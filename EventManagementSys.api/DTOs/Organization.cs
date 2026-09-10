@@ -5,7 +5,7 @@ public class CreateOrganizationDto
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
-    public string? ContactVersion { get; set; }
+    public string? ContactPerson { get; set; }
 }
 
 public class UpdateOrganizationDto
@@ -13,7 +13,7 @@ public class UpdateOrganizationDto
     public string? Name { get; set; }
     public string? Email { get; set; }
     public string? Phone { get; set; }
-    public string? ContactVersion { get; set; }
+    public string? ContactPerson { get; set; }
 }
 
 public class OrganizationResponseDto
@@ -22,5 +22,5 @@ public class OrganizationResponseDto
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
-    public string ContactVersion { get; set; } = string.Empty;
+    public string ContactPerson { get; set; } = string.Empty;
 }

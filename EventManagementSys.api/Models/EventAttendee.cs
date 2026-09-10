@@ -1,9 +1,11 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace EventManagementSys.api.Models;
 
 public class EventAttendee
 {
-    public int EventId { get; set; }
-    public int AttendeeId { get; set; }
+    [Key] public int EventId { get; set; }
+    [Key] public int AttendeeId { get; set; }
     public DateTime RegisteredTime { get; set; }
 
     // Navigation properties

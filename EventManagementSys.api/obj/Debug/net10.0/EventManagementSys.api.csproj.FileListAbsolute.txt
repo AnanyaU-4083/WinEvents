@@ -8,8 +8,9 @@ C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagement
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\EventManagementSys.api.pdb
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Azure.Core.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Azure.Identity.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\BCrypt-Net-Next.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Humanizer.dll
-C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Microsoft.AspNetCore.OpenApi.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Microsoft.Bcl.Cryptography.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Microsoft.Build.dll
@@ -42,6 +43,9 @@ C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagement
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Microsoft.SqlServer.Server.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Mono.TextTemplating.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Newtonsoft.Json.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\System.ClientModel.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\System.CodeDom.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\System.Composition.AttributedModel.dll
@@ -150,6 +154,7 @@ C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagement
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\EventManagementSys.api.csproj.CoreCompileInputs.cache
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\EventManagementSys.api.MvcApplicationPartsAssemblyInfo.cs
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\EventManagementSys.api.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\EventManagementSys.api.sourcelink.json
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\rjimswa.dswa.cache.json
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\rjsmrazor.dswa.cache.json
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\rjsmcshtml.dswa.cache.json
@@ -165,8 +170,3 @@ C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagement
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\EventManagementSys.api.pdb
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\EventManagementSys.api.genruntimeconfig.cache
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\obj\Debug\net10.0\ref\EventManagementSys.api.dll
-C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Scalar.AspNetCore.dll
-C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Swashbuckle.AspNetCore.Swagger.dll
-C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerGen.dll
-C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\Swashbuckle.AspNetCore.SwaggerUI.dll
-C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\bin\Debug\net10.0\BCrypt-Net-Next.dll

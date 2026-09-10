@@ -4,16 +4,11 @@ namespace EventManagementSys.api.Models;
 
 public class User
 {
-    [Key]
-    public int UserId { get; set; }
+    [Key]public int UserId { get; set; }
 
-    [Required]
-    [StringLength(100)]
-    public string Username { get; set; } = string.Empty;
+    [Required] [StringLength(100)] public string Username { get; set; } = string.Empty;
 
-    [Required]
-    [EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    [Required] [EmailAddress] public string Email { get; set; } = string.Empty;
 
     [Required]
     public string PasswordHash { get; set; } = string.Empty;
@@ -26,4 +21,7 @@ public class User
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public List<Attendee> Attendees { get; set; } = new();
+    public List<Employee> Employees { get; set; } = new();
 }

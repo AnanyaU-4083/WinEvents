@@ -50,7 +50,7 @@
               "target": "Package",
               "version": "[4.2.0, )"
             },
-            "Microsoft.AspNetCore.OpenApi": {
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[10.0.11, )"
             },
@@ -63,10 +63,6 @@
               "suppressParent": "All",
               "target": "Package",
               "version": "[10.0.0, )"
-            },
-            "Scalar.AspNetCore": {
-              "target": "Package",
-              "version": "[2.17.2, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",

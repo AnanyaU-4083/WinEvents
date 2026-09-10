@@ -1,4 +1,6 @@
+using EventManagementSys.api.Models;
 namespace EventManagementSys.api.DTOs;
+
 
 public class AssignStaffDto
 {
@@ -11,7 +13,7 @@ public class AssignStaffDto
 
 public class UpdateStaffDto
 {
-    public string Status { get; set; } = "pending";
+    public EventEmployee.AssignmentStatus Status { get; set; }
 
     public string Task { get; set; } = string.Empty;
 

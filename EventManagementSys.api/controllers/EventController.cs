@@ -1,6 +1,7 @@
 using EventManagementSys.api.DTOs;
 using EventManagementSys.api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EventManagementSys.api.Controllers;
 
@@ -8,28 +9,22 @@ namespace EventManagementSys.api.Controllers;
 [Route("api/events")]
 public class EventController(IEventService eventService) : ControllerBase
 {
-    [HttpGet] // Get all events
-    public async Task<ActionResult<List<EventResponseDto>>> GetAll(
-        bool upcomingOnly,
-        CancellationToken cancellationToken)
+    [HttpGet] 
+    [AllowAnonymous]
+    public async Task<ActionResult<List<EventResponseDto>>> GetAll(bool? upcomingOnly,CancellationToken cancellationToken)
     {
         List<EventResponseDto> events =
-            await eventService.GetAllAsync(
-                upcomingOnly,
-                cancellationToken);
+            await eventService.GetAllAsync(upcomingOnly, cancellationToken);
 
         return Ok(events);
     }
 
-    [HttpGet("{eventId:int}")] // Get event by ID
-    public async Task<ActionResult<EventResponseDto>> GetById(
-        int eventId,
-        CancellationToken cancellationToken)
+    [HttpGet("{eventId:int}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<EventResponseDto>> GetById(int eventId,CancellationToken cancellationToken)
     {
         EventResponseDto? eventItem =
-            await eventService.GetByIdAsync(
-                eventId,
-                cancellationToken);
+            await eventService.GetByIdAsync(eventId, cancellationToken);
 
         if (eventItem is null)
         {
@@ -39,10 +34,9 @@ public class EventController(IEventService eventService) : ControllerBase
         return Ok(eventItem);
     }
 
-    [HttpPost] // Create event
-    public async Task<ActionResult<EventResponseDto>> Create(
-        CreateEventDto request,
-        CancellationToken cancellationToken)
+    [HttpPost]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<ActionResult<EventResponseDto>> Create(CreateEventDto request,CancellationToken cancellationToken)
     {
         EventResponseDto eventItem =
             await eventService.CreateAsync(
@@ -56,11 +50,9 @@ public class EventController(IEventService eventService) : ControllerBase
             eventItem);
     }
 
-    [HttpPut("{eventId:int}")] // Update event
-    public async Task<IActionResult> Update(
-        int eventId,
-        UpdateEventDto request,
-        CancellationToken cancellationToken)
+    [HttpPut("{eventId:int}")]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> Update(int eventId,UpdateEventDto request,CancellationToken cancellationToken)
     {
         bool updated =
             await eventService.UpdateAsync(
@@ -76,10 +68,9 @@ public class EventController(IEventService eventService) : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{eventId:int}")] // Delete event
-    public async Task<IActionResult> Delete(
-        int eventId,
-        CancellationToken cancellationToken)
+    [HttpDelete("{eventId:int}")] 
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Delete(int eventId,CancellationToken cancellationToken)
     {
         bool deleted =
             await eventService.DeleteAsync(
