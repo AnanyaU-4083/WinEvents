@@ -20,8 +20,9 @@ var connectionString =
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 builder.Services.AddControllers();
-builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+
+//this will validate the token
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -48,7 +49,7 @@ builder.Services.AddAuthorization();
 //the swagger
 builder.Services.AddSwaggerGen(options =>
 {
-    // the JWT Bearer definition
+    
     options.AddSecurityDefinition(
         "Bearer",
         new OpenApiSecurityScheme
@@ -62,8 +63,7 @@ builder.Services.AddSwaggerGen(options =>
         });
 
 
-    // Tell Swagger that Bearer authentication
-    // is required for API operations
+    // it tells swagger that bearer authentication is required for the endpoints
     options.AddSecurityRequirement(document =>
         new OpenApiSecurityRequirement
         {
@@ -74,8 +74,6 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 
-
-//my dependency injection
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();

@@ -7,8 +7,7 @@ namespace EventManagementSys.api.Controllers;
 
 [ApiController]
 [Route("api/organizations")]
-public class OrganizationController(
-    IOrganizationService organizationService) : ControllerBase
+public class OrganizationController(IOrganizationService organizationService) : ControllerBase
 {
     [HttpGet] 
     [Authorize(Roles = "Admin,Employee")]

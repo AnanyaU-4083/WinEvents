@@ -68,16 +68,18 @@ public class EventController(IEventService eventService) : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{eventId:int}")] 
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Delete(int eventId,CancellationToken cancellationToken)
+    [HttpPatch("{eventId:int}/cancel")]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> Cancel(
+        int eventId,
+        CancellationToken cancellationToken)
     {
-        bool deleted =
-            await eventService.DeleteAsync(
+        bool cancelled =
+            await eventService.CancelAsync(
                 eventId,
                 cancellationToken);
 
-        if (!deleted)
+        if (!cancelled)
         {
             return NotFound();
         }

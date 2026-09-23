@@ -12,5 +12,7 @@ public interface IEventService
 
     Task<bool> UpdateAsync(int eventId,UpdateEventDto request,CancellationToken cancellationToken);
 
-    Task<bool> DeleteAsync(int eventId,CancellationToken cancellationToken);
+    Task<bool> CancelAsync(
+    int eventId,
+    CancellationToken cancellationToken);
 }

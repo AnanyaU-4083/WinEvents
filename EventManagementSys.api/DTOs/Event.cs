@@ -31,6 +31,7 @@ public class EventResponseDto
     public DateTime EndDate { get; set; }
     public decimal? Budget { get; set; }
     public EventType EventType { get; set; }
+    public EventStatus Status { get; set; }
     public int? VenueId { get; set; }
     public int? OrgId { get; set; }
 }

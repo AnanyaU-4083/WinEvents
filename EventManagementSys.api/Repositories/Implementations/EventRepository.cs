@@ -14,11 +14,13 @@ public class EventRepository(AppDbContext dbContext) : IEventRepository
         if (upcomingOnly == true)
         {
             query = query.Where(eventItem =>
-                eventItem.StartDate >= DateTime.UtcNow);
+                eventItem.StartDate >= DateTime.UtcNow&&
+        eventItem.Status != EventStatus.Cancelled);
         }
         else if (upcomingOnly == false)
         {
-            query = query.Where(eventItem => eventItem.EndDate < DateTime.UtcNow);
+            query = query.Where(eventItem => eventItem.EndDate < DateTime.UtcNow&&
+        eventItem.Status != EventStatus.Cancelled);
         }
 
         return await query
@@ -49,10 +51,5 @@ public class EventRepository(AppDbContext dbContext) : IEventRepository
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task DeleteAsync(Event eventItem,CancellationToken cancellationToken)
-    {
-        dbContext.Events.Remove(eventItem);
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-    }
+    
 }

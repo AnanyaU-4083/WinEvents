@@ -7,8 +7,7 @@ namespace EventManagementSys.api.Controllers;
 
 [ApiController]
 [Route("api/events")]
-public class StaffingController(
-    IStaffingService staffingService) : ControllerBase
+public class StaffingController(IStaffingService staffingService) : ControllerBase
 {
     [HttpPost("{eventId:int}/staff")] 
     [Authorize(Roles = "Admin,Employee")]

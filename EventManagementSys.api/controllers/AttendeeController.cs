@@ -20,7 +20,7 @@ public class AttendeeController(IAttendeeService attendeeService) : ControllerBa
     }
 
     [HttpGet("{attendeeId:int}")]
-    [Authorize]
+    [Authorize(Roles = "Admin,Employee")]
     public async Task<ActionResult<AttendeeResponseDto>> GetById(int attendeeId,CancellationToken cancellationToken)
     {
         AttendeeResponseDto? attendee =

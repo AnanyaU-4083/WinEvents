@@ -52,6 +52,12 @@ public class EventService(IEventRepository eventRepository) : IEventService
             return false;
         }
 
+        if (eventEntity.Status == EventStatus.Cancelled)
+        {
+            throw new InvalidOperationException(
+        "A cancelled event cannot be updated.");
+        }
+
         if (request.EventName is not null)
         {
             eventEntity.EventName = request.EventName;
@@ -81,6 +87,7 @@ public class EventService(IEventRepository eventRepository) : IEventService
         {
             eventEntity.VenueId = request.VenueId.Value;
         }
+        
 
         
 
@@ -89,18 +96,38 @@ public class EventService(IEventRepository eventRepository) : IEventService
         return true;
     }
 
-    public async Task<bool> DeleteAsync(int eventId,CancellationToken cancellationToken)
+    public async Task<bool> CancelAsync(
+    int eventId,
+    CancellationToken cancellationToken)
     {
-        Event? eventEntity = await eventRepository.GetByIdAsync(eventId,cancellationToken);
+    Event? eventEntity =
+        await eventRepository.GetByIdAsync(
+            eventId,
+            cancellationToken);
 
-        if (eventEntity is null)
-        {
-            return false;
-        }
+    if (eventEntity is null)
+    {
+        return false;
+    }
+    if (eventEntity.Status == EventStatus.Cancelled)
+    {
+        throw new InvalidOperationException(
+            "Event is already cancelled.");
+    }
 
-        await eventRepository.DeleteAsync(eventEntity,cancellationToken);
+    if (eventEntity.Status == EventStatus.Completed)
+    {
+        throw new InvalidOperationException(
+            "A completed event cannot be cancelled.");
+    }
 
-        return true;
+    eventEntity.Status = EventStatus.Cancelled;
+
+    await eventRepository.UpdateAsync(
+        eventEntity,
+        cancellationToken);
+
+    return true;
     }
 
     private static EventResponseDto MapToResponse(Event eventEntity)
@@ -113,6 +140,7 @@ public class EventService(IEventRepository eventRepository) : IEventService
             EndDate = eventEntity.EndDate,
             Budget = eventEntity.Budget,
             EventType = eventEntity.EventType,
+            Status = eventEntity.Status,
             VenueId = eventEntity.VenueId,
             OrgId = eventEntity.OrgId
         };

@@ -7,8 +7,7 @@ namespace EventManagementSys.api.Controllers;
 
 [ApiController]
 [Route("api/events")]
-public class RegistrationController(
-    IRegistrationService registrationService) : ControllerBase
+public class RegistrationController(IRegistrationService registrationService) : ControllerBase
 {
     [HttpPost("{eventId:int}/attendees/{attendeeId:int}")] 
     [Authorize(Roles = "Admin,Employee,Attendee")]
