@@ -10,7 +10,7 @@ namespace EventManagementSys.api.Controllers;
 public class RegistrationController(IRegistrationService registrationService) : ControllerBase
 {
     [HttpPost("{eventId:int}/attendees/{attendeeId:int}")] 
-    [Authorize(Roles = "Admin,Employee,Attendee")]
+    //[Authorize(Roles = "Admin,Employee,Attendee")]
     public async Task<ActionResult<RegistrationDto>> Register(int eventId,int attendeeId,CancellationToken cancellationToken)
     {
         RegistrationDto registration =
@@ -23,7 +23,7 @@ public class RegistrationController(IRegistrationService registrationService) : 
     }
 
     [HttpGet("{eventId:int}/attendees")] 
-    [Authorize(Roles = "Admin,Employee")]
+    //[Authorize(Roles = "Admin,Employee")]
     public async Task<ActionResult<List<ParticipantDto>>> GetParticipants(int eventId,CancellationToken cancellationToken)
     {
         List<ParticipantDto> participants =
@@ -35,7 +35,7 @@ public class RegistrationController(IRegistrationService registrationService) : 
     }
 
     [HttpDelete("{eventId:int}/attendees/{attendeeId:int}")] 
-    [Authorize(Roles = "Admin,Employee")]
+    //[Authorize(Roles = "Admin,Employee")]
     public async Task<IActionResult> RemoveParticipant(int eventId,int attendeeId,CancellationToken cancellationToken)
     {
         bool removed =

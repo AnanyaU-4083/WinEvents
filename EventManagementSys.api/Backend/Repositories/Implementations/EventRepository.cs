@@ -51,5 +51,10 @@ public class EventRepository(AppDbContext dbContext) : IEventRepository
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     
 }

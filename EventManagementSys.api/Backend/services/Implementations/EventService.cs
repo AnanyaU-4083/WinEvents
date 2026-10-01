@@ -8,21 +8,59 @@ namespace EventManagementSys.api.Services.Implementations;
 public class EventService(IEventRepository eventRepository) : IEventService
 {
     public async Task<List<EventResponseDto>> GetAllAsync(bool? upcomingOnly,CancellationToken cancellationToken)
-{
-    List<Event> events = await eventRepository.GetAllAsync(upcomingOnly,cancellationToken);
+    {
+        List<Event> events =
+            await eventRepository.GetAllAsync(
+                upcomingOnly,
+                cancellationToken);
 
-    return events
-        .Select(MapToResponse)
-        .ToList();
-}
+        bool hasChanges = false;
+
+        foreach (Event eventItem in events)
+        {
+            if (
+                eventItem.Status == EventStatus.Scheduled &&
+                eventItem.EndDate < DateTime.UtcNow)
+            {
+                eventItem.Status = EventStatus.Completed;
+                hasChanges = true;
+            }
+        }
+
+        if (hasChanges)
+        {
+            await eventRepository.SaveChangesAsync(
+                cancellationToken);
+        }
+
+        return events
+            .Select(MapToResponse)
+            .ToList();
+    }
 
     public async Task<EventResponseDto?> GetByIdAsync(int eventId,CancellationToken cancellationToken)
     {
-        Event? eventEntity = await eventRepository.GetByIdAsync(eventId,cancellationToken);
+        Event? eventEntity =
+        await eventRepository.GetByIdAsync(
+            eventId,
+            cancellationToken);
 
-        return eventEntity is null
-            ? null
-            : MapToResponse(eventEntity);
+        if (eventEntity is null)
+        {
+            return null;
+        }
+
+        if (
+            eventEntity.Status == EventStatus.Scheduled &&
+            eventEntity.EndDate < DateTime.UtcNow)
+        {
+            eventEntity.Status = EventStatus.Completed;
+
+            await eventRepository.SaveChangesAsync(
+                cancellationToken);
+        }
+
+        return MapToResponse(eventEntity);
     }
 
     public async Task<EventResponseDto> CreateAsync(CreateEventDto request,int? createdByUserId,CancellationToken cancellationToken)

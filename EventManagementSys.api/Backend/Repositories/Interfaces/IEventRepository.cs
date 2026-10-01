@@ -12,5 +12,8 @@ public interface IEventRepository
 
     Task UpdateAsync(Event eventItem,CancellationToken cancellationToken);
 
+    Task SaveChangesAsync(
+        CancellationToken cancellationToken);
+
     
 }

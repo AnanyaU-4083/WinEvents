@@ -27,8 +27,16 @@ interface EventDto {
    ========================================================= */
 
 function Dashboard() {
+    
 
-  const { accounts } = useMsal()
+  const { instance, accounts } = useMsal()
+
+  const account =
+    instance.getActiveAccount() ?? accounts[0]
+
+  console.log("MSAL account:", account)
+  console.log("ID token claims:", account?.idTokenClaims)
+
 
   const [events, setEvents] = useState<EventDto[]>([])
 
@@ -70,6 +78,7 @@ function Dashboard() {
   /* =======================================================
      LOAD EVENTS
      ======================================================= */
+     
 
   useEffect(() => {
 

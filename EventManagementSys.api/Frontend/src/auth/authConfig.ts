@@ -36,3 +36,7 @@ export const msalConfig: Configuration = {
     },
   },
 }
+
+export const loginRequest = {
+  scopes: ['api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'],
+}

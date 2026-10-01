@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
+
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,7 +23,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(conn
 builder.Services.AddControllers();
 
 //this will validate the token
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+/*builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -39,7 +40,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes(
                     builder.Configuration["Jwt:Key"]!))
         };
+    });*/
+
+    
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+    {
+        policy.RequireClaim("roles", "Admin");
     });
+});
 
 
 builder.Services.AddAuthorization();
