@@ -10,7 +10,7 @@ namespace EventManagementSys.api.Controllers;
 public class OrganizationController(IOrganizationService organizationService) : ControllerBase
 {
     [HttpGet] 
-    [Authorize(Roles = "Admin,Employee")]
+    
     public async Task<ActionResult<List<OrganizationResponseDto>>> GetAll(CancellationToken cancellationToken)
     {
         List<OrganizationResponseDto> organizations =
@@ -20,7 +20,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     }
 
     [HttpGet("{orgId:int}")] 
-    [Authorize(Roles = "Admin,Employee")]
+    
     public async Task<ActionResult<OrganizationResponseDto>> GetById(int orgId,CancellationToken cancellationToken)
     {
         OrganizationResponseDto? organization =
@@ -37,7 +37,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     }
 
     [HttpPost] 
-    [Authorize(Roles = "Admin")]
+    
     public async Task<ActionResult<OrganizationResponseDto>> Create(CreateOrganizationDto request,CancellationToken cancellationToken)
     {
         OrganizationResponseDto organization =
@@ -52,7 +52,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     }
 
     [HttpPut("{orgId:int}")] 
-    [Authorize(Roles = "Admin")]
+    
     public async Task<IActionResult> Update(int orgId,UpdateOrganizationDto request,CancellationToken cancellationToken)
     {
         bool updated =
@@ -70,7 +70,7 @@ public class OrganizationController(IOrganizationService organizationService) : 
     }
 
     [HttpDelete("{orgId:int}")] 
-    [Authorize(Roles = "Admin")]
+    
     public async Task<IActionResult> Delete(int orgId,CancellationToken cancellationToken)
     {
         bool deleted =

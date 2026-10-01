@@ -21,6 +21,7 @@ public class UpdateEventDto
     public decimal? Budget { get; set; }
     public EventType? EventType { get; set; }
     public int? VenueId { get; set; }
+    public int? OrgId { get; set; }
 }
 
 public class EventResponseDto

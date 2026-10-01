@@ -87,6 +87,11 @@ public class EventService(IEventRepository eventRepository) : IEventService
         {
             eventEntity.VenueId = request.VenueId.Value;
         }
+
+        if (request.OrgId.HasValue)
+        {
+            eventEntity.OrgId = request.OrgId.Value;
+        }
         
 
         
