@@ -135,7 +135,7 @@ function Dashboard() {
   }, [])
 
 
-  /* =======================================================
+  /*
      NORMALIZE EVENT STATUS
      
      ASP.NET may return enum values as:
@@ -145,7 +145,7 @@ function Dashboard() {
      2 = Completed
      
      or as strings.
-     ======================================================= */
+      */
 
   const getEventStatus = (
     status: EventStatus | number
@@ -177,9 +177,9 @@ function Dashboard() {
   }
 
 
-  /* =======================================================
+  /* 
      PREVIOUS MONTH
-     ======================================================= */
+    */
 
   const goToPreviousMonth = () => {
 
@@ -194,9 +194,9 @@ function Dashboard() {
   }
 
 
-  /* =======================================================
+  /* 
      NEXT MONTH
-     ======================================================= */
+    */
 
   const goToNextMonth = () => {
 
@@ -211,9 +211,9 @@ function Dashboard() {
   }
 
 
-  /* =======================================================
+  /* 
      TODAY
-     ======================================================= */
+     */
 
   const goToToday = () => {
 
@@ -224,9 +224,9 @@ function Dashboard() {
   }
 
 
-  /* =======================================================
+  /* 
      MONTH DROPDOWN
-     ======================================================= */
+      */
 
   const handleMonthChange = (
     event: ChangeEvent<HTMLSelectElement>
@@ -243,9 +243,9 @@ function Dashboard() {
   }
 
 
-  /* =======================================================
+  /* 
      YEAR DROPDOWN
-     ======================================================= */
+      */
 
   const handleYearChange = (
     event: ChangeEvent<HTMLSelectElement>
@@ -262,9 +262,9 @@ function Dashboard() {
   }
 
 
-  /* =======================================================
+  /* 
      YEARS
-     ======================================================= */
+      */
 
   const years = Array.from(
     {
@@ -275,9 +275,9 @@ function Dashboard() {
   )
 
 
-  /* =======================================================
+  /* 
      DAYS IN CURRENT MONTH
-     ======================================================= */
+      */
 
   const daysInMonth =
     new Date(
@@ -287,14 +287,14 @@ function Dashboard() {
     ).getDate()
 
 
-  /* =======================================================
+  /* 
      FIRST DAY OF MONTH
      
      Monday = 0
      Tuesday = 1
      ...
      Sunday = 6
-     ======================================================= */
+      */
 
   const firstDayOfMonth =
     (
@@ -306,9 +306,9 @@ function Dashboard() {
     ) % 7
 
 
-  /* =======================================================
+  /* 
      PREVIOUS MONTH DAYS
-     ======================================================= */
+      */
 
   const daysInPreviousMonth =
     new Date(
@@ -318,9 +318,9 @@ function Dashboard() {
     ).getDate()
 
 
-  /* =======================================================
+  /* 
      BUILD CALENDAR
-     ======================================================= */
+      */
 
   const calendarDays = useMemo(() => {
 
@@ -412,9 +412,9 @@ function Dashboard() {
   ])
 
 
-  /* =======================================================
+  /* 
      EVENTS FOR A DATE
-     ======================================================= */
+     */
 
   const getEventsForDate = (
     date: Date

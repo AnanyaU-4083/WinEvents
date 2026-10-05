@@ -10,7 +10,7 @@ namespace EventManagementSys.api.Controllers;
 public class AttendeeController(IAttendeeService attendeeService) : ControllerBase
 {
     [HttpGet]
-    //[Authorize(Roles = "Admin,Employee")]
+    [Authorize(Roles = "Admin,Employee")]
     public async Task<ActionResult<List<AttendeeResponseDto>>> GetAll(CancellationToken cancellationToken)
     {
         List<AttendeeResponseDto> attendees =
@@ -20,7 +20,7 @@ public class AttendeeController(IAttendeeService attendeeService) : ControllerBa
     }
 
     [HttpGet("{attendeeId:int}")]
-    //[Authorize(Roles = "Admin,Employee")]
+    [Authorize(Roles = "Admin,Employee")]
     public async Task<ActionResult<AttendeeResponseDto>> GetById(int attendeeId,CancellationToken cancellationToken)
     {
         AttendeeResponseDto? attendee =
@@ -35,7 +35,7 @@ public class AttendeeController(IAttendeeService attendeeService) : ControllerBa
     }
 
     [HttpPost]
-    //[Authorize(Roles = "Admin,Employee")] // Admin and Employee
+    [Authorize(Roles = "Admin,Employee")] // Admin and Employee
     public async Task<ActionResult<AttendeeResponseDto>> Create(CreateAttendeeDto request,CancellationToken cancellationToken)
     {
         AttendeeResponseDto attendee =
@@ -50,7 +50,7 @@ public class AttendeeController(IAttendeeService attendeeService) : ControllerBa
     }
 
     [HttpPut("{attendeeId:int}")]
-    //[Authorize(Roles = "Admin,Employee")] 
+    [Authorize(Roles = "Admin,Employee")] 
     public async Task<IActionResult> Update(int attendeeId,UpdateAttendeeDto request,CancellationToken cancellationToken)
     {
         bool updated =
@@ -66,7 +66,7 @@ public class AttendeeController(IAttendeeService attendeeService) : ControllerBa
     }
 
     [HttpDelete("{attendeeId:int}")]
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int attendeeId,CancellationToken cancellationToken)
     {
         bool deleted =

@@ -342,3 +342,15 @@ C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagement
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\obj\Debug\net10.0\EventManagementSys.api.pdb
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\obj\Debug\net10.0\EventManagementSys.api.genruntimeconfig.cache
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\obj\Debug\net10.0\ref\EventManagementSys.api.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Azure.Security.KeyVault.Certificates.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Azure.Security.KeyVault.Secrets.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.OpenIdConnect.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.Identity.Abstractions.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.Identity.Web.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.Identity.Web.Certificate.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.Identity.Web.Certificateless.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.Identity.Web.Diagnostics.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.Identity.Web.TokenAcquisition.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.Identity.Web.TokenCache.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.IdentityModel.LoggingExtensions.dll
+C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\backend\bin\Debug\net10.0\Microsoft.IdentityModel.Validators.dll

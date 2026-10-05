@@ -7,59 +7,35 @@ using EventManagementSys.api.Services.Interfaces;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
+using Microsoft.Identity.Web;
 using Microsoft.OpenApi;
 
-
-using System.Text;
-
 var builder = WebApplication.CreateBuilder(args);
-
 
 var connectionString =
     builder.Configuration.GetConnectionString("DefaultConnection");
 
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<AppDbContext>(
+    options => options.UseSqlServer(connectionString));
+
 builder.Services.AddControllers();
 
-//this will validate the token
-/*builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
 
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(
-                    builder.Configuration["Jwt:Key"]!))
-        };
-    });*/
-
-    
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminOnly", policy =>
-    {
-        policy.RequireClaim("roles", "Admin");
-    });
-});
+// Microsoft Authentication
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(
+        builder.Configuration,
+        "AzureAd");
 
 
+// Authorization
 builder.Services.AddAuthorization();
 
 
-
-//the swagger
+// Swagger
 builder.Services.AddSwaggerGen(options =>
 {
-    
     options.AddSecurityDefinition(
         "Bearer",
         new OpenApiSecurityScheme
@@ -69,11 +45,9 @@ builder.Services.AddSwaggerGen(options =>
             Scheme = "bearer",
             BearerFormat = "JWT",
             In = ParameterLocation.Header,
-            Description = "Enter your JWT token."
+            Description = "Enter your Microsoft access token."
         });
 
-
-    // it tells swagger that bearer authentication is required for the endpoints
     options.AddSecurityRequirement(document =>
         new OpenApiSecurityRequirement
         {
@@ -84,7 +58,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 
-
+// Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
@@ -109,7 +83,9 @@ builder.Services.AddScoped<IRegistrationRepository, RegistrationRepository>();
 builder.Services.AddScoped<IStaffingRepository, StaffingRepository>();
 builder.Services.AddScoped<IStaffingService, StaffService>();
 
+
 var app = builder.Build();
+
 
 if (app.Environment.IsDevelopment())
 {
@@ -123,11 +99,13 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+
 app.UseMiddleware<ExceptionHandling>();
 
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();

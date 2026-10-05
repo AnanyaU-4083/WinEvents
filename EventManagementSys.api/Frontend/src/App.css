@@ -1673,3 +1673,43 @@ body {
     justify-content: flex-start;
   }
 }
+/* Administration forms */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.form-grid label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.form-grid input,
+.form-grid select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--text-dark);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-grid input:focus,
+.form-grid select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}

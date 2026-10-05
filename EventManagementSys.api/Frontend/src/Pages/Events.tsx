@@ -78,15 +78,15 @@ function Events() {
     orgId: '',
   })
 
-  // ---------------------------------------------------------
+  
   // API URL
-  // ---------------------------------------------------------
+  
 
   const API_URL = '/api'
 
-  // ---------------------------------------------------------
+  
   // Authorization header
-  // ---------------------------------------------------------
+  
 
   const getAuthHeaders = (): HeadersInit => {
     const token = localStorage.getItem('token')
@@ -100,10 +100,9 @@ function Events() {
     }
   }
 
-  // ---------------------------------------------------------
+  
   // Load all data
-  // ---------------------------------------------------------
-
+  
   useEffect(() => {
     loadData()
   }, [])
@@ -126,10 +125,10 @@ function Events() {
     }
   }
 
-  // ---------------------------------------------------------
+  
   // GET EVENTS
   // GET /api/events
-  // ---------------------------------------------------------
+  
 
   const loadEvents = async () => {
     const response = await fetch(`${API_URL}/events`)
@@ -143,10 +142,10 @@ function Events() {
     setEvents(data)
   }
 
-  // ---------------------------------------------------------
+  
   // GET VENUES
   // GET /api/venues
-  // ---------------------------------------------------------
+  
 
   const loadVenues = async () => {
     const response = await fetch(`${API_URL}/venues`)

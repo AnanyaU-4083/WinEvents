@@ -37,7 +37,7 @@ public class VenueController(IVenueService venueService) : ControllerBase
     }
 
     [HttpPost] 
-    //[Authorize(Roles = "Admin,Employee")]
+    [Authorize(Roles = "Admin,Employee")]
     public async Task<ActionResult<VenueResponseDto>> Create(CreateVenueDto request,CancellationToken cancellationToken)
     {
         VenueResponseDto venue =

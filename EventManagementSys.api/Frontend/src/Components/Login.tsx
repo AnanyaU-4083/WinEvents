@@ -15,6 +15,7 @@ function Login() {
   const loginRequest: RedirectRequest = {
     scopes: ['User.Read'],
   }
+  
 
   useEffect(() => {
 

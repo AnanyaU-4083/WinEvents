@@ -12,10 +12,17 @@ if (!rootElement) {
   throw new Error('Root element not found')
 }
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <MsalProvider instance={msalInstance}>
-      <App />
-    </MsalProvider>
-  </StrictMode>,
-)
+async function startApp() {
+  // Initialize MSAL before using MsalProvider
+  await msalInstance.initialize()
+
+  createRoot(rootElement).render(
+    <StrictMode>
+      <MsalProvider instance={msalInstance}>
+        <App />
+      </MsalProvider>
+    </StrictMode>,
+  )
+}
+
+startApp()

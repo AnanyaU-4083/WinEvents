@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useMsal } from '@azure/msal-react'
+import type { AccountInfo } from '@azure/msal-browser'
 
 import SearchBar from '../Components/SearchBar'
 import EventFilter from '../Components/EventFilter'
@@ -28,156 +30,402 @@ interface Participant {
 const API_URL = '/api'
 
 function Participants() {
-  const [selectedEvent, setSelectedEvent] = useState('all')
-  const [searchTerm, setSearchTerm] = useState('')
 
-  const [participants, setParticipants] = useState<Participant[]>([])
-  const [events, setEvents] = useState<EventItem[]>([])
+  const { instance, accounts } = useMsal()
 
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [selectedEvent, setSelectedEvent] =
+    useState('all')
 
-  // Get JWT token if the user is logged in.
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token')
+  const [searchTerm, setSearchTerm] =
+    useState('')
 
-    if (!token) {
-      return {}
+  const [participants, setParticipants] =
+    useState<Participant[]>([])
+
+  const [events, setEvents] =
+    useState<EventItem[]>([])
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [error, setError] =
+    useState('')
+
+
+  /*
+   * Get the currently logged-in
+   * Microsoft account.
+   */
+  const account: AccountInfo | undefined =
+    instance.getActiveAccount() ?? accounts[0]
+
+
+  /*
+   * Get Microsoft access token.
+   */
+  const getAccessToken = async () => {
+
+    if (!account) {
+      throw new Error(
+        'No Microsoft account is logged in.'
+      )
     }
 
-    return {
-      Authorization: `Bearer ${token}`,
-    }
-  }
-
-  // Load events for the event filter.
-  const loadEvents = async () => {
-    try {
-      const response = await fetch(`${API_URL}/events`, {
-        headers: {
-          ...getAuthHeaders(),
-        },
+    const response =
+      await instance.acquireTokenSilent({
+        scopes: [
+          'api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'
+        ],
+        account,
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to load events.')
-      }
-
-      const data = await response.json()
-
-      setEvents(data)
-    } catch (error) {
-      console.error(error)
-      setError('Unable to load events.')
-    }
+    return response.accessToken
   }
 
-  // Load all participants.
-  const loadParticipants = async () => {
-    try {
-      setLoading(true)
-      setError('')
 
-      const eventsResponse = await fetch(`${API_URL}/events`, {
-        headers: {
-          ...getAuthHeaders(),
-        },
-      })
+  /*
+   * Load events and participants.
+   */
+  useEffect(() => {
 
-      if (!eventsResponse.ok) {
-        throw new Error('Failed to load events.')
-      }
+    let cancelled = false
 
-      const eventData: EventItem[] = await eventsResponse.json()
+    const loadData = async () => {
 
-      const participantRequests = eventData.map(async (event) => {
-        const response = await fetch(
-          `${API_URL}/events/${event.eventId}/attendees`,
-          {
-            headers: {
-              ...getAuthHeaders(),
-            },
-          }
-        )
+      try {
 
-        if (!response.ok) {
-          return []
+        setLoading(true)
+        setError('')
+
+
+        /*
+         * Check Microsoft account.
+         */
+        if (!account) {
+
+          throw new Error(
+            'Please log in with Microsoft first.'
+          )
         }
 
-        const attendeeData: Attendee[] = await response.json()
 
-        return attendeeData.map((attendee) => ({
-          attendeeId: attendee.attendeeId,
-          name: attendee.name,
-          email: attendee.email,
-          eventId: event.eventId,
-          eventName: event.eventName,
-          registeredAt: '',
-        }))
-      })
+        console.log(
+          'Loading participants...'
+        )
 
-      const results = await Promise.all(participantRequests)
 
-      const allParticipants = results.flat()
+        /*
+         * Get Microsoft access token.
+         */
+        const token =
+          await getAccessToken()
 
-      setParticipants(allParticipants)
-    } catch (error) {
-      console.error(error)
-      setError('Unable to load participants.')
-    } finally {
-      setLoading(false)
+
+        if (cancelled) {
+          return
+        }
+
+
+        console.log(
+          'Access token received.'
+        )
+
+
+        const headers = {
+          Authorization: `Bearer ${token}`,
+        }
+
+
+        /*
+         * STEP 1
+         *
+         * Get all events.
+         *
+         * GET /api/events
+         */
+        console.log(
+          'Loading events...'
+        )
+
+
+        const eventsResponse =
+          await fetch(
+            `${API_URL}/events`,
+            {
+              method: 'GET',
+              headers,
+            }
+          )
+
+
+        if (!eventsResponse.ok) {
+
+          throw new Error(
+            `Failed to load events. Status: ${eventsResponse.status}`
+          )
+        }
+
+
+        const eventData: EventItem[] =
+          await eventsResponse.json()
+
+
+        if (cancelled) {
+          return
+        }
+
+
+        console.log(
+          'Events loaded:',
+          eventData
+        )
+
+
+        setEvents(eventData)
+
+
+        /*
+         * STEP 2
+         *
+         * Get attendees for every event.
+         *
+         * We load them one event at a time.
+         */
+        console.log(
+          `Loading attendees for ${eventData.length} events...`
+        )
+
+
+        const allParticipants: Participant[] = []
+
+
+        for (const event of eventData) {
+
+          if (cancelled) {
+            return
+          }
+
+
+          console.log(
+            `Loading attendees for event ${event.eventId} - ${event.eventName}`
+          )
+
+
+          const response =
+            await fetch(
+              `${API_URL}/events/${event.eventId}/attendees`,
+              {
+                method: 'GET',
+                headers,
+              }
+            )
+
+
+          /*
+           * If this particular event
+           * fails, continue with the
+           * remaining events.
+           */
+          if (!response.ok) {
+
+            console.error(
+              `Failed to load attendees for event ${event.eventId}. Status: ${response.status}`
+            )
+
+            continue
+          }
+
+
+          const attendeeData: Attendee[] =
+            await response.json()
+
+
+          console.log(
+            `Event ${event.eventId} attendees:`,
+            attendeeData
+          )
+
+
+          /*
+           * Convert attendee data
+           * into Participant data.
+           */
+          attendeeData.forEach(
+            (attendee) => {
+
+              allParticipants.push({
+
+                attendeeId:
+                  attendee.attendeeId,
+
+                name:
+                  attendee.name,
+
+                email:
+                  attendee.email,
+
+                eventId:
+                  event.eventId,
+
+                eventName:
+                  event.eventName,
+
+                registeredAt:
+                  'Registered',
+
+              })
+
+            }
+          )
+
+        }
+
+
+        if (cancelled) {
+          return
+        }
+
+
+        console.log(
+          'All participants:',
+          allParticipants
+        )
+
+
+        /*
+         * Put all participants
+         * into React state.
+         */
+        setParticipants(
+          allParticipants
+        )
+
+
+      } catch (error) {
+
+        if (cancelled) {
+          return
+        }
+
+
+        console.error(
+          'Error loading participants:',
+          error
+        )
+
+
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load participants.'
+        )
+
+
+      } finally {
+
+        if (!cancelled) {
+
+          setLoading(false)
+
+        }
+
+      }
+
     }
-  }
 
-  useEffect(() => {
-    loadEvents()
-    loadParticipants()
-  }, [])
 
-  const filteredParticipants = participants.filter((participant) => {
-    const matchesSearch =
-      participant.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      participant.email
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+    loadData()
 
-    const matchesEvent =
-      selectedEvent === 'all' ||
-      participant.eventId.toString() === selectedEvent
 
-    return matchesSearch && matchesEvent
-  })
+    /*
+     * Cleanup.
+     */
+    return () => {
+
+      cancelled = true
+
+    }
+
+  }, [account?.homeAccountId])
+
+
+  /*
+   * Search + event filtering.
+   */
+  const filteredParticipants =
+    participants.filter(
+      (participant) => {
+
+        const matchesSearch =
+          participant.name
+            .toLowerCase()
+            .includes(
+              searchTerm.toLowerCase()
+            ) ||
+
+          participant.email
+            .toLowerCase()
+            .includes(
+              searchTerm.toLowerCase()
+            )
+
+
+        const matchesEvent =
+          selectedEvent === 'all' ||
+          participant.eventId.toString() ===
+            selectedEvent
+
+
+        return (
+          matchesSearch &&
+          matchesEvent
+        )
+
+      }
+    )
+
 
   return (
+
     <div className="page">
 
       <div className="page-header">
 
         <div>
-          <h1>Participants</h1>
+
+          <h1>
+            Participants
+          </h1>
 
           <p>
-            Manage attendees and event registrations.
+            Manage attendees and event
+            registrations.
           </p>
+
         </div>
 
       </div>
+
 
       <div className="content-card">
 
         <div className="card-header">
 
           <div>
-            <h2>Participants</h2>
+
+            <h2>
+              Participants
+            </h2>
 
             <p>
-              View attendees and their event registrations.
+              View attendees and their
+              event registrations.
             </p>
+
           </div>
 
         </div>
+
 
         <div className="participant-filters">
 
@@ -194,101 +442,139 @@ function Participants() {
 
         </div>
 
+
         <div className="table-container">
 
           <table className="data-table">
 
             <thead>
+
               <tr>
-                <th>Attendee</th>
-                <th>Email</th>
-                <th>Event</th>
-                <th>Registration</th>
-                <th>Actions</th>
+
+                <th>
+                  Attendee
+                </th>
+
+                <th>
+                  Email
+                </th>
+
+                <th>
+                  Event
+                </th>
+
+                <th>
+                  Registration
+                </th>
+
+                <th>
+                  Actions
+                </th>
+
               </tr>
+
             </thead>
+
 
             <tbody>
 
               {loading ? (
 
                 <tr>
+
                   <td colSpan={5}>
 
                     <div className="empty-state">
 
-                      <h3>Loading participants...</h3>
+                      <h3>
+                        Loading participants...
+                      </h3>
 
                       <p>
-                        Please wait while participants are loaded.
+                        Please wait while
+                        participants are loaded.
                       </p>
 
                     </div>
 
                   </td>
+
                 </tr>
 
               ) : error ? (
 
                 <tr>
+
                   <td colSpan={5}>
 
                     <div className="empty-state">
 
-                      <h3>{error}</h3>
+                      <h3>
+                        {error}
+                      </h3>
 
                     </div>
 
                   </td>
+
                 </tr>
 
               ) : filteredParticipants.length === 0 ? (
 
                 <tr>
+
                   <td colSpan={5}>
 
                     <div className="empty-state">
 
-                      <h3>No participants found</h3>
+                      <h3>
+                        No participants found
+                      </h3>
 
                       <p>
-                        Registered attendees will appear here.
+                        Registered attendees
+                        will appear here.
                       </p>
 
                     </div>
 
                   </td>
+
                 </tr>
 
               ) : (
 
-                filteredParticipants.map((participant) => (
+                filteredParticipants.map(
+                  (participant) => (
 
-                  <tr key={`${participant.eventId}-${participant.attendeeId}`}>
+                    <tr
+                      key={`${participant.eventId}-${participant.attendeeId}`}
+                    >
 
-                    <td>
-                      {participant.name}
-                    </td>
+                      <td>
+                        {participant.name}
+                      </td>
 
-                    <td>
-                      {participant.email}
-                    </td>
+                      <td>
+                        {participant.email}
+                      </td>
 
-                    <td>
-                      {participant.eventName}
-                    </td>
+                      <td>
+                        {participant.eventName}
+                      </td>
 
-                    <td>
-                      {participant.registeredAt || 'Registered'}
-                    </td>
+                      <td>
+                        {participant.registeredAt}
+                      </td>
 
-                    <td>
-                      {/* Actions will be added here later. */}
-                    </td>
+                      <td>
+                        {/* Actions will be added later. */}
+                      </td>
 
-                  </tr>
+                    </tr>
 
-                ))
+                  )
+                )
 
               )}
 
@@ -301,6 +587,7 @@ function Participants() {
       </div>
 
     </div>
+
   )
 }
 
