@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "+49mOwviwPo=",
+  "dgSpecHash": "WwPqgpMAov8=",
   "success": true,
-  "projectFilePath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj",
+  "projectFilePath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\AnanyaUrlam\\.nuget\\packages\\azure.core\\1.50.0\\azure.core.1.50.0.nupkg.sha512",
     "C:\\Users\\AnanyaUrlam\\.nuget\\packages\\azure.identity\\1.17.2\\azure.identity.1.17.2.nupkg.sha512",

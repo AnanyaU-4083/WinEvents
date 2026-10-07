@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
+import { useMsal } from '@azure/msal-react'
+import type { AccountInfo } from '@azure/msal-browser'
 
 type EventStatus = 0 | 1 | 2
 // 0 = Scheduled
@@ -50,6 +52,11 @@ interface EventFormData {
 }
 
 function Events() {
+  const { instance, accounts } = useMsal()
+
+  const account: AccountInfo | undefined =
+    instance.getActiveAccount() ?? accounts[0]
+
   const [events, setEvents] = useState<EventResponse[]>([])
   const [venues, setVenues] = useState<Venue[]>([])
   const [organizations, setOrganizations] = useState<Organization[]>([])
@@ -78,31 +85,32 @@ function Events() {
     orgId: '',
   })
 
-  
   // API URL
-  
 
   const API_URL = '/api'
 
-  
   // Authorization header
-  
 
-  const getAuthHeaders = (): HeadersInit => {
-    const token = localStorage.getItem('token')
-
-    if (!token) {
-      return {}
+  const getAuthHeaders = async (): Promise<HeadersInit> => {
+    if (!account) {
+      throw new Error('No Microsoft account is logged in.')
     }
 
+    const response =
+      await instance.acquireTokenSilent({
+        scopes: [
+          'api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'
+        ],
+        account,
+      })
+
     return {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${response.accessToken}`,
     }
   }
 
-  
   // Load all data
-  
+
   useEffect(() => {
     loadData()
   }, [])
@@ -125,10 +133,8 @@ function Events() {
     }
   }
 
-  
   // GET EVENTS
   // GET /api/events
-  
 
   const loadEvents = async () => {
     const response = await fetch(`${API_URL}/events`)
@@ -142,10 +148,8 @@ function Events() {
     setEvents(data)
   }
 
-  
   // GET VENUES
   // GET /api/venues
-  
 
   const loadVenues = async () => {
     const response = await fetch(`${API_URL}/venues`)
@@ -165,8 +169,10 @@ function Events() {
   // ---------------------------------------------------------
 
   const loadOrganizations = async () => {
+    const authHeaders = await getAuthHeaders()
+
     const response = await fetch(`${API_URL}/organizations`, {
-      headers: getAuthHeaders(),
+      headers: authHeaders,
     })
 
     if (!response.ok) {
@@ -300,11 +306,13 @@ function Events() {
           : Number(formData.orgId),
     }
 
+    const authHeaders = await getAuthHeaders()
+
     const response = await fetch(`${API_URL}/events`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeaders(),
+        ...authHeaders,
       },
       body: JSON.stringify(request),
     })
@@ -341,23 +349,25 @@ function Events() {
     }
 
     const request = {
-    eventName: formData.eventName,
-    startDate: new Date(formData.startDate).toISOString(),
-    endDate: new Date(formData.endDate).toISOString(),
-    budget:
+      eventName: formData.eventName,
+      startDate: new Date(formData.startDate).toISOString(),
+      endDate: new Date(formData.endDate).toISOString(),
+      budget:
         formData.budget === ''
-        ? null
-        : Number(formData.budget),
-    eventType: Number(formData.eventType),
-    venueId:
+          ? null
+          : Number(formData.budget),
+      eventType: Number(formData.eventType),
+      venueId:
         formData.venueId === ''
-        ? null
-        : Number(formData.venueId),
-    orgId:
+          ? null
+          : Number(formData.venueId),
+      orgId:
         formData.orgId === ''
-        ? null
-        : Number(formData.orgId),
+          ? null
+          : Number(formData.orgId),
     }
+
+    const authHeaders = await getAuthHeaders()
 
     const response = await fetch(
       `${API_URL}/events/${editingEventId}`,
@@ -365,7 +375,7 @@ function Events() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
+          ...authHeaders,
         },
         body: JSON.stringify(request),
       },
@@ -476,9 +486,7 @@ function Events() {
         `${API_URL}/events/${eventId}/cancel`,
         {
           method: 'PATCH',
-          headers: {
-            ...getAuthHeaders(),
-          },
+          headers: await getAuthHeaders(),
         },
       )
 
@@ -590,21 +598,23 @@ function Events() {
   // ---------------------------------------------------------
 
   return (
-    <div className="page events-page">
+    <div className="min-h-full bg-[#f5f8fc] p-6 md:p-8">
 
       {/* PAGE HEADER */}
-      <div className="page-header">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1>Events</h1>
+          <h1 className="text-2xl font-bold text-[#111827]">
+            Events
+          </h1>
 
-          <p>
+          <p className="mt-1 text-sm text-[#6b7280]">
             Create and manage your events.
           </p>
         </div>
 
         <button
           type="button"
-          className="primary-button"
+          className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:opacity-50"
           onClick={() => {
             if (showCreateForm) {
               resetForm()
@@ -621,24 +631,24 @@ function Events() {
 
       {/* ERROR MESSAGE */}
       {error && (
-        <div className="error-message">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
       {/* SUCCESS MESSAGE */}
       {successMessage && (
-        <div className="success-message">
+        <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
           {successMessage}
         </div>
       )}
 
       {/* CREATE / EDIT FORM */}
       {showCreateForm && (
-        <div className="content-card">
+        <div className="mb-6 overflow-hidden rounded-xl border border-[#dfe5ec] bg-white shadow-[0_6px_20px_rgba(15,23,42,0.08)]">
 
-          <div className="card-header">
-            <h2>
+          <div className="border-b border-[#edf0f4] px-6 py-5">
+            <h2 className="text-lg font-semibold text-[#111827]">
               {editingEventId !== null
                 ? 'Edit Event'
                 : 'Create Event'}
@@ -646,19 +656,23 @@ function Events() {
           </div>
 
           <form
-            className="event-form"
+            className="space-y-5 p-6"
             onSubmit={handleSubmit}
           >
 
             {/* EVENT NAME + EVENT TYPE */}
-            <div className="form-row">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
-              <div className="form-group">
-                <label htmlFor="eventName">
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium text-[#374151]"
+                  htmlFor="eventName"
+                >
                   Event Name
                 </label>
 
                 <input
+                  className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
                   id="eventName"
                   type="text"
                   placeholder="Enter event name"
@@ -672,12 +686,16 @@ function Events() {
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="eventType">
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium text-[#374151]"
+                  htmlFor="eventType"
+                >
                   Event Type
                 </label>
 
                 <select
+                  className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
                   id="eventType"
                   value={formData.eventType}
                   onChange={(event) =>
@@ -720,14 +738,18 @@ function Events() {
             </div>
 
             {/* START + END DATE */}
-            <div className="form-row">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
-              <div className="form-group">
-                <label htmlFor="startDate">
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium text-[#374151]"
+                  htmlFor="startDate"
+                >
                   Start Date
                 </label>
 
                 <input
+                  className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
                   id="startDate"
                   type="datetime-local"
                   value={formData.startDate}
@@ -740,12 +762,16 @@ function Events() {
                 />
               </div>
 
-              <div className="form-group">
-                <label htmlFor="endDate">
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium text-[#374151]"
+                  htmlFor="endDate"
+                >
                   End Date
                 </label>
 
                 <input
+                  className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
                   id="endDate"
                   type="datetime-local"
                   value={formData.endDate}
@@ -761,14 +787,18 @@ function Events() {
             </div>
 
             {/* VENUE + ORGANIZATION */}
-            <div className="form-row">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
-              <div className="form-group">
-                <label htmlFor="venue">
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium text-[#374151]"
+                  htmlFor="venue"
+                >
                   Venue
                 </label>
 
                 <select
+                  className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
                   id="venue"
                   value={formData.venueId}
                   onChange={(event) =>
@@ -794,12 +824,16 @@ function Events() {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="organization">
+              <div className="flex flex-col gap-2">
+                <label
+                  className="text-sm font-medium text-[#374151]"
+                  htmlFor="organization"
+                >
                   Organization
                 </label>
 
                 <select
+                  className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
                   id="organization"
                   value={formData.orgId}
                   onChange={(event) =>
@@ -829,12 +863,16 @@ function Events() {
             </div>
 
             {/* BUDGET */}
-            <div className="form-group">
-              <label htmlFor="budget">
+            <div className="flex flex-col gap-2">
+              <label
+                className="text-sm font-medium text-[#374151]"
+                htmlFor="budget"
+              >
                 Budget
               </label>
 
               <input
+                className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
                 id="budget"
                 type="number"
                 min="0"
@@ -850,11 +888,11 @@ function Events() {
             </div>
 
             {/* FORM BUTTONS */}
-            <div className="form-actions">
+            <div className="flex flex-wrap justify-end gap-3 pt-2">
 
               <button
                 type="button"
-                className="secondary-button"
+                className="rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
                 onClick={resetForm}
               >
                 Cancel
@@ -862,7 +900,7 @@ function Events() {
 
               <button
                 type="submit"
-                className="primary-button"
+                className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={saving}
               >
                 {saving
@@ -879,22 +917,25 @@ function Events() {
       )}
 
       {/* EVENTS LIST */}
-      <div className="content-card events-list-card">
+      <div className="mb-6 w-full overflow-hidden rounded-xl border border-[#dfe5ec] bg-white shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
 
-        <div className="card-header">
+        <div className="border-b border-[#edf0f4] px-6 py-5">
           <div>
-            <h2>All Events</h2>
+            <h2 className="text-lg font-semibold text-[#111827]">
+              All Events
+            </h2>
 
-            <p>
+            <p className="mt-1 text-sm text-[#6b7280]">
               View and manage your events.
             </p>
           </div>
         </div>
 
         {/* FILTERS */}
-        <div className="event-filters">
+        <div className="flex flex-col gap-3 border-b border-[#edf0f4] p-6 md:flex-row">
 
           <input
+            className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
             type="text"
             placeholder="Search events..."
             value={searchText}
@@ -904,6 +945,7 @@ function Events() {
           />
 
           <select
+            className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
             value={statusFilter}
             onChange={(event) =>
               setStatusFilter(event.target.value)
@@ -929,18 +971,35 @@ function Events() {
         </div>
 
         {/* TABLE */}
-        <div className="table-container">
+        <div className="w-full overflow-x-auto">
 
-          <table className="data-table">
+          <table className="min-w-full border-collapse text-left text-sm">
 
             <thead>
               <tr>
-                <th>Event Name</th>
-                <th>Type</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                  Event Name
+                </th>
+
+                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                  Type
+                </th>
+
+                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                  Start Date
+                </th>
+
+                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                  End Date
+                </th>
+
+                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                  Status
+                </th>
+
+                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                  Actions
+                </th>
               </tr>
             </thead>
 
@@ -949,7 +1008,7 @@ function Events() {
               {loading ? (
                 <tr>
                   <td colSpan={6}>
-                    <div className="empty-state">
+                    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
                       <h3>
                         Loading events...
                       </h3>
@@ -959,12 +1018,12 @@ function Events() {
               ) : filteredEvents.length === 0 ? (
                 <tr>
                   <td colSpan={6}>
-                    <div className="empty-state">
+                    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
                       <h3>
                         No events found
                       </h3>
 
-                      <p>
+                      <p className="mt-2 text-sm text-[#6b7280]">
                         Create your first event
                         to see it here.
                       </p>
@@ -975,41 +1034,41 @@ function Events() {
                 filteredEvents.map((event) => (
                   <tr key={event.eventId}>
 
-                    <td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
                       {event.eventName}
                     </td>
 
-                    <td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
                       {getEventTypeText(
                         event.eventType,
                       )}
                     </td>
 
-                    <td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
                       {formatDate(
                         event.startDate,
                       )}
                     </td>
 
-                    <td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
                       {formatDate(
                         event.endDate,
                       )}
                     </td>
 
-                    <td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
                       {getStatusText(
                         event.status,
                       )}
                     </td>
 
-                    <td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
 
                       {event.status !== 1 && (
                         <>
                           <button
                             type="button"
-                            className="secondary-button"
+                            className="rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
                             onClick={() =>
                               openEditForm(event)
                             }
@@ -1019,7 +1078,7 @@ function Events() {
 
                           <button
                             type="button"
-                            className="secondary-button"
+                            className="ml-2 rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
                             onClick={() =>
                               cancelEvent(
                                 event.eventId,

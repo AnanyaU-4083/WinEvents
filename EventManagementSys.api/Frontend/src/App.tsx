@@ -1,4 +1,13 @@
-import { BrowserRouter, Navigate, Route, Routes, Outlet } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  Outlet,
+} from 'react-router-dom'
+
+import { useMsal } from '@azure/msal-react'
+import type { ReactNode } from 'react'
 
 import Login from './Components/Login'
 import Navigationbar from './Components/Navigationbar'
@@ -8,44 +17,155 @@ import Events from './Pages/Events'
 import Participants from './Pages/Participants'
 import Administration from './Pages/Administration'
 
-import './App.css'
 
 function MainLayout() {
+
   return (
-    <div className="app">
+
+    <div className="min-h-screen bg-[#f5f8fc]">
+
       <Navigationbar />
 
-      <main className="app-content">
+      <main className="min-h-[calc(100vh-73px)]">
         <Outlet />
       </main>
+
     </div>
+
   )
 }
 
+
+/*
+ * Protect a page based on Microsoft
+ * Entra roles.
+ */
+function RoleRoute({
+  allowedRoles,
+  children,
+}: {
+  allowedRoles: string[]
+  children: ReactNode
+}) {
+
+  const { instance, accounts } = useMsal()
+
+  const account =
+    instance.getActiveAccount() ?? accounts[0]
+
+  const roles =
+    (account?.idTokenClaims?.roles as string[]) ?? []
+
+  const hasPermission =
+    allowedRoles.some(
+      (role) => roles.includes(role)
+    )
+
+  if (!hasPermission) {
+
+    return (
+      <Navigate
+        to="/dashboard"
+        replace
+      />
+    )
+  }
+
+  return children
+}
+
+
 function App() {
+
   return (
+
     <BrowserRouter>
+
       <Routes>
 
-        {/* Microsoft Login */}
-        <Route path="/" element={<Login />} />
+        {/* Login */}
+
+        <Route
+          path="/"
+          element={<Login />}
+        />
+
 
         {/* Main application */}
+
         <Route element={<MainLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/participants" element={<Participants />} />
-          <Route path="/administration" element={<Administration />} />
+
+          {/* Dashboard */}
+
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
+
+
+          {/* Events */}
+
+          <Route
+            path="/events"
+            element={<Events />}
+          />
+
+
+          {/* Participants
+              Admin + Employee only
+          */}
+
+          <Route
+            path="/participants"
+            element={
+              <RoleRoute
+                allowedRoles={[
+                  'Admin',
+                  'Employee',
+                ]}
+              >
+                <Participants />
+              </RoleRoute>
+            }
+          />
+
+
+          {/* Administration
+              Admin only
+          */}
+
+          <Route
+            path="/administration"
+            element={
+              <RoleRoute
+                allowedRoles={[
+                  'Admin',
+                ]}
+              >
+                <Administration />
+              </RoleRoute>
+            }
+          />
+
         </Route>
 
-        {/* Invalid URL */}
+
+        {/* Unknown route */}
+
         <Route
           path="*"
-          element={<Navigate to="/" replace />}
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
         />
 
       </Routes>
+
     </BrowserRouter>
+
   )
 }
 

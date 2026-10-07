@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMsal } from '@azure/msal-react'
 import type { ChangeEvent } from 'react'
-import '../App.css'
+import { useNavigate } from 'react-router-dom'
 
 
 /* =========================================================
@@ -27,25 +27,35 @@ interface EventDto {
    ========================================================= */
 
 function Dashboard() {
-    
 
   const { instance, accounts } = useMsal()
+
+  const navigate = useNavigate()
 
   const account =
     instance.getActiveAccount() ?? accounts[0]
 
-  console.log("MSAL account:", account)
-  console.log("ID token claims:", account?.idTokenClaims)
+  console.log('MSAL account:', account)
+  console.log('ID token claims:', account?.idTokenClaims)
 
 
-  const [events, setEvents] = useState<EventDto[]>([])
+  const [events, setEvents] =
+    useState<EventDto[]>([])
 
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] =
+    useState(true)
 
-  const [error, setError] = useState('')
+  const [error, setError] =
+    useState('')
 
   const [currentDate, setCurrentDate] =
     useState(new Date())
+
+  const [hoveredEventId, setHoveredEventId] =
+    useState<number | null>(null)
+
+  const [selectedDate, setSelectedDate] =
+    useState<Date | null>(null)
 
 
   /* =======================================================
@@ -78,7 +88,6 @@ function Dashboard() {
   /* =======================================================
      LOAD EVENTS
      ======================================================= */
-     
 
   useEffect(() => {
 
@@ -135,17 +144,9 @@ function Dashboard() {
   }, [])
 
 
-  /*
-     NORMALIZE EVENT STATUS
-     
-     ASP.NET may return enum values as:
-     
-     0 = Scheduled
-     1 = Cancelled
-     2 = Completed
-     
-     or as strings.
-      */
+  /* =======================================================
+     EVENT STATUS
+     ======================================================= */
 
   const getEventStatus = (
     status: EventStatus | number
@@ -177,9 +178,92 @@ function Dashboard() {
   }
 
 
-  /* 
+  /* =======================================================
+     GO TO EVENT DETAILS
+     ======================================================= */
+
+  const goToEventDetails = (
+    eventId: number
+  ) => {
+
+    navigate(
+      `/events/${eventId}`
+    )
+
+  }
+
+
+  /* =======================================================
+     SELECT CALENDAR DATE
+     
+     Clicking the date only selects it.
+     It does NOT navigate.
+     ======================================================= */
+
+  const selectCalendarDate = (
+    date: Date
+  ) => {
+
+    setSelectedDate(date)
+
+  }
+
+
+  /* =======================================================
+     ADD EVENT FROM HEADER
+     
+     Opens the normal Events page.
+     ======================================================= */
+
+  const openCreateEvent = () => {
+
+    navigate(
+      '/events'
+    )
+
+  }
+
+
+  /* =======================================================
+     ADD EVENT FOR SELECTED DATE
+     
+     Clicking the + on a selected calendar
+     day sends the selected date to the
+     Events page.
+     ======================================================= */
+
+  const addEventForSelectedDate = (
+    date: Date
+  ) => {
+
+    const year =
+      date.getFullYear()
+
+    const month =
+      String(
+        date.getMonth() + 1
+      ).padStart(2, '0')
+
+    const day =
+      String(
+        date.getDate()
+      ).padStart(2, '0')
+
+
+    const selectedDate =
+      `${year}-${month}-${day}`
+
+
+    navigate(
+      `/events?date=${selectedDate}`
+    )
+
+  }
+
+
+  /* =======================================================
      PREVIOUS MONTH
-    */
+     ======================================================= */
 
   const goToPreviousMonth = () => {
 
@@ -194,9 +278,9 @@ function Dashboard() {
   }
 
 
-  /* 
+  /* =======================================================
      NEXT MONTH
-    */
+     ======================================================= */
 
   const goToNextMonth = () => {
 
@@ -211,9 +295,9 @@ function Dashboard() {
   }
 
 
-  /* 
+  /* =======================================================
      TODAY
-     */
+     ======================================================= */
 
   const goToToday = () => {
 
@@ -224,9 +308,9 @@ function Dashboard() {
   }
 
 
-  /* 
+  /* =======================================================
      MONTH DROPDOWN
-      */
+     ======================================================= */
 
   const handleMonthChange = (
     event: ChangeEvent<HTMLSelectElement>
@@ -243,9 +327,9 @@ function Dashboard() {
   }
 
 
-  /* 
+  /* =======================================================
      YEAR DROPDOWN
-      */
+     ======================================================= */
 
   const handleYearChange = (
     event: ChangeEvent<HTMLSelectElement>
@@ -262,9 +346,9 @@ function Dashboard() {
   }
 
 
-  /* 
+  /* =======================================================
      YEARS
-      */
+     ======================================================= */
 
   const years = Array.from(
     {
@@ -275,9 +359,9 @@ function Dashboard() {
   )
 
 
-  /* 
+  /* =======================================================
      DAYS IN CURRENT MONTH
-      */
+     ======================================================= */
 
   const daysInMonth =
     new Date(
@@ -287,14 +371,14 @@ function Dashboard() {
     ).getDate()
 
 
-  /* 
+  /* =======================================================
      FIRST DAY OF MONTH
-     
+
      Monday = 0
      Tuesday = 1
      ...
      Sunday = 6
-      */
+     ======================================================= */
 
   const firstDayOfMonth =
     (
@@ -306,9 +390,9 @@ function Dashboard() {
     ) % 7
 
 
-  /* 
-     PREVIOUS MONTH DAYS
-      */
+  /* =======================================================
+     DAYS IN PREVIOUS MONTH
+     ======================================================= */
 
   const daysInPreviousMonth =
     new Date(
@@ -318,9 +402,9 @@ function Dashboard() {
     ).getDate()
 
 
-  /* 
+  /* =======================================================
      BUILD CALENDAR
-      */
+     ======================================================= */
 
   const calendarDays = useMemo(() => {
 
@@ -412,9 +496,9 @@ function Dashboard() {
   ])
 
 
-  /* 
-     EVENTS FOR A DATE
-     */
+  /* =======================================================
+     EVENTS FOR DATE
+     ======================================================= */
 
   const getEventsForDate = (
     date: Date
@@ -500,8 +584,6 @@ function Dashboard() {
 
   /* =======================================================
      UPCOMING EVENTS
-     
-     Cancelled events are excluded.
      ======================================================= */
 
   const upcomingEvents =
@@ -558,6 +640,28 @@ function Dashboard() {
 
 
   /* =======================================================
+     FORMAT DATE
+     ======================================================= */
+
+  const formatDate = (
+    date: string
+  ) => {
+
+    return new Date(
+      date
+    ).toLocaleDateString(
+      'en-US',
+      {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }
+    )
+
+  }
+
+
+  /* =======================================================
      CHECK TODAY
      ======================================================= */
 
@@ -584,6 +688,33 @@ function Dashboard() {
 
 
   /* =======================================================
+     CHECK SELECTED DATE
+     ======================================================= */
+
+  const isSelectedDate = (
+    date: Date
+  ) => {
+
+    if (!selectedDate) {
+      return false
+    }
+
+
+    return (
+      date.getDate() ===
+        selectedDate.getDate() &&
+
+      date.getMonth() ===
+        selectedDate.getMonth() &&
+
+      date.getFullYear() ===
+        selectedDate.getFullYear()
+    )
+
+  }
+
+
+  /* =======================================================
      USER NAME
      ======================================================= */
 
@@ -599,28 +730,28 @@ function Dashboard() {
 
   return (
 
-    <div className="dashboard">
+    <div className="min-h-[calc(100vh-68px)] w-full bg-[#f5f8fc] px-[46px] pt-9 pb-[60px] max-[1150px]:px-[25px] max-[1150px]:pt-[30px] max-[1150px]:pb-[50px] max-[700px]:px-[15px] max-[700px]:pt-[25px] max-[700px]:pb-10">
 
 
       {/* =================================================
           DASHBOARD HEADER
           ================================================= */}
 
-      <header className="dashboard-header">
+      <header className="mx-auto mb-[34px] w-full max-w-[1400px] text-center">
 
         <div>
 
-          <p className="dashboard-eyebrow">
+          <p className="mb-[6px] text-[14px] font-[750] tracking-[1.8px] text-[#ff7a00]">
             WINEVENTS
           </p>
 
 
-          <h1>
+          <h1 className="m-0 text-[48px] font-extrabold leading-[1.1] tracking-[-1px] text-[#111827] max-[700px]:text-[38px]">
             Dashboard
           </h1>
 
 
-          <p>
+          <p className="mt-3 text-[17px] text-[#6b7280]">
             Welcome back! Here's what's happening
             with your events.
           </p>
@@ -628,15 +759,12 @@ function Dashboard() {
         </div>
 
 
-        {/* User information only.
-            Logout is already in the navbar. */}
-
-        <div className="dashboard-profile">
+        <div className="mt-[14px] flex items-center justify-center">
 
           <div>
 
             <span>
-              Welcome
+              Welcome,{' '}
             </span>
 
             <strong>
@@ -654,70 +782,62 @@ function Dashboard() {
           MAIN DASHBOARD
           ================================================= */}
 
-      <main className="dashboard-content">
+      <main className="mx-auto w-full max-w-[1400px]">
 
 
         {/* =================================================
             STATISTICS
             ================================================= */}
 
-        <section className="dashboard-stats">
+        <section className="mb-[30px] grid w-full grid-cols-4 gap-5 max-[900px]:grid-cols-2 max-[700px]:grid-cols-1">
 
 
-          {/* Total */}
+          <div className="rounded-xl border border-[#dfe5ec] bg-white p-[22px] shadow-[0_2px_8px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] border-t-4 border-t-[#0066ff]">
 
-          <div className="stat-card">
-
-            <span>
+            <span className="block text-[14px] font-medium text-[#6b7280]">
               Total Events
             </span>
 
-            <strong>
+            <strong className="mt-2 block text-[30px] font-[750] text-[#111827]">
               {events.length}
             </strong>
 
           </div>
 
 
-          {/* Scheduled */}
+          <div className="rounded-xl border border-[#dfe5ec] bg-white p-[22px] shadow-[0_2px_8px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] border-t-4 border-t-[#ff7a00]">
 
-          <div className="stat-card">
-
-            <span>
+            <span className="block text-[14px] font-medium text-[#6b7280]">
               Scheduled
             </span>
 
-            <strong>
+            <strong className="mt-2 block text-[30px] font-[750] text-[#111827]">
               {scheduledEvents.length}
             </strong>
 
           </div>
 
 
-          {/* Cancelled */}
+          <div className="rounded-xl border border-[#dfe5ec] bg-white p-[22px] shadow-[0_2px_8px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] border-t-4 border-t-[#dc2626]">
 
-          <div className="stat-card">
-
-            <span>
+            <span className="block text-[14px] font-medium text-[#6b7280]">
               Cancelled
             </span>
 
-            <strong>
+            <strong className="mt-2 block text-[30px] font-[750] text-[#111827]">
               {cancelledEvents.length}
             </strong>
 
           </div>
 
 
-          {/* Upcoming */}
+          <div className="rounded-xl border border-[#dfe5ec] bg-white p-[22px] shadow-[0_2px_8px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] border-t-4 border-t-[#15803d]">
 
-          <div className="stat-card">
-
-            <span>
+            <span className="block text-[14px] font-medium text-[#6b7280]">
               Upcoming
             </span>
 
-            <strong>
+            <strong className="mt-2 block text-[30px] font-[750] text-[#111827]">
               {upcomingEvents.length}
             </strong>
 
@@ -732,7 +852,7 @@ function Dashboard() {
 
         {error && (
 
-          <div className="dashboard-error">
+          <div className="mb-[22px] w-full rounded-[9px] border border-[#fecaca] bg-[#fef2f2] px-[18px] py-[14px] text-[14px] text-[#b91c1c]">
 
             {error}
 
@@ -745,29 +865,26 @@ function Dashboard() {
             CALENDAR + UPCOMING
             ================================================= */}
 
-        <section className="dashboard-main">
+        <section className="grid w-full grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)] items-start gap-6 max-[1150px]:grid-cols-1">
 
 
           {/* =================================================
               CALENDAR
               ================================================= */}
 
-          <div className="calendar-card">
+          <div className="w-full rounded-[14px] border border-[#dfe5ec] bg-white p-6 shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
 
 
             {/* Calendar header */}
 
-            <div className="section-header">
-
+            <div className="mb-5 flex items-center justify-between max-[700px]:flex-col max-[700px]:items-start max-[700px]:gap-[15px]">
 
               <div>
 
-                <div className="calendar-title">
-
-
-                  {/* Month */}
+                <div className="mb-[6px] flex items-center gap-2">
 
                   <select
+                    className="min-w-[110px] cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-[11px] py-2 text-[14px] font-semibold text-[#111827] outline-none focus:border-[#0066ff] focus:ring-4 focus:ring-[#0066ff]/10"
                     value={currentMonth}
                     onChange={
                       handleMonthChange
@@ -793,9 +910,8 @@ function Dashboard() {
                   </select>
 
 
-                  {/* Year */}
-
                   <select
+                    className="min-w-[110px] cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-[11px] py-2 text-[14px] font-semibold text-[#111827] outline-none focus:border-[#0066ff] focus:ring-4 focus:ring-[#0066ff]/10"
                     value={currentYear}
                     onChange={
                       handleYearChange
@@ -833,12 +949,27 @@ function Dashboard() {
               </div>
 
 
-              {/* Calendar navigation */}
+              {/* Calendar buttons */}
 
-              <div className="calendar-buttons">
+              <div className="flex items-center gap-[7px] max-[700px]:w-full max-[700px]:justify-start">
+
+
+                {/* Header Add Event button */}
 
                 <button
                   type="button"
+                  className="cursor-pointer rounded-[7px] border border-[#ff7a00] bg-[#ff7a00] px-3 py-2 text-[13px] font-semibold text-white transition hover:border-[#e65f00] hover:bg-[#e65f00]"
+                  onClick={
+                    openCreateEvent
+                  }
+                >
+                  + Add Event
+                </button>
+
+
+                <button
+                  type="button"
+                  className="cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-3 py-2 text-[13px] font-semibold text-[#374151] hover:border-[#9bbcff] hover:bg-[#eaf2ff] hover:text-[#0066ff]"
                   onClick={
                     goToPreviousMonth
                   }
@@ -849,6 +980,7 @@ function Dashboard() {
 
                 <button
                   type="button"
+                  className="cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-3 py-2 text-[13px] font-semibold text-[#374151] hover:border-[#9bbcff] hover:bg-[#eaf2ff] hover:text-[#0066ff]"
                   onClick={
                     goToToday
                   }
@@ -859,6 +991,7 @@ function Dashboard() {
 
                 <button
                   type="button"
+                  className="cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-3 py-2 text-[13px] font-semibold text-[#374151] hover:border-[#9bbcff] hover:bg-[#eaf2ff] hover:text-[#0066ff]"
                   onClick={
                     goToNextMonth
                   }
@@ -875,15 +1008,15 @@ function Dashboard() {
                 WEEKDAYS
                 ================================================= */}
 
-            <div className="calendar-weekdays">
+            <div className="mt-[5px] grid grid-cols-7 border-l border-t border-[#dfe5ec]">
 
-              <span>Mon</span>
-              <span>Tue</span>
-              <span>Wed</span>
-              <span>Thu</span>
-              <span>Fri</span>
-              <span>Sat</span>
-              <span>Sun</span>
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Mon</span>
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Tue</span>
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Wed</span>
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Thu</span>
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Fri</span>
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Sat</span>
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Sun</span>
 
             </div>
 
@@ -892,7 +1025,7 @@ function Dashboard() {
                 CALENDAR DAYS
                 ================================================= */}
 
-            <div className="calendar-days">
+            <div className="grid grid-cols-7 border-l border-t border-[#dfe5ec]">
 
               {calendarDays.map(
                 (
@@ -906,6 +1039,12 @@ function Dashboard() {
                     )
 
 
+                  const selected =
+                    isSelectedDate(
+                      calendarDay.date
+                    )
+
+
                   return (
 
                     <div
@@ -913,34 +1052,58 @@ function Dashboard() {
                         `${calendarDay.date.toISOString()}-${index}`
                       }
 
-                      className={`
-                        calendar-day
-                        ${
-                          calendarDay.currentMonth
-                            ? ''
-                            : 'muted'
-                        }
-                        ${
-                          isToday(
-                            calendarDay.date
-                          )
-                            ? 'today'
-                            : ''
-                        }
-                      `}
+                      className={`relative min-h-[112px] cursor-pointer border-r border-b border-[#dfe5ec] bg-white p-[9px] transition hover:z-20 hover:bg-[#fbfdff] max-[900px]:min-h-[95px] max-[700px]:min-h-[75px] max-[700px]:p-[5px] ${!calendarDay.currentMonth ? 'bg-[#f8fafc]' : ''} ${isToday(calendarDay.date) ? 'bg-[#f0f6ff]' : ''} ${selected ? 'z-[25] outline-2 outline-[#ff7a00] outline-offset-[-2px]' : ''}`}
+
+                      onClick={() =>
+                        selectCalendarDate(
+                          calendarDay.date
+                        )
+                      }
                     >
 
 
-                      {/* Date */}
+                      {/* =================================================
+                          DATE NUMBER
+                          ================================================= */}
 
-                      <span className="calendar-number">
+                      <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-[650] text-[#374151] max-[700px]:h-6 max-[700px]:w-6 max-[700px]:text-[11px] ${!calendarDay.currentMonth ? 'text-[#b4bdc9]' : ''} ${isToday(calendarDay.date) ? 'bg-[#0066ff] font-[750] text-white' : ''}`}>
 
                         {calendarDay.day}
 
                       </span>
 
 
-                      {/* Events */}
+                      {/* =================================================
+                          ADD BUTTON FOR SELECTED DAY
+                          ================================================= */}
+
+                      {selected && (
+
+                        <button
+                          type="button"
+                          className="ml-[6px] cursor-pointer border-0 bg-transparent p-0 align-middle text-[20px] font-bold leading-none text-[#ff7a00] hover:scale-[1.15] hover:text-[#e65f00]"
+
+                          onClick={(clickEvent) => {
+
+                            clickEvent.stopPropagation()
+
+                            addEventForSelectedDate(
+                              calendarDay.date
+                            )
+
+                          }}
+
+                          title="Add event on this date"
+                        >
+                          +
+                        </button>
+
+                      )}
+
+
+                      {/* =================================================
+                          EVENTS
+                          ================================================= */}
 
                       {dayEvents.map(
                         (event) => {
@@ -958,21 +1121,227 @@ function Dashboard() {
                                 event.eventId
                               }
 
-                              className={`
-                                calendar-event
-                                ${
-                                  status ===
-                                  'Cancelled'
-                                    ? 'cancelled-event'
-                                    : ''
-                                }
-                              `}
-                              title={
-                                event.eventName
+                              className="relative mt-[6px] w-full cursor-pointer overflow-visible whitespace-nowrap rounded-[5px] border-l-[3px] border-[#ff7a00] bg-[#fff1e6] px-2 py-[6px] text-[11px] font-[650] text-[#b45309] transition hover:z-[100] hover:bg-[#ffe4cc] max-[700px]:p-1 max-[700px]:text-[9px]"
+
+                              onMouseEnter={() =>
+                                setHoveredEventId(
+                                  event.eventId
+                                )
                               }
+
+                              onMouseLeave={() =>
+                                setHoveredEventId(
+                                  null
+                                )
+                              }
+
+                              onClick={(eventClick) => {
+                                eventClick.stopPropagation()
+                              }}
                             >
 
                               {event.eventName}
+
+
+                              {/* =================================================
+                                  EVENT POPUP
+                                  ================================================= */}
+
+                              {hoveredEventId ===
+                                event.eventId && (
+
+                                <div
+                                  className="absolute left-0 top-7 z-[1000] w-[370px] cursor-default rounded-lg border-t-4 border-[#0066ff] bg-white p-[18px] text-left text-[#374151] shadow-[0_8px_24px_rgba(0,0,0,0.18)] max-[700px]:left-auto max-[700px]:right-0 max-[700px]:w-[300px]"
+
+                                  onMouseEnter={() =>
+                                    setHoveredEventId(
+                                      event.eventId
+                                    )
+                                  }
+
+                                  onMouseLeave={() =>
+                                    setHoveredEventId(
+                                      null
+                                    )
+                                  }
+
+                                  onClick={(popupClick) =>
+                                    popupClick.stopPropagation()
+                                  }
+                                >
+
+
+                                  {/* ==============================
+                                      POPUP HEADER
+                                      ============================== */}
+
+                                  <div className="flex items-start justify-between gap-3">
+
+                                    <h3 className="m-0 text-[20px] font-semibold leading-[1.3] text-[#6b7280]">
+                                      {event.eventName}
+                                    </h3>
+
+
+                                    <button
+                                      type="button"
+                                      className="cursor-pointer border-0 bg-transparent px-1 py-0.5 text-[20px] leading-none text-[#6b7280] hover:text-[#0066ff]"
+
+                                      onClick={() =>
+                                        goToEventDetails(
+                                          event.eventId
+                                        )
+                                      }
+
+                                      title="Open event"
+                                    >
+                                      ↗
+                                    </button>
+
+                                  </div>
+
+
+                                  {/* Divider */}
+
+                                  <div className="my-[14px] h-px bg-[#edf0f4]" />
+
+
+                                  {/* ==============================
+                                      DATE / TIME
+                                      ============================== */}
+
+                                  <div className="flex min-h-[35px] items-start gap-3">
+
+                                    <span className="w-[22px] shrink-0 text-center text-[19px] text-[#6b7280]">
+                                      ◷
+                                    </span>
+
+
+                                    <div className="flex flex-col gap-1 text-[14px] leading-[1.4]">
+
+                                      <strong>
+                                        {formatDate(
+                                          event.startDate
+                                        )}
+                                      </strong>
+
+
+                                      <span>
+                                        {formatTime(
+                                          event.startDate
+                                        )}
+
+                                        {' - '}
+
+                                        {formatTime(
+                                          event.endDate
+                                        )}
+                                      </span>
+
+                                    </div>
+
+                                  </div>
+
+
+                                  {/* Divider */}
+
+                                  <div className="my-[14px] h-px bg-[#edf0f4]" />
+
+
+                                  {/* ==============================
+                                      LOCATION
+                                      ============================== */}
+
+                                  <div className="flex min-h-[35px] items-start gap-3">
+
+                                    <span className="w-[22px] shrink-0 text-center text-[19px] text-[#6b7280]">
+                                      ◉
+                                    </span>
+
+
+                                    <div className="flex flex-col gap-1 text-[14px] leading-[1.4]">
+
+                                      <span>
+                                        No location added
+                                      </span>
+
+                                    </div>
+
+                                  </div>
+
+
+                                  {/* Divider */}
+
+                                  <div className="my-[14px] h-px bg-[#edf0f4]" />
+
+
+                                  {/* ==============================
+                                      ORGANIZER
+                                      ============================== */}
+
+                                  <div className="flex min-h-[35px] items-start gap-3">
+
+                                    <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-[#fff1e6] text-[13px] font-bold text-[#e65f00]">
+
+                                      {userName
+                                        .charAt(0)
+                                        .toUpperCase()}
+
+                                    </div>
+
+
+                                    <div className="flex flex-col gap-1 text-[14px] leading-[1.4]">
+
+                                      <span className="text-[#6b7280]">
+                                        You're the organizer.
+                                      </span>
+
+
+                                      <span className="text-[#6b7280]">
+                                        Status: {status}
+                                      </span>
+
+                                    </div>
+
+                                  </div>
+
+
+                                  {/* Divider */}
+
+                                  <div className="my-[14px] h-px bg-[#edf0f4]" />
+
+
+                                  {/* ==============================
+                                      ACTION BUTTONS
+                                      ============================== */}
+
+                                  <div className="mt-1 flex gap-2">
+
+                                    <button
+                                      type="button"
+                                      className="cursor-pointer rounded-[4px] border border-[#dfe5ec] bg-white px-[14px] py-2 text-[14px] text-[#0066ff] hover:border-[#0066ff] hover:bg-[#eaf2ff]"
+
+                                      onClick={() =>
+                                        goToEventDetails(
+                                          event.eventId
+                                        )
+                                      }
+                                    >
+                                      ✎ Edit
+                                    </button>
+
+
+                                    <button
+                                      type="button"
+                                      className="cursor-pointer rounded-[4px] border border-[#dfe5ec] bg-white px-[14px] py-2 text-[14px] text-[#dc2626] hover:border-[#dc2626] hover:bg-[#fee2e2]"
+                                    >
+                                      × Cancel
+                                    </button>
+
+                                  </div>
+
+                                </div>
+
+                              )}
 
                             </div>
 
@@ -997,18 +1366,18 @@ function Dashboard() {
               UPCOMING EVENTS
               ================================================= */}
 
-          <div className="upcoming-card">
+          <div className="w-full rounded-[14px] border border-[#dfe5ec] bg-white p-6 shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
 
 
-            <div className="section-header">
+            <div className="mb-5 flex items-center justify-between max-[700px]:flex-col max-[700px]:items-start max-[700px]:gap-[15px]">
 
               <div>
 
-                <h2>
+                <h2 className="m-0 text-[21px] font-[750] text-[#111827]">
                   Upcoming Events
                 </h2>
 
-                <p>
+                <p className="mt-[5px] text-[13px] text-[#6b7280]">
                   Your next scheduled events
                 </p>
 
@@ -1021,7 +1390,7 @@ function Dashboard() {
 
             {loading && (
 
-              <p>
+              <p className="m-0 px-0 py-[25px] text-center text-[14px] text-[#6b7280]">
                 Loading events...
               </p>
 
@@ -1034,7 +1403,7 @@ function Dashboard() {
               upcomingEvents.length ===
                 0 && (
 
-                <p>
+                <p className="m-0 px-0 py-[25px] text-center text-[14px] text-[#6b7280]">
                   No upcoming events.
                 </p>
 
@@ -1056,26 +1425,34 @@ function Dashboard() {
                   return (
 
                     <div
-                      className="upcoming-event"
+                      className="flex cursor-pointer items-center gap-[14px] border-b border-[#edf0f4] py-[14px] last:border-b-0 max-[1150px]:mr-[1%] max-[1150px]:inline-flex max-[1150px]:w-[32.5%] max-[1150px]:border max-[1150px]:rounded-[9px] max-[1150px]:p-3 max-[700px]:mb-2 max-[700px]:mr-0 max-[700px]:w-full"
+
                       key={
                         event.eventId
                       }
+
+                      onClick={() =>
+                        goToEventDetails(
+                          event.eventId
+                        )
+                      }
+
+                      title="Go to event details"
                     >
 
 
                       {/* Date */}
 
-                      <div className="event-date">
+                      <div className="flex h-[60px] w-[55px] shrink-0 flex-col items-center justify-center rounded-[9px] border border-[#cfe0ff] bg-[#eaf2ff]">
 
-                        <strong>
-
+                        <strong className="text-[21px] font-extrabold leading-none text-[#0066ff]">
                           {
                             eventDate.getDate()
                           }
-
                         </strong>
 
-                        <span>
+
+                        <span className="mt-1 text-[10px] font-extrabold tracking-[0.7px] text-[#ff7a00]">
 
                           {
                             eventDate
@@ -1102,7 +1479,9 @@ function Dashboard() {
                           {event.eventName}
                         </h3>
 
-                        <p>
+
+                        <p className="m-0 text-[12px] text-[#6b7280]">
+
                           {eventDate.toLocaleDateString(
                             'en-US',
                             {
@@ -1114,12 +1493,16 @@ function Dashboard() {
                                 'numeric',
                             }
                           )}
+
                         </p>
 
-                        <p>
+
+                        <p className="m-0 text-[12px] text-[#6b7280]">
+
                           {formatTime(
                             event.startDate
                           )}
+
                         </p>
 
                       </div>

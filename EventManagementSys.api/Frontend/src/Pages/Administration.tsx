@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useMsal } from '@azure/msal-react'
+import type { AccountInfo } from '@azure/msal-browser'
 
 type AdminSection =
   | 'organizations'
@@ -47,6 +49,11 @@ interface VenueForm {
 }
 
 function Administration() {
+  const { instance, accounts } = useMsal()
+
+  const account: AccountInfo | undefined =
+    instance.getActiveAccount() ?? accounts[0]
+
   const [activeSection, setActiveSection] =
     useState<AdminSection>('organizations')
 
@@ -103,23 +110,26 @@ function Administration() {
       capacity: '',
     })
 
-  
   // AUTH HEADERS
-  
 
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token')
+  const getAuthHeaders = async (): Promise<HeadersInit> => {
+    if (!account) {
+      throw new Error('No Microsoft account is logged in.')
+    }
 
-    return token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {}
+    const response = await instance.acquireTokenSilent({
+      scopes: [
+        'api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user',
+      ],
+      account,
+    })
+
+    return {
+      Authorization: `Bearer ${response.accessToken}`,
+    }
   }
 
-  
   // LOAD ORGANIZATIONS
-  
 
   const loadOrganizations = async () => {
     try {
@@ -129,7 +139,7 @@ function Administration() {
       const response = await fetch('/api/organizations', {
         method: 'GET',
         headers: {
-          ...getAuthHeaders(),
+          ...(await getAuthHeaders()),
         },
       })
 
@@ -167,7 +177,7 @@ function Administration() {
       const response = await fetch('/api/employees', {
         method: 'GET',
         headers: {
-          ...getAuthHeaders(),
+          ...(await getAuthHeaders()),
         },
       })
 
@@ -193,9 +203,7 @@ function Administration() {
     }
   }
 
-  
   // LOAD VENUES
-  
 
   const loadVenues = async () => {
     try {
@@ -228,9 +236,7 @@ function Administration() {
     }
   }
 
-  
   // LOAD DATA WHEN TAB CHANGES
-  
 
   useEffect(() => {
     if (activeSection === 'organizations') {
@@ -247,9 +253,7 @@ function Administration() {
     }
   }, [activeSection])
 
-  
   // ORGANIZATION FORM
-  
 
   const openAddOrganization = () => {
     setEditingOrganizationId(null)
@@ -313,7 +317,7 @@ function Administration() {
 
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
+          ...(await getAuthHeaders()),
         },
 
         body: JSON.stringify({
@@ -378,7 +382,7 @@ function Administration() {
         {
           method: 'DELETE',
           headers: {
-            ...getAuthHeaders(),
+            ...(await getAuthHeaders()),
           },
         }
       )
@@ -406,9 +410,8 @@ function Administration() {
     }
   }
 
-  
   // EMPLOYEE FORM
-  
+
   const openAddEmployee = () => {
     setEditingEmployeeId(null)
 
@@ -473,7 +476,7 @@ function Administration() {
 
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
+          ...(await getAuthHeaders()),
         },
 
         body: JSON.stringify({
@@ -513,9 +516,7 @@ function Administration() {
     }
   }
 
-  
   // DELETE EMPLOYEE
-  
 
   const deleteEmployee = async (
     employeeId: number
@@ -537,7 +538,7 @@ function Administration() {
         {
           method: 'DELETE',
           headers: {
-            ...getAuthHeaders(),
+            ...(await getAuthHeaders()),
           },
         }
       )
@@ -565,9 +566,7 @@ function Administration() {
     }
   }
 
-  
   // VENUE FORM
-  
 
   const openAddVenue = () => {
     setVenueForm({
@@ -604,7 +603,7 @@ function Administration() {
 
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeaders(),
+          ...(await getAuthHeaders()),
         },
 
         body: JSON.stringify({
@@ -638,9 +637,7 @@ function Administration() {
     }
   }
 
-  
   // ORGANIZATION NAME
-  
 
   const getOrganizationName = (orgId: number) => {
     const organization = organizations.find(
@@ -652,19 +649,38 @@ function Administration() {
       : 'Unknown'
   }
 
-  
+  // --------------------------------------------------
+  // TAILWIND CLASSES
+  // --------------------------------------------------
+
+  const inputClass =
+    'w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20'
+
+  const labelClass =
+    'mb-1.5 block text-sm font-medium text-[#374151]'
+
+  const primaryButtonClass =
+    'rounded-lg bg-[#0066ff] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:opacity-50'
+
+  const secondaryButtonClass =
+    'rounded-lg border border-[#dfe5ec] bg-white px-4 py-2.5 text-sm font-medium text-[#374151] transition hover:border-[#0066ff] hover:bg-[#eaf2ff] hover:text-[#0052cc]'
+
+  const deleteButtonClass =
+    'rounded-lg border border-[#fee2e2] bg-white px-4 py-2.5 text-sm font-medium text-[#dc2626] transition hover:bg-[#fee2e2]'
+
   // UI
-  
 
   return (
-    <div className="page">
+    <div className="min-h-full bg-[#f5f8fc] p-6 md:p-8">
 
-      <div className="page-header">
+      <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
 
         <div>
-          <h1>Administration</h1>
+          <h1 className="text-2xl font-bold text-[#111827]">
+            Administration
+          </h1>
 
-          <p>
+          <p className="mt-1 text-sm text-[#6b7280]">
             Manage organizations, employees, and venues.
           </p>
         </div>
@@ -674,22 +690,22 @@ function Administration() {
       {/* ERROR */}
 
       {error && (
-        <div className="dashboard-error">
+        <div className="mb-6 rounded-lg border border-[#fecaca] bg-[#fee2e2] px-4 py-3 text-sm text-[#b91c1c]">
           {error}
         </div>
       )}
 
       {/* TABS */}
 
-      <div className="admin-tabs">
+      <div className="mb-6 flex flex-wrap gap-1 rounded-xl border border-[#dfe5ec] bg-white p-1 shadow-sm">
 
         <button
           type="button"
-          className={
+          className={`rounded-lg px-4 py-2.5 text-sm font-medium transition ${
             activeSection === 'organizations'
-              ? 'admin-tab active'
-              : 'admin-tab'
-          }
+              ? 'bg-[#eaf2ff] text-[#0066ff]'
+              : 'text-[#6b7280] hover:bg-[#f5f8fc] hover:text-[#374151]'
+          }`}
           onClick={() =>
             setActiveSection('organizations')
           }
@@ -699,11 +715,11 @@ function Administration() {
 
         <button
           type="button"
-          className={
+          className={`rounded-lg px-4 py-2.5 text-sm font-medium transition ${
             activeSection === 'employees'
-              ? 'admin-tab active'
-              : 'admin-tab'
-          }
+              ? 'bg-[#eaf2ff] text-[#0066ff]'
+              : 'text-[#6b7280] hover:bg-[#f5f8fc] hover:text-[#374151]'
+          }`}
           onClick={() =>
             setActiveSection('employees')
           }
@@ -713,11 +729,11 @@ function Administration() {
 
         <button
           type="button"
-          className={
+          className={`rounded-lg px-4 py-2.5 text-sm font-medium transition ${
             activeSection === 'venues'
-              ? 'admin-tab active'
-              : 'admin-tab'
-          }
+              ? 'bg-[#eaf2ff] text-[#0066ff]'
+              : 'text-[#6b7280] hover:bg-[#f5f8fc] hover:text-[#374151]'
+          }`}
           onClick={() =>
             setActiveSection('venues')
           }
@@ -727,26 +743,26 @@ function Administration() {
 
       </div>
 
-      
       {/* ORGANIZATIONS */}
-      
 
       {activeSection === 'organizations' && (
-        <div className="content-card">
+        <div className="rounded-xl border border-[#dfe5ec] bg-white p-6 shadow-sm">
 
-          <div className="section-header">
+          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
 
             <div>
-              <h2>Organizations</h2>
+              <h2 className="text-lg font-semibold text-[#111827]">
+                Organizations
+              </h2>
 
-              <p>
+              <p className="mt-1 text-sm text-[#6b7280]">
                 Create and manage event organizations.
               </p>
             </div>
 
             <button
               type="button"
-              className="primary-button"
+              className={primaryButtonClass}
               onClick={openAddOrganization}
             >
               + Add Organization
@@ -759,19 +775,21 @@ function Administration() {
           {showOrganizationForm && (
             <form
               onSubmit={saveOrganization}
-              className="content-card"
+              className="mb-6 rounded-xl border border-[#dfe5ec] bg-[#f8fafc] p-5"
             >
 
-              <h3>
+              <h3 className="mb-5 text-base font-semibold text-[#111827]">
                 {editingOrganizationId !== null
                   ? 'Edit Organization'
                   : 'Add Organization'}
               </h3>
 
-              <div className="form-grid">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
                 <div>
-                  <label>Name</label>
+                  <label className={labelClass}>
+                    Name
+                  </label>
 
                   <input
                     type="text"
@@ -779,11 +797,14 @@ function Administration() {
                     value={organizationForm.name}
                     onChange={handleOrganizationChange}
                     required
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label>Email</label>
+                  <label className={labelClass}>
+                    Email
+                  </label>
 
                   <input
                     type="email"
@@ -791,11 +812,14 @@ function Administration() {
                     value={organizationForm.email}
                     onChange={handleOrganizationChange}
                     required
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label>Phone</label>
+                  <label className={labelClass}>
+                    Phone
+                  </label>
 
                   <input
                     type="text"
@@ -803,29 +827,31 @@ function Administration() {
                     value={organizationForm.phone}
                     onChange={handleOrganizationChange}
                     required
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label>Contact Person</label>
+                  <label className={labelClass}>
+                    Contact Person
+                  </label>
 
                   <input
                     type="text"
                     name="contactPerson"
-                    value={
-                      organizationForm.contactPerson
-                    }
+                    value={organizationForm.contactPerson}
                     onChange={handleOrganizationChange}
+                    className={inputClass}
                   />
                 </div>
 
               </div>
 
-              <div className="form-actions">
+              <div className="mt-5 flex flex-wrap justify-end gap-3">
 
                 <button
                   type="button"
-                  className="secondary-button"
+                  className={secondaryButtonClass}
                   onClick={() =>
                     setShowOrganizationForm(false)
                   }
@@ -835,7 +861,7 @@ function Administration() {
 
                 <button
                   type="submit"
-                  className="primary-button"
+                  className={primaryButtonClass}
                   disabled={loading}
                 >
                   {loading
@@ -852,17 +878,33 @@ function Administration() {
 
           {/* ORGANIZATION TABLE */}
 
-          <div className="table-container">
+          <div className="overflow-x-auto rounded-lg border border-[#edf0f4]">
 
-            <table className="data-table">
+            <table className="w-full min-w-[760px] border-collapse text-left">
 
               <thead>
-                <tr>
-                  <th>Organization</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Contact Person</th>
-                  <th>Actions</th>
+                <tr className="border-b border-[#edf0f4] bg-[#f8fafc]">
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Organization
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Email
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Phone
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Contact Person
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Actions
+                  </th>
+
                 </tr>
               </thead>
 
@@ -870,69 +912,81 @@ function Administration() {
 
                 {organizations.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>
-                      <div className="empty-state">
 
-                        <h3>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-10"
+                    >
+
+                      <div className="text-center">
+
+                        <h3 className="text-base font-semibold text-[#111827]">
                           No organizations found
                         </h3>
 
-                        <p>
+                        <p className="mt-1 text-sm text-[#6b7280]">
                           Organizations will appear here.
                         </p>
 
                       </div>
+
                     </td>
+
                   </tr>
                 ) : (
                   organizations.map(
                     (organization) => (
                       <tr
                         key={organization.orgId}
+                        className="border-b border-[#edf0f4] last:border-b-0 hover:bg-[#f8fafc]"
                       >
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {organization.name}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {organization.email}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {organization.phone}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {organization.contactPerson ||
                             '-'}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3">
 
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() =>
-                              openEditOrganization(
-                                organization
-                              )
-                            }
-                          >
-                            Edit
-                          </button>
+                          <div className="flex flex-wrap gap-2">
 
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() =>
-                              deleteOrganization(
-                                organization.orgId
-                              )
-                            }
-                          >
-                            Delete
-                          </button>
+                            <button
+                              type="button"
+                              className={secondaryButtonClass}
+                              onClick={() =>
+                                openEditOrganization(
+                                  organization
+                                )
+                              }
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              className={deleteButtonClass}
+                              onClick={() =>
+                                deleteOrganization(
+                                  organization.orgId
+                                )
+                              }
+                            >
+                              Delete
+                            </button>
+
+                          </div>
 
                         </td>
 
@@ -955,21 +1009,23 @@ function Administration() {
       {/* ================================================= */}
 
       {activeSection === 'employees' && (
-        <div className="content-card">
+        <div className="rounded-xl border border-[#dfe5ec] bg-white p-6 shadow-sm">
 
-          <div className="section-header">
+          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
 
             <div>
-              <h2>Employees</h2>
+              <h2 className="text-lg font-semibold text-[#111827]">
+                Employees
+              </h2>
 
-              <p>
+              <p className="mt-1 text-sm text-[#6b7280]">
                 Create and manage employees.
               </p>
             </div>
 
             <button
               type="button"
-              className="primary-button"
+              className={primaryButtonClass}
               onClick={openAddEmployee}
             >
               + Add Employee
@@ -982,19 +1038,21 @@ function Administration() {
           {showEmployeeForm && (
             <form
               onSubmit={saveEmployee}
-              className="content-card"
+              className="mb-6 rounded-xl border border-[#dfe5ec] bg-[#f8fafc] p-5"
             >
 
-              <h3>
+              <h3 className="mb-5 text-base font-semibold text-[#111827]">
                 {editingEmployeeId !== null
                   ? 'Edit Employee'
                   : 'Add Employee'}
               </h3>
 
-              <div className="form-grid">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
                 <div>
-                  <label>Name</label>
+                  <label className={labelClass}>
+                    Name
+                  </label>
 
                   <input
                     type="text"
@@ -1002,11 +1060,14 @@ function Administration() {
                     value={employeeForm.name}
                     onChange={handleEmployeeChange}
                     required
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label>Job Title</label>
+                  <label className={labelClass}>
+                    Job Title
+                  </label>
 
                   <input
                     type="text"
@@ -1014,11 +1075,14 @@ function Administration() {
                     value={employeeForm.jobTitle}
                     onChange={handleEmployeeChange}
                     required
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label>Email</label>
+                  <label className={labelClass}>
+                    Email
+                  </label>
 
                   <input
                     type="email"
@@ -1026,17 +1090,21 @@ function Administration() {
                     value={employeeForm.email}
                     onChange={handleEmployeeChange}
                     required
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label>Organization</label>
+                  <label className={labelClass}>
+                    Organization
+                  </label>
 
                   <select
                     name="orgId"
                     value={employeeForm.orgId}
                     onChange={handleEmployeeChange}
                     required
+                    className={inputClass}
                   >
                     <option value="">
                       Select organization
@@ -1058,11 +1126,11 @@ function Administration() {
 
               </div>
 
-              <div className="form-actions">
+              <div className="mt-5 flex flex-wrap justify-end gap-3">
 
                 <button
                   type="button"
-                  className="secondary-button"
+                  className={secondaryButtonClass}
                   onClick={() =>
                     setShowEmployeeForm(false)
                   }
@@ -1072,7 +1140,7 @@ function Administration() {
 
                 <button
                   type="submit"
-                  className="primary-button"
+                  className={primaryButtonClass}
                   disabled={loading}
                 >
                   {loading
@@ -1089,17 +1157,33 @@ function Administration() {
 
           {/* EMPLOYEE TABLE */}
 
-          <div className="table-container">
+          <div className="overflow-x-auto rounded-lg border border-[#edf0f4]">
 
-            <table className="data-table">
+            <table className="w-full min-w-[760px] border-collapse text-left">
 
               <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Job Title</th>
-                  <th>Organization</th>
-                  <th>Actions</th>
+                <tr className="border-b border-[#edf0f4] bg-[#f8fafc]">
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Name
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Email
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Job Title
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Organization
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Actions
+                  </th>
+
                 </tr>
               </thead>
 
@@ -1107,70 +1191,82 @@ function Administration() {
 
                 {employees.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>
-                      <div className="empty-state">
 
-                        <h3>
+                    <td
+                      colSpan={5}
+                      className="px-4 py-10"
+                    >
+
+                      <div className="text-center">
+
+                        <h3 className="text-base font-semibold text-[#111827]">
                           No employees found
                         </h3>
 
-                        <p>
+                        <p className="mt-1 text-sm text-[#6b7280]">
                           Employees will appear here.
                         </p>
 
                       </div>
+
                     </td>
+
                   </tr>
                 ) : (
                   employees.map(
                     (employee) => (
                       <tr
                         key={employee.employeeId}
+                        className="border-b border-[#edf0f4] last:border-b-0 hover:bg-[#f8fafc]"
                       >
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {employee.name}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {employee.email}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {employee.jobTitle}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {getOrganizationName(
                             employee.orgId
                           )}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3">
 
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() =>
-                              openEditEmployee(
-                                employee
-                              )
-                            }
-                          >
-                            Edit
-                          </button>
+                          <div className="flex flex-wrap gap-2">
 
-                          <button
-                            type="button"
-                            className="secondary-button"
-                            onClick={() =>
-                              deleteEmployee(
-                                employee.employeeId
-                              )
-                            }
-                          >
-                            Delete
-                          </button>
+                            <button
+                              type="button"
+                              className={secondaryButtonClass}
+                              onClick={() =>
+                                openEditEmployee(
+                                  employee
+                                )
+                              }
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              className={deleteButtonClass}
+                              onClick={() =>
+                                deleteEmployee(
+                                  employee.employeeId
+                                )
+                              }
+                            >
+                              Delete
+                            </button>
+
+                          </div>
 
                         </td>
 
@@ -1193,21 +1289,23 @@ function Administration() {
       {/* ================================================= */}
 
       {activeSection === 'venues' && (
-        <div className="content-card">
+        <div className="rounded-xl border border-[#dfe5ec] bg-white p-6 shadow-sm">
 
-          <div className="section-header">
+          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
 
             <div>
-              <h2>Venues</h2>
+              <h2 className="text-lg font-semibold text-[#111827]">
+                Venues
+              </h2>
 
-              <p>
+              <p className="mt-1 text-sm text-[#6b7280]">
                 View and manage event venues.
               </p>
             </div>
 
             <button
               type="button"
-              className="primary-button"
+              className={primaryButtonClass}
               onClick={openAddVenue}
             >
               + Add Venue
@@ -1220,15 +1318,19 @@ function Administration() {
           {showVenueForm && (
             <form
               onSubmit={saveVenue}
-              className="content-card"
+              className="mb-6 rounded-xl border border-[#dfe5ec] bg-[#f8fafc] p-5"
             >
 
-              <h3>Add Venue</h3>
+              <h3 className="mb-5 text-base font-semibold text-[#111827]">
+                Add Venue
+              </h3>
 
-              <div className="form-grid">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
                 <div>
-                  <label>Address</label>
+                  <label className={labelClass}>
+                    Address
+                  </label>
 
                   <input
                     type="text"
@@ -1236,11 +1338,14 @@ function Administration() {
                     value={venueForm.address}
                     onChange={handleVenueChange}
                     required
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label>Capacity</label>
+                  <label className={labelClass}>
+                    Capacity
+                  </label>
 
                   <input
                     type="number"
@@ -1249,16 +1354,17 @@ function Administration() {
                     onChange={handleVenueChange}
                     min="1"
                     required
+                    className={inputClass}
                   />
                 </div>
 
               </div>
 
-              <div className="form-actions">
+              <div className="mt-5 flex flex-wrap justify-end gap-3">
 
                 <button
                   type="button"
-                  className="secondary-button"
+                  className={secondaryButtonClass}
                   onClick={() =>
                     setShowVenueForm(false)
                   }
@@ -1268,7 +1374,7 @@ function Administration() {
 
                 <button
                   type="submit"
-                  className="primary-button"
+                  className={primaryButtonClass}
                   disabled={loading}
                 >
                   {loading
@@ -1283,15 +1389,25 @@ function Administration() {
 
           {/* VENUE TABLE */}
 
-          <div className="table-container">
+          <div className="overflow-x-auto rounded-lg border border-[#edf0f4]">
 
-            <table className="data-table">
+            <table className="w-full min-w-[600px] border-collapse text-left">
 
               <thead>
-                <tr>
-                  <th>Venue</th>
-                  <th>Location</th>
-                  <th>Capacity</th>
+                <tr className="border-b border-[#edf0f4] bg-[#f8fafc]">
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Venue
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Location
+                  </th>
+
+                  <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
+                    Capacity
+                  </th>
+
                 </tr>
               </thead>
 
@@ -1299,36 +1415,44 @@ function Administration() {
 
                 {venues.length === 0 ? (
                   <tr>
-                    <td colSpan={3}>
-                      <div className="empty-state">
 
-                        <h3>
+                    <td
+                      colSpan={3}
+                      className="px-4 py-10"
+                    >
+
+                      <div className="text-center">
+
+                        <h3 className="text-base font-semibold text-[#111827]">
                           No venues found
                         </h3>
 
-                        <p>
+                        <p className="mt-1 text-sm text-[#6b7280]">
                           Venues will appear here.
                         </p>
 
                       </div>
+
                     </td>
+
                   </tr>
                 ) : (
                   venues.map(
                     (venue) => (
                       <tr
                         key={venue.venueId}
+                        className="border-b border-[#edf0f4] last:border-b-0 hover:bg-[#f8fafc]"
                       >
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {venue.address}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {venue.address}
                         </td>
 
-                        <td>
+                        <td className="px-4 py-3 text-sm text-[#374151]">
                           {venue.capacity}
                         </td>
 
