@@ -5,7 +5,7 @@ using EventManagementSys.api.Services.Interfaces;
 
 namespace EventManagementSys.api.Services.Implementations;
 
-public class RegistrationService(IRegistrationRepository registrationRepository) : IRegistrationService
+public class RegistrationService(IRegistrationRepository registrationRepository,IAttendeeRepository attendeeRepository) : IRegistrationService
 {
     public async Task<RegistrationDto> RegisterAsync(int eventId,int attendeeId,CancellationToken cancellationToken)
     {
@@ -32,6 +32,66 @@ public class RegistrationService(IRegistrationRepository registrationRepository)
             RegisteredAt = createdRegistration.RegisteredTime
         };
     }
+
+    public async Task<RegistrationDto> RegisterCurrentUserAsync(
+    int eventId,
+    string email,
+    CancellationToken cancellationToken)
+{
+    Attendee? attendee =
+        await attendeeRepository.GetByUserEmailAsync(
+            email,
+            cancellationToken);
+
+    if (attendee is null)
+    {
+        throw new KeyNotFoundException(
+            "The logged-in Microsoft user is not connected to an attendee.");
+    }
+
+    return await RegisterAsync(
+        eventId,
+        attendee.AttendeeId,
+        cancellationToken);
+}
+
+    public async Task<List<EventResponseDto>> GetRegisteredEventsAsync(
+    string email,
+    CancellationToken cancellationToken)
+{
+    Attendee? attendee =
+        await attendeeRepository.GetByUserEmailAsync(
+            email,
+            cancellationToken);
+
+    if (attendee is null)
+    {
+        throw new KeyNotFoundException(
+            "The logged-in Microsoft user is not connected to an attendee.");
+    }
+
+    List<EventAttendee> registrations =
+        await registrationRepository.GetByAttendeeIdAsync(
+            attendee.AttendeeId,
+            cancellationToken);
+
+    return registrations
+        .Where(registration => registration.EventNavigation is not null)
+        .Select(registration => registration.EventNavigation!)
+        .Select(eventItem => new EventResponseDto
+        {
+            EventId = eventItem.EventId,
+            EventName = eventItem.EventName,
+            StartDate = eventItem.StartDate,
+            EndDate = eventItem.EndDate,
+            Budget = eventItem.Budget,
+            EventType = eventItem.EventType,
+            Status = eventItem.Status,
+            VenueId = eventItem.VenueId,
+            OrgId = eventItem.OrgId
+        })
+        .ToList();
+}
 
     public async Task<List<ParticipantDto>> GetParticipantsAsync(int eventId,CancellationToken cancellationToken)
     {

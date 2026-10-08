@@ -27,5 +27,11 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<EventAttendee>()
             .HasKey(ea => new { ea.EventId, ea.AttendeeId });
+
+        modelBuilder.Entity<Attendee>()
+            .HasOne(attendee => attendee.User)
+            .WithOne(user => user.Attendee)
+            .HasForeignKey<Attendee>(attendee => attendee.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -35,8 +35,41 @@ function Dashboard() {
   const account =
     instance.getActiveAccount() ?? accounts[0]
 
+  /*
+     Use the stable Microsoft account ID for the
+     useEffect dependency instead of the whole
+     account object.
+  */
+  const accountId =
+    account?.homeAccountId
+
   console.log('MSAL account:', account)
   console.log('ID token claims:', account?.idTokenClaims)
+
+
+  /* =======================================================
+     USER ROLES
+     ======================================================= */
+
+  const roles =
+    (account?.idTokenClaims?.roles as string[]) ?? []
+
+  const isAdmin =
+    roles.includes('Admin')
+
+  const isEmployee =
+    roles.includes('Employee')
+
+  const isAttendee =
+    roles.includes('Attendee')
+
+
+  /* =======================================================
+     API SCOPE
+     ======================================================= */
+
+  const API_SCOPE =
+    'api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'
 
 
   const [events, setEvents] =
@@ -87,6 +120,15 @@ function Dashboard() {
 
   /* =======================================================
      LOAD EVENTS
+
+     Admin / Employee:
+       GET /api/events
+
+     Attendee:
+       GET /api/events/my-registrations
+
+     This means an Attendee only sees events
+     that they have registered for.
      ======================================================= */
 
   useEffect(() => {
@@ -100,8 +142,56 @@ function Dashboard() {
         setError('')
 
 
-        const response =
-          await fetch('/api/events')
+        let response: Response
+
+
+        /* =================================================
+           ATTENDEE
+           ================================================= */
+
+        if (isAttendee) {
+
+          if (!account) {
+
+            throw new Error(
+              'Microsoft account not available.'
+            )
+
+          }
+
+
+          const tokenResponse =
+            await instance.acquireTokenSilent({
+              scopes: [API_SCOPE],
+              account: account,
+            })
+
+
+          response =
+            await fetch(
+              '/api/events/my-registrations',
+              {
+                headers: {
+                  Authorization:
+                    `Bearer ${tokenResponse.accessToken}`,
+                },
+              }
+            )
+
+        }
+
+        /* =================================================
+           ADMIN / EMPLOYEE
+           ================================================= */
+
+        else {
+
+          response =
+            await fetch(
+              '/api/events'
+            )
+
+        }
 
 
         if (!response.ok) {
@@ -141,7 +231,11 @@ function Dashboard() {
 
     getEvents()
 
-  }, [])
+  }, [
+    accountId,
+    instance,
+    isAttendee,
+  ])
 
 
   /* =======================================================
@@ -195,7 +289,7 @@ function Dashboard() {
 
   /* =======================================================
      SELECT CALENDAR DATE
-     
+
      Clicking the date only selects it.
      It does NOT navigate.
      ======================================================= */
@@ -211,7 +305,7 @@ function Dashboard() {
 
   /* =======================================================
      ADD EVENT FROM HEADER
-     
+
      Opens the normal Events page.
      ======================================================= */
 
@@ -226,7 +320,7 @@ function Dashboard() {
 
   /* =======================================================
      ADD EVENT FOR SELECTED DATE
-     
+
      Clicking the + on a selected calendar
      day sends the selected date to the
      Events page.
@@ -498,6 +592,8 @@ function Dashboard() {
 
   /* =======================================================
      EVENTS FOR DATE
+
+     CANCELLED EVENTS ARE NOT SHOWN ON THE CALENDAR.
      ======================================================= */
 
   const getEventsForDate = (
@@ -506,6 +602,21 @@ function Dashboard() {
 
     return events.filter(
       (event) => {
+
+        const status =
+          getEventStatus(
+            event.status
+          )
+
+
+        /*
+           Cancelled events should never appear
+           inside the calendar.
+        */
+        if (status === 'Cancelled') {
+          return false
+        }
+
 
         const eventDate =
           new Date(
@@ -532,11 +643,29 @@ function Dashboard() {
 
   /* =======================================================
      CURRENT MONTH EVENTS
+
+     Cancelled events are excluded from the
+     calendar's monthly event count.
      ======================================================= */
 
   const monthEvents =
     events.filter(
       (event) => {
+
+        const status =
+          getEventStatus(
+            event.status
+          )
+
+
+        /*
+           Cancelled events should not contribute
+           to the calendar month count.
+        */
+        if (status === 'Cancelled') {
+          return false
+        }
+
 
         const date =
           new Date(
@@ -571,6 +700,9 @@ function Dashboard() {
 
   /* =======================================================
      CANCELLED EVENTS
+
+     Cancelled events are still counted in the
+     dashboard statistics.
      ======================================================= */
 
   const cancelledEvents =
@@ -584,6 +716,8 @@ function Dashboard() {
 
   /* =======================================================
      UPCOMING EVENTS
+
+     Cancelled events are excluded.
      ======================================================= */
 
   const upcomingEvents =
@@ -956,15 +1090,22 @@ function Dashboard() {
 
                 {/* Header Add Event button */}
 
-                <button
-                  type="button"
-                  className="cursor-pointer rounded-[7px] border border-[#ff7a00] bg-[#ff7a00] px-3 py-2 text-[13px] font-semibold text-white transition hover:border-[#e65f00] hover:bg-[#e65f00]"
-                  onClick={
-                    openCreateEvent
-                  }
-                >
-                  + Add Event
-                </button>
+                {(
+                  isAdmin ||
+                  isEmployee
+                ) && (
+
+                  <button
+                    type="button"
+                    className="cursor-pointer rounded-[7px] border border-[#ff7a00] bg-[#ff7a00] px-3 py-2 text-[13px] font-semibold text-white transition hover:border-[#e65f00] hover:bg-[#e65f00]"
+                    onClick={
+                      openCreateEvent
+                    }
+                  >
+                    + Add Event
+                  </button>
+
+                )}
 
 
                 <button
@@ -1010,13 +1151,33 @@ function Dashboard() {
 
             <div className="mt-[5px] grid grid-cols-7 border-l border-t border-[#dfe5ec]">
 
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Mon</span>
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Tue</span>
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Wed</span>
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Thu</span>
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Fri</span>
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Sat</span>
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">Sun</span>
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
+                Mon
+              </span>
+
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
+                Tue
+              </span>
+
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
+                Wed
+              </span>
+
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
+                Thu
+              </span>
+
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
+                Fri
+              </span>
+
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
+                Sat
+              </span>
+
+              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
+                Sun
+              </span>
 
             </div>
 
@@ -1075,9 +1236,15 @@ function Dashboard() {
 
                       {/* =================================================
                           ADD BUTTON FOR SELECTED DAY
+
+                          Only Admin / Employee can add events.
                           ================================================= */}
 
-                      {selected && (
+                      {selected &&
+                        (
+                          isAdmin ||
+                          isEmployee
+                        ) && (
 
                         <button
                           type="button"
@@ -1103,6 +1270,10 @@ function Dashboard() {
 
                       {/* =================================================
                           EVENTS
+
+                          Cancelled events are already removed by
+                          getEventsForDate(), so they will never
+                          be rendered here.
                           ================================================= */}
 
                       {dayEvents.map(

@@ -4,7 +4,16 @@ namespace EventManagementSys.api.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<UserResponseDto> RegisterAsync(RegisterUserDto request,CancellationToken cancellationToken);
+    Task<UserResponseDto> RegisterAsync(
+        RegisterUserDto request,
+        CancellationToken cancellationToken);
 
-    Task<LoginResponseDto> LoginAsync(LoginUserDto request,CancellationToken cancellationToken);
+    Task<LoginResponseDto> LoginAsync(
+        LoginUserDto request,
+        CancellationToken cancellationToken);
+
+    Task<UserResponseDto> GetOrCreateMicrosoftUserAsync(
+        string email,
+        string? displayName,
+        CancellationToken cancellationToken);
 }

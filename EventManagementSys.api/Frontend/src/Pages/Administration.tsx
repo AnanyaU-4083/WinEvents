@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useMsal } from '@azure/msal-react'
 import type { AccountInfo } from '@azure/msal-browser'
 
+import SearchBar from '../Components/SearchBar'
+
 type AdminSection =
   | 'organizations'
   | 'employees'
@@ -70,7 +72,19 @@ function Administration() {
 
   const [error, setError] = useState('')
 
+  // FILTERS
+
+  const [organizationSearch, setOrganizationSearch] =
+    useState('')
+
+  const [employeeSearch, setEmployeeSearch] =
+    useState('')
+
+  const [venueSearch, setVenueSearch] =
+    useState('')
+
   // Organization form
+
   const [showOrganizationForm, setShowOrganizationForm] =
     useState(false)
 
@@ -86,6 +100,7 @@ function Administration() {
     })
 
   // Employee form
+
   const [showEmployeeForm, setShowEmployeeForm] =
     useState(false)
 
@@ -101,6 +116,7 @@ function Administration() {
     })
 
   // Venue form
+
   const [showVenueForm, setShowVenueForm] =
     useState(false)
 
@@ -114,15 +130,18 @@ function Administration() {
 
   const getAuthHeaders = async (): Promise<HeadersInit> => {
     if (!account) {
-      throw new Error('No Microsoft account is logged in.')
+      throw new Error(
+        'No Microsoft account is logged in.'
+      )
     }
 
-    const response = await instance.acquireTokenSilent({
-      scopes: [
-        'api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user',
-      ],
-      account,
-    })
+    const response =
+      await instance.acquireTokenSilent({
+        scopes: [
+          'api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user',
+        ],
+        account,
+      })
 
     return {
       Authorization: `Bearer ${response.accessToken}`,
@@ -136,12 +155,15 @@ function Administration() {
       setLoading(true)
       setError('')
 
-      const response = await fetch('/api/organizations', {
-        method: 'GET',
-        headers: {
-          ...(await getAuthHeaders()),
-        },
-      })
+      const response = await fetch(
+        '/api/organizations',
+        {
+          method: 'GET',
+          headers: {
+            ...(await getAuthHeaders()),
+          },
+        }
+      )
 
       if (!response.ok) {
         throw new Error(
@@ -149,7 +171,8 @@ function Administration() {
         )
       }
 
-      const data = await response.json()
+      const data =
+        await response.json()
 
       setOrganizations(data)
     } catch (error) {
@@ -165,21 +188,22 @@ function Administration() {
     }
   }
 
-  // --------------------------------------------------
   // LOAD EMPLOYEES
-  // --------------------------------------------------
 
   const loadEmployees = async () => {
     try {
       setLoading(true)
       setError('')
 
-      const response = await fetch('/api/employees', {
-        method: 'GET',
-        headers: {
-          ...(await getAuthHeaders()),
-        },
-      })
+      const response = await fetch(
+        '/api/employees',
+        {
+          method: 'GET',
+          headers: {
+            ...(await getAuthHeaders()),
+          },
+        }
+      )
 
       if (!response.ok) {
         throw new Error(
@@ -187,7 +211,8 @@ function Administration() {
         )
       }
 
-      const data = await response.json()
+      const data =
+        await response.json()
 
       setEmployees(data)
     } catch (error) {
@@ -210,9 +235,12 @@ function Administration() {
       setLoading(true)
       setError('')
 
-      const response = await fetch('/api/venues', {
-        method: 'GET',
-      })
+      const response = await fetch(
+        '/api/venues',
+        {
+          method: 'GET',
+        }
+      )
 
       if (!response.ok) {
         throw new Error(
@@ -220,7 +248,8 @@ function Administration() {
         )
       }
 
-      const data = await response.json()
+      const data =
+        await response.json()
 
       setVenues(data)
     } catch (error) {
@@ -239,16 +268,25 @@ function Administration() {
   // LOAD DATA WHEN TAB CHANGES
 
   useEffect(() => {
-    if (activeSection === 'organizations') {
+    if (
+      activeSection ===
+      'organizations'
+    ) {
       loadOrganizations()
     }
 
-    if (activeSection === 'employees') {
+    if (
+      activeSection ===
+      'employees'
+    ) {
       loadOrganizations()
       loadEmployees()
     }
 
-    if (activeSection === 'venues') {
+    if (
+      activeSection ===
+      'venues'
+    ) {
       loadVenues()
     }
   }, [activeSection])
@@ -272,13 +310,17 @@ function Administration() {
   const openEditOrganization = (
     organization: Organization
   ) => {
-    setEditingOrganizationId(organization.orgId)
+    setEditingOrganizationId(
+      organization.orgId
+    )
 
     setOrganizationForm({
       name: organization.name,
       email: organization.email,
       phone: organization.phone,
-      contactPerson: organization.contactPerson || '',
+      contactPerson:
+        organization.contactPerson ||
+        '',
     })
 
     setShowOrganizationForm(true)
@@ -288,12 +330,15 @@ function Administration() {
   const handleOrganizationChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const { name, value } = event.target
+    const { name, value } =
+      event.target
 
-    setOrganizationForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }))
+    setOrganizationForm(
+      (previous) => ({
+        ...previous,
+        [name]: value,
+      })
+    )
   }
 
   const saveOrganization = async (
@@ -306,43 +351,62 @@ function Administration() {
       setError('')
 
       const isEditing =
-        editingOrganizationId !== null
+        editingOrganizationId !==
+        null
 
       const url = isEditing
         ? `/api/organizations/${editingOrganizationId}`
         : '/api/organizations'
 
-      const response = await fetch(url, {
-        method: isEditing ? 'PUT' : 'POST',
+      const response =
+        await fetch(url, {
+          method: isEditing
+            ? 'PUT'
+            : 'POST',
 
-        headers: {
-          'Content-Type': 'application/json',
-          ...(await getAuthHeaders()),
-        },
+          headers: {
+            'Content-Type':
+              'application/json',
+            ...(await getAuthHeaders()),
+          },
 
-        body: JSON.stringify({
-          name: organizationForm.name,
-          email: organizationForm.email,
-          phone: organizationForm.phone,
-          contactPerson:
-            organizationForm.contactPerson || null,
-        }),
-      })
+          body: JSON.stringify({
+            name:
+              organizationForm.name,
+
+            email:
+              organizationForm.email,
+
+            phone:
+              organizationForm.phone,
+
+            contactPerson:
+              organizationForm.contactPerson ||
+              null,
+          }),
+        })
 
       if (!response.ok) {
-        const message = await response.text()
+        const message =
+          await response.text()
 
         throw new Error(
           message ||
             `Failed to ${
-              isEditing ? 'update' : 'create'
+              isEditing
+                ? 'update'
+                : 'create'
             } organization (${response.status})`
         )
       }
 
-      setShowOrganizationForm(false)
+      setShowOrganizationForm(
+        false
+      )
 
-      setEditingOrganizationId(null)
+      setEditingOrganizationId(
+        null
+      )
 
       await loadOrganizations()
     } catch (error) {
@@ -358,16 +422,15 @@ function Administration() {
     }
   }
 
-  // --------------------------------------------------
   // DELETE ORGANIZATION
-  // --------------------------------------------------
 
   const deleteOrganization = async (
     organizationId: number
   ) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this organization?'
-    )
+    const confirmed =
+      window.confirm(
+        'Are you sure you want to delete this organization?'
+      )
 
     if (!confirmed) {
       return
@@ -377,18 +440,20 @@ function Administration() {
       setLoading(true)
       setError('')
 
-      const response = await fetch(
-        `/api/organizations/${organizationId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            ...(await getAuthHeaders()),
-          },
-        }
-      )
+      const response =
+        await fetch(
+          `/api/organizations/${organizationId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              ...(await getAuthHeaders()),
+            },
+          }
+        )
 
       if (!response.ok) {
-        const message = await response.text()
+        const message =
+          await response.text()
 
         throw new Error(
           message ||
@@ -429,13 +494,17 @@ function Administration() {
   const openEditEmployee = (
     employee: Employee
   ) => {
-    setEditingEmployeeId(employee.employeeId)
+    setEditingEmployeeId(
+      employee.employeeId
+    )
 
     setEmployeeForm({
       name: employee.name,
-      jobTitle: employee.jobTitle || '',
+      jobTitle:
+        employee.jobTitle || '',
       email: employee.email,
-      orgId: employee.orgId.toString(),
+      orgId:
+        employee.orgId.toString(),
     })
 
     setShowEmployeeForm(true)
@@ -447,12 +516,15 @@ function Administration() {
       | React.ChangeEvent<HTMLInputElement>
       | React.ChangeEvent<HTMLSelectElement>
   ) => {
-    const { name, value } = event.target
+    const { name, value } =
+      event.target
 
-    setEmployeeForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }))
+    setEmployeeForm(
+      (previous) => ({
+        ...previous,
+        [name]: value,
+      })
+    )
   }
 
   const saveEmployee = async (
@@ -465,40 +537,59 @@ function Administration() {
       setError('')
 
       const isEditing =
-        editingEmployeeId !== null
+        editingEmployeeId !==
+        null
 
       const url = isEditing
         ? `/api/employees/${editingEmployeeId}`
         : '/api/employees'
 
-      const response = await fetch(url, {
-        method: isEditing ? 'PUT' : 'POST',
+      const response =
+        await fetch(url, {
+          method: isEditing
+            ? 'PUT'
+            : 'POST',
 
-        headers: {
-          'Content-Type': 'application/json',
-          ...(await getAuthHeaders()),
-        },
+          headers: {
+            'Content-Type':
+              'application/json',
+            ...(await getAuthHeaders()),
+          },
 
-        body: JSON.stringify({
-          name: employeeForm.name,
-          jobTitle: employeeForm.jobTitle,
-          email: employeeForm.email,
-          orgId: Number(employeeForm.orgId),
-        }),
-      })
+          body: JSON.stringify({
+            name:
+              employeeForm.name,
+
+            jobTitle:
+              employeeForm.jobTitle,
+
+            email:
+              employeeForm.email,
+
+            orgId:
+              Number(
+                employeeForm.orgId
+              ),
+          }),
+        })
 
       if (!response.ok) {
-        const message = await response.text()
+        const message =
+          await response.text()
 
         throw new Error(
           message ||
             `Failed to ${
-              isEditing ? 'update' : 'create'
+              isEditing
+                ? 'update'
+                : 'create'
             } employee (${response.status})`
         )
       }
 
-      setShowEmployeeForm(false)
+      setShowEmployeeForm(
+        false
+      )
 
       setEditingEmployeeId(null)
 
@@ -521,9 +612,10 @@ function Administration() {
   const deleteEmployee = async (
     employeeId: number
   ) => {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this employee?'
-    )
+    const confirmed =
+      window.confirm(
+        'Are you sure you want to delete this employee?'
+      )
 
     if (!confirmed) {
       return
@@ -533,18 +625,20 @@ function Administration() {
       setLoading(true)
       setError('')
 
-      const response = await fetch(
-        `/api/employees/${employeeId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            ...(await getAuthHeaders()),
-          },
-        }
-      )
+      const response =
+        await fetch(
+          `/api/employees/${employeeId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              ...(await getAuthHeaders()),
+            },
+          }
+        )
 
       if (!response.ok) {
-        const message = await response.text()
+        const message =
+          await response.text()
 
         throw new Error(
           message ||
@@ -581,12 +675,15 @@ function Administration() {
   const handleVenueChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const { name, value } = event.target
+    const { name, value } =
+      event.target
 
-    setVenueForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }))
+    setVenueForm(
+      (previous) => ({
+        ...previous,
+        [name]: value,
+      })
+    )
   }
 
   const saveVenue = async (
@@ -598,22 +695,33 @@ function Administration() {
       setLoading(true)
       setError('')
 
-      const response = await fetch('/api/venues', {
-        method: 'POST',
+      const response =
+        await fetch(
+          '/api/venues',
+          {
+            method: 'POST',
 
-        headers: {
-          'Content-Type': 'application/json',
-          ...(await getAuthHeaders()),
-        },
+            headers: {
+              'Content-Type':
+                'application/json',
+              ...(await getAuthHeaders()),
+            },
 
-        body: JSON.stringify({
-          address: venueForm.address,
-          capacity: Number(venueForm.capacity),
-        }),
-      })
+            body: JSON.stringify({
+              address:
+                venueForm.address,
+
+              capacity:
+                Number(
+                  venueForm.capacity
+                ),
+            }),
+          }
+        )
 
       if (!response.ok) {
-        const message = await response.text()
+        const message =
+          await response.text()
 
         throw new Error(
           message ||
@@ -639,19 +747,109 @@ function Administration() {
 
   // ORGANIZATION NAME
 
-  const getOrganizationName = (orgId: number) => {
-    const organization = organizations.find(
-      (item) => item.orgId === orgId
-    )
+  const getOrganizationName = (
+    orgId: number
+  ) => {
+    const organization =
+      organizations.find(
+        (item) =>
+          item.orgId === orgId
+      )
 
     return organization
       ? organization.name
       : 'Unknown'
   }
 
-  // --------------------------------------------------
+  // FILTERED DATA
+
+  const filteredOrganizations =
+    organizations.filter(
+      (organization) => {
+        const search =
+          organizationSearch
+            .toLowerCase()
+            .trim()
+
+        if (!search) {
+          return true
+        }
+
+        return (
+          organization.name
+            .toLowerCase()
+            .includes(search) ||
+          organization.email
+            .toLowerCase()
+            .includes(search) ||
+          organization.phone
+            .toLowerCase()
+            .includes(search) ||
+          organization.contactPerson
+            .toLowerCase()
+            .includes(search)
+        )
+      }
+    )
+
+  const filteredEmployees =
+    employees.filter(
+      (employee) => {
+        const search =
+          employeeSearch
+            .toLowerCase()
+            .trim()
+
+        if (!search) {
+          return true
+        }
+
+        const organizationName =
+          getOrganizationName(
+            employee.orgId
+          )
+
+        return (
+          employee.name
+            .toLowerCase()
+            .includes(search) ||
+          employee.email
+            .toLowerCase()
+            .includes(search) ||
+          employee.jobTitle
+            .toLowerCase()
+            .includes(search) ||
+          organizationName
+            .toLowerCase()
+            .includes(search)
+        )
+      }
+    )
+
+  const filteredVenues =
+    venues.filter(
+      (venue) => {
+        const search =
+          venueSearch
+            .toLowerCase()
+            .trim()
+
+        if (!search) {
+          return true
+        }
+
+        return (
+          venue.address
+            .toLowerCase()
+            .includes(search) ||
+          venue.capacity
+            .toString()
+            .includes(search)
+        )
+      }
+    )
+
   // TAILWIND CLASSES
-  // --------------------------------------------------
 
   const inputClass =
     'w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20'
@@ -702,12 +900,15 @@ function Administration() {
         <button
           type="button"
           className={`rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-            activeSection === 'organizations'
+            activeSection ===
+            'organizations'
               ? 'bg-[#eaf2ff] text-[#0066ff]'
               : 'text-[#6b7280] hover:bg-[#f5f8fc] hover:text-[#374151]'
           }`}
           onClick={() =>
-            setActiveSection('organizations')
+            setActiveSection(
+              'organizations'
+            )
           }
         >
           Organizations
@@ -716,12 +917,15 @@ function Administration() {
         <button
           type="button"
           className={`rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-            activeSection === 'employees'
+            activeSection ===
+            'employees'
               ? 'bg-[#eaf2ff] text-[#0066ff]'
               : 'text-[#6b7280] hover:bg-[#f5f8fc] hover:text-[#374151]'
           }`}
           onClick={() =>
-            setActiveSection('employees')
+            setActiveSection(
+              'employees'
+            )
           }
         >
           Employees
@@ -730,12 +934,15 @@ function Administration() {
         <button
           type="button"
           className={`rounded-lg px-4 py-2.5 text-sm font-medium transition ${
-            activeSection === 'venues'
+            activeSection ===
+            'venues'
               ? 'bg-[#eaf2ff] text-[#0066ff]'
               : 'text-[#6b7280] hover:bg-[#f5f8fc] hover:text-[#374151]'
           }`}
           onClick={() =>
-            setActiveSection('venues')
+            setActiveSection(
+              'venues'
+            )
           }
         >
           Venues
@@ -745,10 +952,11 @@ function Administration() {
 
       {/* ORGANIZATIONS */}
 
-      {activeSection === 'organizations' && (
+      {activeSection ===
+        'organizations' && (
         <div className="rounded-xl border border-[#dfe5ec] bg-white p-6 shadow-sm">
 
-          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
 
             <div>
               <h2 className="text-lg font-semibold text-[#111827]">
@@ -760,13 +968,31 @@ function Administration() {
               </p>
             </div>
 
-            <button
-              type="button"
-              className={primaryButtonClass}
-              onClick={openAddOrganization}
-            >
-              + Add Organization
-            </button>
+            <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+
+              <SearchBar
+                value={
+                  organizationSearch
+                }
+                onChange={
+                  setOrganizationSearch
+                }
+                placeholder="Search organizations..."
+              />
+
+              <button
+                type="button"
+                className={
+                  primaryButtonClass
+                }
+                onClick={
+                  openAddOrganization
+                }
+              >
+                + Add Organization
+              </button>
+
+            </div>
 
           </div>
 
@@ -774,12 +1000,15 @@ function Administration() {
 
           {showOrganizationForm && (
             <form
-              onSubmit={saveOrganization}
+              onSubmit={
+                saveOrganization
+              }
               className="mb-6 rounded-xl border border-[#dfe5ec] bg-[#f8fafc] p-5"
             >
 
               <h3 className="mb-5 text-base font-semibold text-[#111827]">
-                {editingOrganizationId !== null
+                {editingOrganizationId !==
+                null
                   ? 'Edit Organization'
                   : 'Add Organization'}
               </h3>
@@ -787,61 +1016,101 @@ function Administration() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Name
                   </label>
 
                   <input
                     type="text"
                     name="name"
-                    value={organizationForm.name}
-                    onChange={handleOrganizationChange}
+                    value={
+                      organizationForm.name
+                    }
+                    onChange={
+                      handleOrganizationChange
+                    }
                     required
-                    className={inputClass}
+                    className={
+                      inputClass
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Email
                   </label>
 
                   <input
                     type="email"
                     name="email"
-                    value={organizationForm.email}
-                    onChange={handleOrganizationChange}
+                    value={
+                      organizationForm.email
+                    }
+                    onChange={
+                      handleOrganizationChange
+                    }
                     required
-                    className={inputClass}
+                    className={
+                      inputClass
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Phone
                   </label>
 
                   <input
                     type="text"
                     name="phone"
-                    value={organizationForm.phone}
-                    onChange={handleOrganizationChange}
+                    value={
+                      organizationForm.phone
+                    }
+                    onChange={
+                      handleOrganizationChange
+                    }
                     required
-                    className={inputClass}
+                    className={
+                      inputClass
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Contact Person
                   </label>
 
                   <input
                     type="text"
                     name="contactPerson"
-                    value={organizationForm.contactPerson}
-                    onChange={handleOrganizationChange}
-                    className={inputClass}
+                    value={
+                      organizationForm.contactPerson
+                    }
+                    onChange={
+                      handleOrganizationChange
+                    }
+                    className={
+                      inputClass
+                    }
                   />
                 </div>
 
@@ -851,9 +1120,13 @@ function Administration() {
 
                 <button
                   type="button"
-                  className={secondaryButtonClass}
+                  className={
+                    secondaryButtonClass
+                  }
                   onClick={() =>
-                    setShowOrganizationForm(false)
+                    setShowOrganizationForm(
+                      false
+                    )
                   }
                 >
                   Cancel
@@ -861,12 +1134,15 @@ function Administration() {
 
                 <button
                   type="submit"
-                  className={primaryButtonClass}
+                  className={
+                    primaryButtonClass
+                  }
                   disabled={loading}
                 >
                   {loading
                     ? 'Saving...'
-                    : editingOrganizationId !== null
+                    : editingOrganizationId !==
+                      null
                     ? 'Update Organization'
                     : 'Add Organization'}
                 </button>
@@ -910,7 +1186,8 @@ function Administration() {
 
               <tbody>
 
-                {organizations.length === 0 ? (
+                {filteredOrganizations.length ===
+                0 ? (
                   <tr>
 
                     <td
@@ -921,11 +1198,15 @@ function Administration() {
                       <div className="text-center">
 
                         <h3 className="text-base font-semibold text-[#111827]">
-                          No organizations found
+                          {organizationSearch
+                            ? 'No matching organizations'
+                            : 'No organizations found'}
                         </h3>
 
                         <p className="mt-1 text-sm text-[#6b7280]">
-                          Organizations will appear here.
+                          {organizationSearch
+                            ? 'Try a different search.'
+                            : 'Organizations will appear here.'}
                         </p>
 
                       </div>
@@ -934,28 +1215,38 @@ function Administration() {
 
                   </tr>
                 ) : (
-                  organizations.map(
+                  filteredOrganizations.map(
                     (organization) => (
                       <tr
-                        key={organization.orgId}
+                        key={
+                          organization.orgId
+                        }
                         className="border-b border-[#edf0f4] last:border-b-0 hover:bg-[#f8fafc]"
                       >
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {organization.name}
+                          {
+                            organization.name
+                          }
                         </td>
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {organization.email}
+                          {
+                            organization.email
+                          }
                         </td>
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {organization.phone}
+                          {
+                            organization.phone
+                          }
                         </td>
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {organization.contactPerson ||
-                            '-'}
+                          {
+                            organization.contactPerson ||
+                            '-'
+                          }
                         </td>
 
                         <td className="px-4 py-3">
@@ -964,7 +1255,9 @@ function Administration() {
 
                             <button
                               type="button"
-                              className={secondaryButtonClass}
+                              className={
+                                secondaryButtonClass
+                              }
                               onClick={() =>
                                 openEditOrganization(
                                   organization
@@ -976,7 +1269,9 @@ function Administration() {
 
                             <button
                               type="button"
-                              className={deleteButtonClass}
+                              className={
+                                deleteButtonClass
+                              }
                               onClick={() =>
                                 deleteOrganization(
                                   organization.orgId
@@ -1004,14 +1299,13 @@ function Administration() {
         </div>
       )}
 
-      {/* ================================================= */}
       {/* EMPLOYEES */}
-      {/* ================================================= */}
 
-      {activeSection === 'employees' && (
+      {activeSection ===
+        'employees' && (
         <div className="rounded-xl border border-[#dfe5ec] bg-white p-6 shadow-sm">
 
-          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
 
             <div>
               <h2 className="text-lg font-semibold text-[#111827]">
@@ -1023,13 +1317,31 @@ function Administration() {
               </p>
             </div>
 
-            <button
-              type="button"
-              className={primaryButtonClass}
-              onClick={openAddEmployee}
-            >
-              + Add Employee
-            </button>
+            <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+
+              <SearchBar
+                value={
+                  employeeSearch
+                }
+                onChange={
+                  setEmployeeSearch
+                }
+                placeholder="Search employees..."
+              />
+
+              <button
+                type="button"
+                className={
+                  primaryButtonClass
+                }
+                onClick={
+                  openAddEmployee
+                }
+              >
+                + Add Employee
+              </button>
+
+            </div>
 
           </div>
 
@@ -1042,7 +1354,8 @@ function Administration() {
             >
 
               <h3 className="mb-5 text-base font-semibold text-[#111827]">
-                {editingEmployeeId !== null
+                {editingEmployeeId !==
+                null
                   ? 'Edit Employee'
                   : 'Add Employee'}
               </h3>
@@ -1050,73 +1363,121 @@ function Administration() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Name
                   </label>
 
                   <input
                     type="text"
                     name="name"
-                    value={employeeForm.name}
-                    onChange={handleEmployeeChange}
+                    value={
+                      employeeForm.name
+                    }
+                    onChange={
+                      handleEmployeeChange
+                    }
                     required
-                    className={inputClass}
+                    className={
+                      inputClass
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Job Title
                   </label>
 
                   <input
                     type="text"
                     name="jobTitle"
-                    value={employeeForm.jobTitle}
-                    onChange={handleEmployeeChange}
+                    value={
+                      employeeForm.jobTitle
+                    }
+                    onChange={
+                      handleEmployeeChange
+                    }
                     required
-                    className={inputClass}
+                    className={
+                      inputClass
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Email
                   </label>
 
                   <input
                     type="email"
                     name="email"
-                    value={employeeForm.email}
-                    onChange={handleEmployeeChange}
+                    value={
+                      employeeForm.email
+                    }
+                    onChange={
+                      handleEmployeeChange
+                    }
                     required
-                    className={inputClass}
+                    className={
+                      inputClass
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Organization
                   </label>
 
                   <select
                     name="orgId"
-                    value={employeeForm.orgId}
-                    onChange={handleEmployeeChange}
+                    value={
+                      employeeForm.orgId
+                    }
+                    onChange={
+                      handleEmployeeChange
+                    }
                     required
-                    className={inputClass}
+                    className={
+                      inputClass
+                    }
                   >
                     <option value="">
                       Select organization
                     </option>
 
                     {organizations.map(
-                      (organization) => (
+                      (
+                        organization
+                      ) => (
                         <option
-                          key={organization.orgId}
-                          value={organization.orgId}
+                          key={
+                            organization.orgId
+                          }
+                          value={
+                            organization.orgId
+                          }
                         >
-                          {organization.name}
+                          {
+                            organization.name
+                          }
                         </option>
                       )
                     )}
@@ -1130,9 +1491,13 @@ function Administration() {
 
                 <button
                   type="button"
-                  className={secondaryButtonClass}
+                  className={
+                    secondaryButtonClass
+                  }
                   onClick={() =>
-                    setShowEmployeeForm(false)
+                    setShowEmployeeForm(
+                      false
+                    )
                   }
                 >
                   Cancel
@@ -1140,12 +1505,15 @@ function Administration() {
 
                 <button
                   type="submit"
-                  className={primaryButtonClass}
+                  className={
+                    primaryButtonClass
+                  }
                   disabled={loading}
                 >
                   {loading
                     ? 'Saving...'
-                    : editingEmployeeId !== null
+                    : editingEmployeeId !==
+                      null
                     ? 'Update Employee'
                     : 'Add Employee'}
                 </button>
@@ -1189,7 +1557,8 @@ function Administration() {
 
               <tbody>
 
-                {employees.length === 0 ? (
+                {filteredEmployees.length ===
+                0 ? (
                   <tr>
 
                     <td
@@ -1200,11 +1569,15 @@ function Administration() {
                       <div className="text-center">
 
                         <h3 className="text-base font-semibold text-[#111827]">
-                          No employees found
+                          {employeeSearch
+                            ? 'No matching employees'
+                            : 'No employees found'}
                         </h3>
 
                         <p className="mt-1 text-sm text-[#6b7280]">
-                          Employees will appear here.
+                          {employeeSearch
+                            ? 'Try a different search.'
+                            : 'Employees will appear here.'}
                         </p>
 
                       </div>
@@ -1213,23 +1586,31 @@ function Administration() {
 
                   </tr>
                 ) : (
-                  employees.map(
+                  filteredEmployees.map(
                     (employee) => (
                       <tr
-                        key={employee.employeeId}
+                        key={
+                          employee.employeeId
+                        }
                         className="border-b border-[#edf0f4] last:border-b-0 hover:bg-[#f8fafc]"
                       >
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {employee.name}
+                          {
+                            employee.name
+                          }
                         </td>
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {employee.email}
+                          {
+                            employee.email
+                          }
                         </td>
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {employee.jobTitle}
+                          {
+                            employee.jobTitle
+                          }
                         </td>
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
@@ -1244,7 +1625,9 @@ function Administration() {
 
                             <button
                               type="button"
-                              className={secondaryButtonClass}
+                              className={
+                                secondaryButtonClass
+                              }
                               onClick={() =>
                                 openEditEmployee(
                                   employee
@@ -1256,7 +1639,9 @@ function Administration() {
 
                             <button
                               type="button"
-                              className={deleteButtonClass}
+                              className={
+                                deleteButtonClass
+                              }
                               onClick={() =>
                                 deleteEmployee(
                                   employee.employeeId
@@ -1284,14 +1669,13 @@ function Administration() {
         </div>
       )}
 
-      {/* ================================================= */}
       {/* VENUES */}
-      {/* ================================================= */}
 
-      {activeSection === 'venues' && (
+      {activeSection ===
+        'venues' && (
         <div className="rounded-xl border border-[#dfe5ec] bg-white p-6 shadow-sm">
 
-          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
 
             <div>
               <h2 className="text-lg font-semibold text-[#111827]">
@@ -1303,13 +1687,31 @@ function Administration() {
               </p>
             </div>
 
-            <button
-              type="button"
-              className={primaryButtonClass}
-              onClick={openAddVenue}
-            >
-              + Add Venue
-            </button>
+            <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+
+              <SearchBar
+                value={
+                  venueSearch
+                }
+                onChange={
+                  setVenueSearch
+                }
+                placeholder="Search venues..."
+              />
+
+              <button
+                type="button"
+                className={
+                  primaryButtonClass
+                }
+                onClick={
+                  openAddVenue
+                }
+              >
+                + Add Venue
+              </button>
+
+            </div>
 
           </div>
 
@@ -1328,33 +1730,53 @@ function Administration() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Address
                   </label>
 
                   <input
                     type="text"
                     name="address"
-                    value={venueForm.address}
-                    onChange={handleVenueChange}
+                    value={
+                      venueForm.address
+                    }
+                    onChange={
+                      handleVenueChange
+                    }
                     required
-                    className={inputClass}
+                    className={
+                      inputClass
+                    }
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
+                  <label
+                    className={
+                      labelClass
+                    }
+                  >
                     Capacity
                   </label>
 
                   <input
                     type="number"
                     name="capacity"
-                    value={venueForm.capacity}
-                    onChange={handleVenueChange}
+                    value={
+                      venueForm.capacity
+                    }
+                    onChange={
+                      handleVenueChange
+                    }
                     min="1"
                     required
-                    className={inputClass}
+                    className={
+                      inputClass
+                    }
                   />
                 </div>
 
@@ -1364,9 +1786,13 @@ function Administration() {
 
                 <button
                   type="button"
-                  className={secondaryButtonClass}
+                  className={
+                    secondaryButtonClass
+                  }
                   onClick={() =>
-                    setShowVenueForm(false)
+                    setShowVenueForm(
+                      false
+                    )
                   }
                 >
                   Cancel
@@ -1374,7 +1800,9 @@ function Administration() {
 
                 <button
                   type="submit"
-                  className={primaryButtonClass}
+                  className={
+                    primaryButtonClass
+                  }
                   disabled={loading}
                 >
                   {loading
@@ -1413,7 +1841,8 @@ function Administration() {
 
               <tbody>
 
-                {venues.length === 0 ? (
+                {filteredVenues.length ===
+                0 ? (
                   <tr>
 
                     <td
@@ -1424,11 +1853,15 @@ function Administration() {
                       <div className="text-center">
 
                         <h3 className="text-base font-semibold text-[#111827]">
-                          No venues found
+                          {venueSearch
+                            ? 'No matching venues'
+                            : 'No venues found'}
                         </h3>
 
                         <p className="mt-1 text-sm text-[#6b7280]">
-                          Venues will appear here.
+                          {venueSearch
+                            ? 'Try a different search.'
+                            : 'Venues will appear here.'}
                         </p>
 
                       </div>
@@ -1437,23 +1870,31 @@ function Administration() {
 
                   </tr>
                 ) : (
-                  venues.map(
+                  filteredVenues.map(
                     (venue) => (
                       <tr
-                        key={venue.venueId}
+                        key={
+                          venue.venueId
+                        }
                         className="border-b border-[#edf0f4] last:border-b-0 hover:bg-[#f8fafc]"
                       >
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {venue.address}
+                          {
+                            venue.address
+                          }
                         </td>
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {venue.address}
+                          {
+                            venue.address
+                          }
                         </td>
 
                         <td className="px-4 py-3 text-sm text-[#374151]">
-                          {venue.capacity}
+                          {
+                            venue.capacity
+                          }
                         </td>
 
                       </tr>

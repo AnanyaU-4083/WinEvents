@@ -34,6 +34,34 @@ public class AttendeeController(IAttendeeService attendeeService) : ControllerBa
         return Ok(attendee);
     }
 
+    [HttpGet("me")]
+[Authorize(Roles = "Attendee")]
+public async Task<ActionResult<AttendeeResponseDto>> GetMe(
+    CancellationToken cancellationToken)
+{
+    string? email =
+        User.FindFirst("preferred_username")?.Value
+        ?? User.FindFirst("email")?.Value;
+
+    if (string.IsNullOrWhiteSpace(email))
+    {
+        return Unauthorized();
+    }
+
+    AttendeeResponseDto? attendee =
+        await attendeeService.GetMeAsync(
+            email,
+            cancellationToken);
+
+    if (attendee is null)
+    {
+        return NotFound(
+            "No attendee record was found for the logged-in Microsoft account.");
+    }
+
+    return Ok(attendee);
+}
+
     [HttpPost]
     [Authorize(Roles = "Admin,Employee")] // Admin and Employee
     public async Task<ActionResult<AttendeeResponseDto>> Create(CreateAttendeeDto request,CancellationToken cancellationToken)

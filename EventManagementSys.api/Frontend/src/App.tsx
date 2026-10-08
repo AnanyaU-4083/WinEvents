@@ -16,6 +16,7 @@ import Dashboard from './Pages/Dashboard'
 import Events from './Pages/Events'
 import Participants from './Pages/Participants'
 import Administration from './Pages/Administration'
+import EmployeeTasks from './Pages/EmployeeTasks'
 
 
 function MainLayout() {
@@ -125,6 +126,25 @@ function App() {
                 ]}
               >
                 <Participants />
+              </RoleRoute>
+            }
+          />
+
+
+          {/* Employee Tasks
+              Employee only
+          */}
+
+          <Route
+            path="/my-tasks"
+            element={
+              <RoleRoute
+                allowedRoles={[
+                  'Admin',
+                  'Employee',
+                ]}
+              >
+                <EmployeeTasks />
               </RoleRoute>
             }
           />

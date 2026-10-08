@@ -11,6 +11,9 @@ function Navigationbar() {
   const roles =
     (account?.idTokenClaims?.roles as string[]) ?? []
 
+  // Temporary check to see which Microsoft roles are available
+  console.log('Microsoft roles:', roles)
+
   const isAdmin = roles.includes('Admin')
   const isEmployee = roles.includes('Employee')
 
@@ -91,6 +94,22 @@ function Navigationbar() {
               }
             >
               Participants
+            </NavLink>
+          )}
+
+          {/* MY TASKS */}
+          {(isAdmin || isEmployee) && (
+            <NavLink
+              to="/my-tasks"
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'text-blue-600'
+                    : 'text-gray-600 hover:text-blue-600'
+                }`
+              }
+            >
+              My Tasks
             </NavLink>
           )}
 

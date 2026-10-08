@@ -1,6 +1,6 @@
 using EventManagementSys.api.Models;
-namespace EventManagementSys.api.DTOs;
 
+namespace EventManagementSys.api.DTOs;
 
 public class AssignStaffDto
 {
@@ -22,6 +22,10 @@ public class UpdateStaffDto
 
 public class StaffDto
 {
+    public int EventId { get; set; }
+
+    public string EventName { get; set; } = string.Empty;
+
     public int EmployeeId { get; set; }
 
     public string Name { get; set; } = string.Empty;
@@ -32,5 +36,5 @@ public class StaffDto
 
     public DateTime? Deadline { get; set; }
 
-    public string Status { get; set; } = "pending";
+    public string Status { get; set; } = "Pending";
 }

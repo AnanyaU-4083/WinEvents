@@ -10,6 +10,10 @@ public interface IAttendeeService
 
     Task<AttendeeResponseDto> CreateAsync(CreateAttendeeDto request,CancellationToken cancellationToken);
 
+    Task<AttendeeResponseDto?> GetMeAsync(
+    string email,
+    CancellationToken cancellationToken);
+
     Task<bool> UpdateAsync(int attendeeId,UpdateAttendeeDto request,CancellationToken cancellationToken);
 
     Task<bool> DeleteAsync(int attendeeId,CancellationToken cancellationToken);

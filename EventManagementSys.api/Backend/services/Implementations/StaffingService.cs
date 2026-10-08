@@ -8,13 +8,21 @@ namespace EventManagementSys.api.Services.Implementations;
 public class StaffService(
     IStaffingRepository staffingRepository) : IStaffingService
 {
-    public async Task<StaffDto> AssignAsync(int eventId,AssignStaffDto request,CancellationToken cancellationToken)
+    public async Task<StaffDto> AssignAsync(
+        int eventId,
+        AssignStaffDto request,
+        CancellationToken cancellationToken)
     {
-        EventEmployee? existingAssignment = await staffingRepository.GetAsync(eventId,request.EmployeeId,cancellationToken);
+        EventEmployee? existingAssignment =
+            await staffingRepository.GetAsync(
+                eventId,
+                request.EmployeeId,
+                cancellationToken);
 
         if (existingAssignment is not null)
         {
-            throw new InvalidOperationException("This employee is already assigned to this event.");
+            throw new InvalidOperationException(
+                "This employee is already assigned to this event.");
         }
 
         EventEmployee assignment = new()
@@ -23,28 +31,78 @@ public class StaffService(
             EmployeeId = request.EmployeeId,
             Task = request.Task,
             Deadline = request.Deadline,
-            Status = EventEmployee.AssignmentStatus.Pending
+            Status =
+                EventEmployee.AssignmentStatus.Pending
         };
 
-        EventEmployee createdAssignment = await staffingRepository.AddAsync(assignment,cancellationToken);
+        EventEmployee createdAssignment =
+            await staffingRepository.AddAsync(
+                assignment,
+                cancellationToken);
 
-        EventEmployee? assignmentWithEmployee = await staffingRepository.GetAsync(createdAssignment.EventId,createdAssignment.EmployeeId,cancellationToken);
+        EventEmployee? assignmentWithEmployee =
+            await staffingRepository.GetAsync(
+                createdAssignment.EventId,
+                createdAssignment.EmployeeId,
+                cancellationToken);
 
-        return MapToResponse(assignmentWithEmployee ?? createdAssignment);
+        return MapToResponse(
+            assignmentWithEmployee ?? createdAssignment);
     }
 
-    public async Task<List<StaffDto>> GetStaffAsync(int eventId,CancellationToken cancellationToken)
+    public async Task<List<StaffDto>> GetStaffAsync(
+        int eventId,
+        CancellationToken cancellationToken)
     {
-        List<EventEmployee> assignments = await staffingRepository.GetByEventIdAsync(eventId,cancellationToken);
+        List<EventEmployee> assignments =
+            await staffingRepository.GetByEventIdAsync(
+                eventId,
+                cancellationToken);
 
         return assignments
             .Select(MapToResponse)
             .ToList();
     }
 
-    public async Task<bool> UpdateAsync(int eventId,int employeeId,UpdateStaffDto request,CancellationToken cancellationToken)
+    public async Task<List<StaffDto>> GetTasksByEmployeeIdAsync(
+        int employeeId,
+        CancellationToken cancellationToken)
     {
-        EventEmployee? assignment = await staffingRepository.GetAsync(eventId,employeeId,cancellationToken);
+        List<EventEmployee> assignments =
+            await staffingRepository.GetByEmployeeIdAsync(
+                employeeId,
+                cancellationToken);
+
+        return assignments
+            .Select(MapToResponse)
+            .ToList();
+    }
+
+    public async Task<List<StaffDto>> GetTasksByEmployeeEmailAsync(
+        string email,
+        CancellationToken cancellationToken)
+    {
+        List<EventEmployee> assignments =
+            await staffingRepository.GetByEmployeeEmailAsync(
+                email,
+                cancellationToken);
+
+        return assignments
+            .Select(MapToResponse)
+            .ToList();
+    }
+
+    public async Task<bool> UpdateAsync(
+        int eventId,
+        int employeeId,
+        UpdateStaffDto request,
+        CancellationToken cancellationToken)
+    {
+        EventEmployee? assignment =
+            await staffingRepository.GetAsync(
+                eventId,
+                employeeId,
+                cancellationToken);
 
         if (assignment is null)
         {
@@ -55,34 +113,61 @@ public class StaffService(
         assignment.Deadline = request.Deadline;
         assignment.Status = request.Status;
 
-        await staffingRepository.UpdateAsync(assignment,cancellationToken);
+        await staffingRepository.UpdateAsync(
+            assignment,
+            cancellationToken);
 
         return true;
     }
 
-    public async Task<bool> RemoveAsync(int eventId,int employeeId,CancellationToken cancellationToken)
+    public async Task<bool> RemoveAsync(
+        int eventId,
+        int employeeId,
+        CancellationToken cancellationToken)
     {
-        EventEmployee? assignment = await staffingRepository.GetAsync(eventId,employeeId,cancellationToken);
+        EventEmployee? assignment =
+            await staffingRepository.GetAsync(
+                eventId,
+                employeeId,
+                cancellationToken);
 
         if (assignment is null)
         {
             return false;
         }
 
-        await staffingRepository.DeleteAsync(assignment,cancellationToken);
+        await staffingRepository.DeleteAsync(
+            assignment,
+            cancellationToken);
 
         return true;
     }
 
-    private static StaffDto MapToResponse(EventEmployee assignment)
+    private static StaffDto MapToResponse(
+        EventEmployee assignment)
     {
         return new StaffDto
         {
+            EventId = assignment.EventId,
+
+            EventName =
+                assignment.EventNavigation?.EventName
+                ?? string.Empty,
+
             EmployeeId = assignment.EmployeeId,
-            Name = assignment.EmployeeNavigation?.Name ?? string.Empty,
-            JobTitle = assignment.EmployeeNavigation?.JobTitle ?? string.Empty,
+
+            Name =
+                assignment.EmployeeNavigation?.Name
+                ?? string.Empty,
+
+            JobTitle =
+                assignment.EmployeeNavigation?.JobTitle
+                ?? string.Empty,
+
             Task = assignment.Task,
+
             Deadline = assignment.Deadline,
+
             Status = assignment.Status.ToString()
         };
     }

@@ -39,6 +39,29 @@ public class AttendeeService(IAttendeeRepository attendeeRepository) : IAttendee
 
         return MapToResponse(createdAttendee);
     }
+    public async Task<AttendeeResponseDto?> GetMeAsync(
+    string email,
+    CancellationToken cancellationToken)
+{
+    Attendee? attendee =
+        await attendeeRepository.GetByEmailAsync(
+            email,
+            cancellationToken);
+
+    if (attendee is null)
+    {
+        return null;
+    }
+
+    return new AttendeeResponseDto
+    {
+        AttendeeId = attendee.AttendeeId,
+        Name = attendee.Name,
+        Email = attendee.Email,
+        Phone = attendee.Phone,
+        Ticket = attendee.Ticket
+    };
+}
 
     public async Task<bool> UpdateAsync(int attendeeId,UpdateAttendeeDto request,CancellationToken cancellationToken)
     {

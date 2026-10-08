@@ -37,6 +37,16 @@ public class RegistrationRepository(AppDbContext dbContext) : IRegistrationRepos
         return registration;
     }
 
+    public async Task<List<EventAttendee>> GetByAttendeeIdAsync(
+    int attendeeId,
+    CancellationToken cancellationToken)
+{
+    return await dbContext.EventAttendees
+        .Include(registration => registration.EventNavigation)
+        .Where(registration => registration.AttendeeId == attendeeId)
+        .ToListAsync(cancellationToken);
+}
+
     public async Task DeleteAsync(EventAttendee registration,CancellationToken cancellationToken)
     {
         dbContext.EventAttendees.Remove(registration);
