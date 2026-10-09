@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { MsalProvider } from '@azure/msal-react'
 
 import './index.css'
+import '@syncfusion/ej2-tailwind3-theme/styles/schedule/index.css'
 import App from './App'
 import { msalInstance } from './auth/msalInstance'
 

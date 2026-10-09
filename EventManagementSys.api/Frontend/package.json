@@ -13,6 +13,7 @@
     "@azure/msal-browser": "^5.23.0",
     "@azure/msal-react": "^5.7.1",
     "@syncfusion/ej2-react-schedule": "^35.1.37",
+    "@syncfusion/ej2-tailwind3-theme": "^35.1.39",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4"
