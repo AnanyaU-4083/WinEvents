@@ -112,6 +112,12 @@ function App() {
             element={<Events />}
           />
 
+          {/* Open a specific event for viewing/editing */}
+          <Route
+            path="/events/:eventId"
+            element={<Events />}
+          />
+
 
           {/* Participants
               Admin + Employee only

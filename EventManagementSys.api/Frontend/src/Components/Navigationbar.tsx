@@ -1,6 +1,9 @@
 import { useMsal } from '@azure/msal-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
+import ProfileMenu from './ProfileMenu'
+import EventNotifications from './EventNotifications'
+
 function Navigationbar() {
   const { instance, accounts } = useMsal()
   const navigate = useNavigate()
@@ -128,29 +131,15 @@ function Navigationbar() {
               Administration
             </NavLink>
           )}
+          
 
         </div>
       </div>
 
-      {/* RIGHT SIDE */}
-      <div className="flex items-center gap-5">
-
-        {/* USER NAME */}
-        <span className="text-sm font-medium text-gray-700">
-          {account?.name ||
-            account?.username ||
-            'User'}
-        </span>
-
-        {/* LOGOUT */}
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-orange-600"
-        >
-          Logout
-        </button>
-
+      {/* RIGHT SIDE: NOTIFICATIONS AND PROFILE */}
+      <div className="flex shrink-0 items-center gap-3">
+        <EventNotifications />
+        <ProfileMenu />
       </div>
 
     </nav>

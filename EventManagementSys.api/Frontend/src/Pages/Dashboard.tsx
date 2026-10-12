@@ -1,1701 +1,1146 @@
-import { useEffect, useMemo, useState } from 'react'
+
+import { useEffect, useState, useCallback } from 'react'
 import { useMsal } from '@azure/msal-react'
-import type { ChangeEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import {
+  ScheduleComponent,
+  ViewsDirective,
+  ViewDirective,
+  Inject,
+  Month,
+  Week,
+  WorkWeek,
+  Day,
+  Agenda,
+} from '@syncfusion/ej2-react-schedule'
 
-
-/* =========================================================
-   EVENT TYPES
-   ========================================================= */
-
-type EventStatus =
-  | 'Scheduled'
-  | 'Cancelled'
-  | 'Completed'
+type EventStatus = 'Scheduled' | 'Cancelled' | 'Completed'
 
 interface EventDto {
   eventId: number
   eventName: string
   startDate: string
   endDate: string
+  budget?: number | null
+  eventType: number
   status: EventStatus | number
+  venueId?: number | null
+  orgId?: number | null
 }
 
+interface VenueOption {
+  venueId: number
+  venueName: string
+}
 
-/* =========================================================
-   DASHBOARD
-   ========================================================= */
+interface OrganizationOption {
+  orgId: number
+  orgName: string
+}
+
+interface EventFormData {
+  eventName: string
+  eventType: string
+  startDate: string
+  endDate: string
+  venueId: string
+  orgId: string
+  budget: string
+}
+
+const emptyForm: EventFormData = {
+  eventName: '',
+  eventType: '0',
+  startDate: '',
+  endDate: '',
+  venueId: '',
+  orgId: '',
+  budget: '',
+}
+
+function toDateTimeLocal(value: string | Date): string {
+  const date = new Date(value)
+  const offset = date.getTimezoneOffset() * 60000
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16)
+}
+
+function getObjectId(
+  obj: Record<string, unknown>,
+  ...keys: string[]
+): number {
+  for (const key of keys) {
+    const value = obj[key]
+
+    if (typeof value === 'number' && Number.isInteger(value)) {
+      return value
+    }
+
+    if (
+      typeof value === 'string' &&
+      value.trim() !== '' &&
+      Number.isInteger(Number(value))
+    ) {
+      return Number(value)
+    }
+  }
+
+  return 0
+}
+
+function getObjectString(
+  obj: Record<string, unknown>,
+  ...keys: string[]
+): string {
+  for (const key of keys) {
+    const value = obj[key]
+
+    if (typeof value === 'string' && value.trim() !== '') {
+      return value
+    }
+  }
+
+  return ''
+}
 
 function Dashboard() {
-
   const { instance, accounts } = useMsal()
+  const account = instance.getActiveAccount() ?? accounts[0]
+  const accountId = account?.homeAccountId
 
-  const navigate = useNavigate()
-
-  const account =
-    instance.getActiveAccount() ?? accounts[0]
-
-  /*
-     Use the stable Microsoft account ID for the
-     useEffect dependency instead of the whole
-     account object.
-  */
-  const accountId =
-    account?.homeAccountId
-
-  console.log('MSAL account:', account)
-  console.log('ID token claims:', account?.idTokenClaims)
-
-
-  /* =======================================================
-     USER ROLES
-     ======================================================= */
-
-  const roles =
-    (account?.idTokenClaims?.roles as string[]) ?? []
-
-  const isAdmin =
-    roles.includes('Admin')
-
-  const isEmployee =
-    roles.includes('Employee')
-
-  const isAttendee =
-    roles.includes('Attendee')
-
-
-  /* =======================================================
-     API SCOPE
-     ======================================================= */
+  const roles = (account?.idTokenClaims?.roles as string[]) ?? []
+  const canManageEvents =
+    roles.includes('Admin') || roles.includes('Employee')
+  const isAttendee = roles.includes('Attendee')
 
   const API_SCOPE =
     'api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'
 
+  const [events, setEvents] = useState<EventDto[]>([])
+  const [venues, setVenues] = useState<VenueOption[]>([])
+  const [organizations, setOrganizations] = useState<OrganizationOption[]>([])
 
-  const [events, setEvents] =
-    useState<EventDto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
 
-  const [loading, setLoading] =
-    useState(true)
+  const [showEventForm, setShowEventForm] = useState(false)
+  const [editingEventId, setEditingEventId] = useState<number | null>(null)
+  const [formData, setFormData] = useState<EventFormData>(emptyForm)
+  const [savingEvent, setSavingEvent] = useState(false)
 
-  const [error, setError] =
-    useState('')
+  const currentMonth = currentDate.getMonth()
+  const currentYear = currentDate.getFullYear()
 
-  const [currentDate, setCurrentDate] =
-    useState(new Date())
+  const getAccessToken = useCallback(async () => {
+    const activeAccount = instance.getActiveAccount() ?? account
 
-  const [hoveredEventId, setHoveredEventId] =
-    useState<number | null>(null)
+    if (!activeAccount) {
+      throw new Error('Please sign in before performing this action.')
+    }
 
-  const [selectedDate, setSelectedDate] =
-    useState<Date | null>(null)
+    const result = await instance.acquireTokenSilent({
+      scopes: [API_SCOPE],
+      account: activeAccount,
+    })
 
+    return result.accessToken
+  }, [accountId, instance])
 
-  /* =======================================================
-     MONTHS
-     ======================================================= */
+  const loadEvents = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError('')
 
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ]
+      let response: Response
 
+      if (isAttendee) {
+        const token = await getAccessToken()
 
-  const currentMonth =
-    currentDate.getMonth()
+        response = await fetch('/api/events/my-registrations', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+      } else {
+        response = await fetch('/api/events')
+      }
 
-  const currentYear =
-    currentDate.getFullYear()
+      if (!response.ok) {
+        throw new Error(`Failed to load events (${response.status}).`)
+      }
 
-
-  /* =======================================================
-     LOAD EVENTS
-
-     Admin / Employee:
-       GET /api/events
-
-     Attendee:
-       GET /api/events/my-registrations
-
-     This means an Attendee only sees events
-     that they have registered for.
-     ======================================================= */
+      const data: EventDto[] = await response.json()
+      setEvents(data)
+    } catch (err) {
+      console.error('Error loading events:', err)
+      setError(err instanceof Error ? err.message : 'Unable to load events.')
+    } finally {
+      setLoading(false)
+    }
+  }, [getAccessToken, isAttendee])
 
   useEffect(() => {
+    void loadEvents()
+  }, [loadEvents])
 
-    const getEvents = async () => {
+  // Load venue and organization records through their API endpoints.
+  useEffect(() => {
+    let active = true
 
+    const loadDropdowns = async () => {
       try {
+        const [venueResponse, organizationResponse] = await Promise.all([
+          fetch('/api/venues'),
+          fetch('/api/organizations'),
+        ])
 
-        setLoading(true)
+        if (!venueResponse.ok) {
+          throw new Error(`Failed to load venues (${venueResponse.status}).`)
+        }
 
-        setError('')
+        if (!organizationResponse.ok) {
+          throw new Error(
+            `Failed to load organizations (${organizationResponse.status}).`,
+          )
+        }
 
+        const venueJson: unknown = await venueResponse.json()
+        const organizationJson: unknown = await organizationResponse.json()
 
-        let response: Response
+        if (!Array.isArray(venueJson)) {
+          throw new Error('The venues API did not return a list.')
+        }
 
+        if (!Array.isArray(organizationJson)) {
+          throw new Error('The organizations API did not return a list.')
+        }
 
-        /* =================================================
-           ATTENDEE
-           ================================================= */
+        const venueData: VenueOption[] = venueJson
+          .map((item: unknown) => {
+            const obj = item as Record<string, unknown>
 
-        if (isAttendee) {
+            return {
+              venueId: getObjectId(
+                obj,
+                'venueId',
+                'VenueId',
+                'id',
+                'Id',
+              ),
+              venueName: getObjectString(
+                obj,
+                'venueName',
+                'VenueName',
+                'name',
+                'Name',
+              ),
+            }
+          })
+          .filter(venue => venue.venueId > 0 && venue.venueName !== '')
 
-          if (!account) {
+        const organizationData: OrganizationOption[] = organizationJson
+          .map((item: unknown) => {
+            const obj = item as Record<string, unknown>
 
-            throw new Error(
-              'Microsoft account not available.'
+            return {
+              orgId: getObjectId(
+                obj,
+                'orgId',
+                'OrgId',
+                'organizationId',
+                'OrganizationId',
+                'id',
+                'Id',
+              ),
+              orgName: getObjectString(
+                obj,
+                'orgName',
+                'OrgName',
+                'organizationName',
+                'OrganizationName',
+                'name',
+                'Name',
+              ),
+            }
+          })
+          .filter(
+            organization =>
+              organization.orgId > 0 && organization.orgName !== '',
+          )
+
+        console.log('Venue options received:', venueData)
+        console.log('Organization options received:', organizationData)
+
+        if (active) {
+          setVenues(venueData)
+          setOrganizations(organizationData)
+
+          if (venueData.length === 0) {
+            console.warn(
+              'No venue options were mapped. Check the VenueResponseDto property names and API response.',
             )
-
           }
 
-
-          const tokenResponse =
-            await instance.acquireTokenSilent({
-              scopes: [API_SCOPE],
-              account: account,
-            })
-
-
-          response =
-            await fetch(
-              '/api/events/my-registrations',
-              {
-                headers: {
-                  Authorization:
-                    `Bearer ${tokenResponse.accessToken}`,
-                },
-              }
+          if (organizationData.length === 0) {
+            console.warn(
+              'No organization options were mapped. Check the OrganizationResponseDto property names and API response.',
             )
-
+          }
         }
+      } catch (err) {
+        console.error('Failed to load dropdowns:', err)
 
-        /* =================================================
-           ADMIN / EMPLOYEE
-           ================================================= */
-
-        else {
-
-          response =
-            await fetch(
-              '/api/events'
-            )
-
-        }
-
-
-        if (!response.ok) {
-
-          throw new Error(
-            'Failed to load events.'
+        if (active) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Unable to load venues and organizations.',
           )
-
         }
-
-
-        const data: EventDto[] =
-          await response.json()
-
-
-        setEvents(data)
-
-      } catch (error) {
-
-        console.error(
-          'Error loading events:',
-          error
-        )
-
-        setError(
-          'Unable to load events.'
-        )
-
-      } finally {
-
-        setLoading(false)
-
       }
-
     }
 
+    void loadDropdowns()
 
-    getEvents()
+    return () => {
+      active = false
+    }
+  }, [])
 
-  }, [
-    accountId,
-    instance,
-    isAttendee,
-  ])
+  useEffect(() => {
+    const refresh = () => void loadEvents()
 
+    const visibility = () => {
+      if (document.visibilityState === 'visible') {
+        refresh()
+      }
+    }
 
-  /* =======================================================
-     EVENT STATUS
-     ======================================================= */
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', visibility)
+
+    return () => {
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', visibility)
+    }
+  }, [loadEvents])
 
   const getEventStatus = (
-    status: EventStatus | number
+    status: EventStatus | number,
   ): EventStatus => {
-
     if (typeof status === 'number') {
-
-      switch (status) {
-
-        case 0:
-          return 'Scheduled'
-
-        case 1:
-          return 'Cancelled'
-
-        case 2:
-          return 'Completed'
-
-        default:
-          return 'Scheduled'
-
-      }
-
+      if (status === 1) return 'Cancelled'
+      if (status === 2) return 'Completed'
+      return 'Scheduled'
     }
-
 
     return status
-
   }
 
+  const schedulerEvents = events
+    .filter(event => getEventStatus(event.status) !== 'Cancelled')
+    .map(event => ({
+      Id: event.eventId,
+      Subject: event.eventName,
+      StartTime: new Date(event.startDate),
+      EndTime: new Date(event.endDate),
+    }))
 
-  /* =======================================================
-     GO TO EVENT DETAILS
-     ======================================================= */
-
-  const goToEventDetails = (
-    eventId: number
-  ) => {
-
-    navigate(
-      `/events/${eventId}`
-    )
-
-  }
-
-
-  /* =======================================================
-     SELECT CALENDAR DATE
-
-     Clicking the date only selects it.
-     It does NOT navigate.
-     ======================================================= */
-
-  const selectCalendarDate = (
-    date: Date
-  ) => {
-
-    setSelectedDate(date)
-
-  }
-
-
-  /* =======================================================
-     ADD EVENT FROM HEADER
-
-     Opens the normal Events page.
-     ======================================================= */
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
 
   const openCreateEvent = () => {
+    if (!canManageEvents) return
 
-    navigate(
-      '/events'
-    )
+    const start = selectedDate ? new Date(selectedDate) : new Date()
+    start.setHours(9, 0, 0, 0)
 
+    const end = new Date(start)
+    end.setHours(end.getHours() + 1)
+
+    setEditingEventId(null)
+    setFormData({
+      ...emptyForm,
+      startDate: toDateTimeLocal(start),
+      endDate: toDateTimeLocal(end),
+    })
+    setError('')
+    setShowEventForm(true)
   }
 
+  const openEditEvent = (eventId: number) => {
+    if (!canManageEvents) return
 
-  /* =======================================================
-     ADD EVENT FOR SELECTED DATE
+    const event = events.find(item => item.eventId === eventId)
 
-     Clicking the + on a selected calendar
-     day sends the selected date to the
-     Events page.
-     ======================================================= */
+    if (!event) {
+      setError('Event not found. Please refresh and try again.')
+      return
+    }
 
-  const addEventForSelectedDate = (
-    date: Date
+    if (getEventStatus(event.status) === 'Cancelled') {
+      setError('Cancelled events cannot be edited.')
+      return
+    }
+
+    setEditingEventId(eventId)
+    setFormData({
+      eventName: event.eventName,
+      eventType: String(event.eventType ?? 0),
+      startDate: toDateTimeLocal(event.startDate),
+      endDate: toDateTimeLocal(event.endDate),
+      venueId: event.venueId == null ? '' : String(event.venueId),
+      orgId: event.orgId == null ? '' : String(event.orgId),
+      budget: event.budget == null ? '' : String(event.budget),
+    })
+
+    setError('')
+    setShowEventForm(true)
+  }
+
+  const closeEventForm = () => {
+    if (savingEvent) return
+
+    setShowEventForm(false)
+    setEditingEventId(null)
+    setFormData(emptyForm)
+  }
+
+  const saveCalendarEvent = async (
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
+    e.preventDefault()
 
-    const year =
-      date.getFullYear()
+    if (!canManageEvents) {
+      setError('You do not have permission to manage events.')
+      return
+    }
 
-    const month =
-      String(
-        date.getMonth() + 1
-      ).padStart(2, '0')
+    const startDate = new Date(formData.startDate)
+    const endDate = new Date(formData.endDate)
+    const venueId = Number(formData.venueId)
+    const orgId = formData.orgId ? Number(formData.orgId) : null
+    const budget = formData.budget ? Number(formData.budget) : null
+    const eventType = Number(formData.eventType)
 
-    const day =
-      String(
-        date.getDate()
-      ).padStart(2, '0')
+    if (!formData.eventName.trim() || !formData.venueId) {
+      setError('Event name and venue are required.')
+      return
+    }
 
+    if (
+      Number.isNaN(startDate.getTime()) ||
+      Number.isNaN(endDate.getTime()) ||
+      endDate <= startDate
+    ) {
+      setError('Enter valid dates. The end must be after the start.')
+      return
+    }
 
-    const selectedDate =
-      `${year}-${month}-${day}`
+    if (!Number.isInteger(venueId) || venueId <= 0) {
+      setError('Please select a valid venue.')
+      return
+    }
 
+    if (
+      orgId !== null &&
+      (!Number.isInteger(orgId) || orgId <= 0)
+    ) {
+      setError('Please select a valid organization.')
+      return
+    }
 
-    navigate(
-      `/events?date=${selectedDate}`
-    )
+    if (
+      budget !== null &&
+      (!Number.isFinite(budget) || budget < 0)
+    ) {
+      setError('Budget must be zero or greater.')
+      return
+    }
 
-  }
+    if (!Number.isInteger(eventType) || eventType < 0 || eventType > 5) {
+      setError('Please select a valid event type.')
+      return
+    }
 
+    try {
+      setSavingEvent(true)
+      setError('')
 
-  /* =======================================================
-     PREVIOUS MONTH
-     ======================================================= */
+      const token = await getAccessToken()
+      const isEditing = editingEventId !== null
 
-  const goToPreviousMonth = () => {
+      const payload = {
+        eventName: formData.eventName.trim(),
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        venueId,
+        budget,
+        eventType,
+        orgId,
+      }
 
-    setCurrentDate(
-      new Date(
-        currentYear,
-        currentMonth - 1,
-        1
+      const response = await fetch(
+        isEditing ? `/api/events/${editingEventId}` : '/api/events',
+        {
+          method: isEditing ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        },
       )
-    )
 
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(
+          message ||
+            `Unable to ${isEditing ? 'update' : 'create'} event (${response.status}).`,
+        )
+      }
+
+      setShowEventForm(false)
+      setEditingEventId(null)
+      setFormData(emptyForm)
+
+      await loadEvents()
+    } catch (err) {
+      console.error('Save event failed:', err)
+      setError(err instanceof Error ? err.message : 'Failed to save event.')
+    } finally {
+      setSavingEvent(false)
+    }
   }
 
+  const cancelCalendarEvent = async (eventId: number) => {
+    if (!canManageEvents) {
+      setError('You do not have permission to cancel events.')
+      return
+    }
 
-  /* =======================================================
-     NEXT MONTH
-     ======================================================= */
+    const event = events.find(item => item.eventId === eventId)
 
-  const goToNextMonth = () => {
+    if (!event) {
+      setError('Event not found. Refresh the calendar and try again.')
+      return
+    }
 
-    setCurrentDate(
-      new Date(
-        currentYear,
-        currentMonth + 1,
-        1
+    if (getEventStatus(event.status) === 'Cancelled') {
+      setError('This event is already cancelled.')
+      return
+    }
+
+    if (
+      !window.confirm(
+        `Cancel "${event.eventName}"? The event will remain in the database.`,
       )
-    )
+    ) {
+      return
+    }
 
+    try {
+      setError('')
+
+      const token = await getAccessToken()
+
+      const response = await fetch(`/api/events/${eventId}/cancel`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        const message = await response.text()
+
+        throw new Error(
+          message || `Unable to cancel event (${response.status}).`,
+        )
+      }
+
+      setShowEventForm(false)
+      setEditingEventId(null)
+      setFormData(emptyForm)
+
+      await loadEvents()
+    } catch (err) {
+      console.error('Cancel event failed:', err)
+      setError(err instanceof Error ? err.message : 'Failed to cancel event.')
+    }
   }
 
+  // Use explicit popup actions rather than Syncfusion's delete behavior.
+  const handlePopupOpen = (args: any) => {
+    if (args.type !== 'QuickInfo' || !args.data || !canManageEvents) return
 
-  /* =======================================================
-     TODAY
-     ======================================================= */
-
-  const goToToday = () => {
-
-    setCurrentDate(
-      new Date()
+    const eventId = Number(
+      args.data.Id ?? args.data.EventId ?? args.data.eventId,
     )
 
-  }
+    if (!Number.isInteger(eventId) || eventId <= 0) return
 
-
-  /* =======================================================
-     MONTH DROPDOWN
-     ======================================================= */
-
-  const handleMonthChange = (
-    event: ChangeEvent<HTMLSelectElement>
-  ) => {
-
-    setCurrentDate(
-      new Date(
-        currentYear,
-        Number(event.target.value),
-        1
+    window.setTimeout(() => {
+      const popup = document.querySelector<HTMLElement>(
+        '.e-quick-popup-wrapper',
       )
-    )
 
-  }
+      if (!popup) return
 
-
-  /* =======================================================
-     YEAR DROPDOWN
-     ======================================================= */
-
-  const handleYearChange = (
-    event: ChangeEvent<HTMLSelectElement>
-  ) => {
-
-    setCurrentDate(
-      new Date(
-        Number(event.target.value),
-        currentMonth,
-        1
+      const editButton = popup.querySelector<HTMLElement>(
+        '.e-event-edit, .e-edit',
       )
-    )
 
+      if (editButton) {
+        editButton.onclick = e => {
+          e.preventDefault()
+          e.stopPropagation()
+          openEditEvent(eventId)
+        }
+      }
+
+      const deleteButton = popup.querySelector<HTMLElement>(
+        '.e-event-delete, .e-delete',
+      )
+
+      if (deleteButton) {
+        deleteButton.style.display = 'none'
+      }
+
+      if (popup.querySelector('[data-custom-cancel-event="true"]')) {
+        return
+      }
+
+      const cancelButton = document.createElement('button')
+      cancelButton.type = 'button'
+      cancelButton.textContent = 'Cancel Event'
+      cancelButton.setAttribute('data-custom-cancel-event', 'true')
+      cancelButton.className = 'e-btn e-flat e-primary'
+      cancelButton.style.margin = '8px'
+      cancelButton.style.color = '#dc2626'
+
+      cancelButton.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        void cancelCalendarEvent(eventId)
+      })
+
+      const footer = popup.querySelector<HTMLElement>('.e-footer-content')
+      ;(footer ?? popup).appendChild(cancelButton)
+    }, 0)
   }
 
+  const monthEvents = events.filter(event => {
+    if (getEventStatus(event.status) === 'Cancelled') return false
 
-  /* =======================================================
-     YEARS
-     ======================================================= */
+    const date = new Date(event.startDate)
 
-  const years = Array.from(
-    {
-      length: 11,
-    },
-    (_, index) =>
-      currentYear - 5 + index
+    return (
+      date.getMonth() === currentMonth &&
+      date.getFullYear() === currentYear
+    )
+  })
+
+  const scheduledEvents = events.filter(
+    event => getEventStatus(event.status) === 'Scheduled',
   )
 
+  const cancelledEvents = events.filter(
+    event => getEventStatus(event.status) === 'Cancelled',
+  )
 
-  /* =======================================================
-     DAYS IN CURRENT MONTH
-     ======================================================= */
+  const upcomingEvents = events
+    .filter(
+      event =>
+        getEventStatus(event.status) === 'Scheduled' &&
+        new Date(event.startDate) >= new Date(),
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+    )
+    .slice(0, 5)
 
-  const daysInMonth =
-    new Date(
-      currentYear,
-      currentMonth + 1,
-      0
-    ).getDate()
+  const applySelectedDateStyle = useCallback(() => {
+    const cells = document.querySelectorAll<HTMLElement>(
+      '.dashboard-calendar .e-work-cells',
+    )
 
+    cells.forEach(cell => {
+      cell.style.outline = ''
+      cell.style.outlineOffset = ''
+      cell.style.boxShadow = ''
+      cell.style.backgroundColor = ''
 
-  /* =======================================================
-     FIRST DAY OF MONTH
+      const dateValue = cell.getAttribute('data-date')
 
-     Monday = 0
-     Tuesday = 1
-     ...
-     Sunday = 6
-     ======================================================= */
+      if (!selectedDate || !dateValue) return
 
-  const firstDayOfMonth =
-    (
-      new Date(
-        currentYear,
-        currentMonth,
-        1
-      ).getDay() + 6
-    ) % 7
-
-
-  /* =======================================================
-     DAYS IN PREVIOUS MONTH
-     ======================================================= */
-
-  const daysInPreviousMonth =
-    new Date(
-      currentYear,
-      currentMonth,
-      0
-    ).getDate()
-
-
-  /* =======================================================
-     BUILD CALENDAR
-     ======================================================= */
-
-  const calendarDays = useMemo(() => {
-
-    const days: {
-      day: number
-      currentMonth: boolean
-      date: Date
-    }[] = []
-
-
-    /* Previous month */
-
-    for (
-      let i = firstDayOfMonth - 1;
-      i >= 0;
-      i--
-    ) {
-
-      const day =
-        daysInPreviousMonth - i
-
-
-      days.push({
-        day,
-        currentMonth: false,
-        date: new Date(
-          currentYear,
-          currentMonth - 1,
-          day
-        ),
-      })
-
-    }
-
-
-    /* Current month */
-
-    for (
-      let day = 1;
-      day <= daysInMonth;
-      day++
-    ) {
-
-      days.push({
-        day,
-        currentMonth: true,
-        date: new Date(
-          currentYear,
-          currentMonth,
-          day
-        ),
-      })
-
-    }
-
-
-    /* Next month */
-
-    let nextMonthDay = 1
-
-
-    while (
-      days.length % 7 !== 0
-    ) {
-
-      days.push({
-        day: nextMonthDay,
-        currentMonth: false,
-        date: new Date(
-          currentYear,
-          currentMonth + 1,
-          nextMonthDay
-        ),
-      })
-
-      nextMonthDay++
-
-    }
-
-
-    return days
-
-  }, [
-    currentMonth,
-    currentYear,
-    daysInMonth,
-    firstDayOfMonth,
-    daysInPreviousMonth,
-  ])
-
-
-  /* =======================================================
-     EVENTS FOR DATE
-
-     CANCELLED EVENTS ARE NOT SHOWN ON THE CALENDAR.
-     ======================================================= */
-
-  const getEventsForDate = (
-    date: Date
-  ) => {
-
-    return events.filter(
-      (event) => {
-
-        const status =
-          getEventStatus(
-            event.status
-          )
-
-
-        /*
-           Cancelled events should never appear
-           inside the calendar.
-        */
-        if (status === 'Cancelled') {
-          return false
-        }
-
-
-        const eventDate =
-          new Date(
-            event.startDate
-          )
-
-
-        return (
-          eventDate.getFullYear() ===
-            date.getFullYear() &&
-
-          eventDate.getMonth() ===
-            date.getMonth() &&
-
-          eventDate.getDate() ===
-            date.getDate()
-        )
-
+      if (isSameDay(new Date(Number(dateValue)), selectedDate)) {
+        cell.style.outline = '2px solid #8b5cf6'
+        cell.style.outlineOffset = '-2px'
+        cell.style.backgroundColor = '#f5f3ff'
       }
-    )
+    })
+  }, [selectedDate])
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(applySelectedDateStyle, 50)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [applySelectedDateStyle, currentDate, loading])
+
+  const handleCellClick = (args: { startTime: Date }) => {
+    setSelectedDate(args.startTime)
   }
 
-
-  /* =======================================================
-     CURRENT MONTH EVENTS
-
-     Cancelled events are excluded from the
-     calendar's monthly event count.
-     ======================================================= */
-
-  const monthEvents =
-    events.filter(
-      (event) => {
-
-        const status =
-          getEventStatus(
-            event.status
-          )
-
-
-        /*
-           Cancelled events should not contribute
-           to the calendar month count.
-        */
-        if (status === 'Cancelled') {
-          return false
-        }
-
-
-        const date =
-          new Date(
-            event.startDate
-          )
-
-
-        return (
-          date.getMonth() ===
-            currentMonth &&
-
-          date.getFullYear() ===
-            currentYear
-        )
-
-      }
-    )
-
-
-  /* =======================================================
-     SCHEDULED EVENTS
-     ======================================================= */
-
-  const scheduledEvents =
-    events.filter(
-      (event) =>
-        getEventStatus(
-          event.status
-        ) === 'Scheduled'
-    )
-
-
-  /* =======================================================
-     CANCELLED EVENTS
-
-     Cancelled events are still counted in the
-     dashboard statistics.
-     ======================================================= */
-
-  const cancelledEvents =
-    events.filter(
-      (event) =>
-        getEventStatus(
-          event.status
-        ) === 'Cancelled'
-    )
-
-
-  /* =======================================================
-     UPCOMING EVENTS
-
-     Cancelled events are excluded.
-     ======================================================= */
-
-  const upcomingEvents =
-    events
-      .filter(
-        (event) => {
-
-          const status =
-            getEventStatus(
-              event.status
-            )
-
-
-          return (
-            status !== 'Cancelled' &&
-            new Date(
-              event.startDate
-            ) >= new Date()
-          )
-
-        }
-      )
-      .sort(
-        (a, b) =>
-          new Date(
-            a.startDate
-          ).getTime() -
-          new Date(
-            b.startDate
-          ).getTime()
-      )
-      .slice(0, 5)
-
-
-  /* =======================================================
-     FORMAT TIME
-     ======================================================= */
-
-  const formatTime = (
-    date: string
-  ) => {
-
-    return new Date(
-      date
-    ).toLocaleTimeString(
-      [],
-      {
-        hour: 'numeric',
-        minute: '2-digit',
-      }
-    )
-
+  // Prevent double-clicking empty cells from opening the default editor.
+  const handleCellDoubleClick = (args: any) => {
+    args.cancel = true
   }
 
+  // Double-clicking an existing event opens our custom edit form.
+  const handleEventDoubleClick = (args: any) => {
+    args.cancel = true
 
-  /* =======================================================
-     FORMAT DATE
-     ======================================================= */
-
-  const formatDate = (
-    date: string
-  ) => {
-
-    return new Date(
-      date
-    ).toLocaleDateString(
-      'en-US',
-      {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }
+    const eventId = Number(
+      args.event?.Id ??
+        args.event?.EventId ??
+        args.event?.eventId ??
+        args.data?.Id,
     )
 
-  }
-
-
-  /* =======================================================
-     CHECK TODAY
-     ======================================================= */
-
-  const isToday = (
-    date: Date
-  ) => {
-
-    const today =
-      new Date()
-
-
-    return (
-      date.getDate() ===
-        today.getDate() &&
-
-      date.getMonth() ===
-        today.getMonth() &&
-
-      date.getFullYear() ===
-        today.getFullYear()
-    )
-
-  }
-
-
-  /* =======================================================
-     CHECK SELECTED DATE
-     ======================================================= */
-
-  const isSelectedDate = (
-    date: Date
-  ) => {
-
-    if (!selectedDate) {
-      return false
+    if (Number.isInteger(eventId) && eventId > 0) {
+      openEditEvent(eventId)
     }
-
-
-    return (
-      date.getDate() ===
-        selectedDate.getDate() &&
-
-      date.getMonth() ===
-        selectedDate.getMonth() &&
-
-      date.getFullYear() ===
-        selectedDate.getFullYear()
-    )
-
   }
 
+  const handleRenderCell = (args: {
+    element: HTMLElement
+    date?: Date
+    type: string
+  }) => {
+    if (args.type !== 'workCells' || !selectedDate || !args.date) return
 
-  /* =======================================================
-     USER NAME
-     ======================================================= */
+    if (isSameDay(args.date, selectedDate)) {
+      args.element.style.boxShadow = 'inset 0 0 0 2px #8b5cf6'
+      args.element.style.backgroundColor = '#f5f3ff'
+    }
+  }
 
-  const userName =
-    accounts[0]?.name ||
-    accounts[0]?.username ||
-    'User'
+  const formatTime = (date: string) =>
+    new Date(date).toLocaleTimeString([], {
+      hour: 'numeric',
+      minute: '2-digit',
+    })
 
+  const formatDisplayDate = (date: string) =>
+    new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
 
-  /* =======================================================
-     RENDER
-     ======================================================= */
+  const userName = account?.name || account?.username || 'User'
 
   return (
-
-    <div className="min-h-[calc(100vh-68px)] w-full bg-[#f5f8fc] px-[46px] pt-9 pb-[60px] max-[1150px]:px-[25px] max-[1150px]:pt-[30px] max-[1150px]:pb-[50px] max-[700px]:px-[15px] max-[700px]:pt-[25px] max-[700px]:pb-10">
-
-
-      {/* =================================================
-          DASHBOARD HEADER
-          ================================================= */}
-
+    <div className="min-h-[calc(100vh-68px)] w-full bg-[#f5f8fc] px-[46px] pt-9 pb-[60px] max-[1150px]:px-[25px] max-[700px]:px-[15px]">
       <header className="mx-auto mb-[34px] w-full max-w-[1400px] text-center">
+        <p className="mb-[6px] text-[14px] font-[750] tracking-[1.8px] text-[#ff7a00]">
+          WINEVENTS
+        </p>
 
-        <div>
+        <h1 className="m-0 text-[48px] font-extrabold tracking-[-1px] text-[#111827] max-[700px]:text-[38px]">
+          Dashboard
+        </h1>
 
-          <p className="mb-[6px] text-[14px] font-[750] tracking-[1.8px] text-[#ff7a00]">
-            WINEVENTS
-          </p>
+        <p className="mt-3 text-[17px] text-[#6b7280]">
+          Welcome back! Here's what's happening with your events.
+        </p>
 
-
-          <h1 className="m-0 text-[48px] font-extrabold leading-[1.1] tracking-[-1px] text-[#111827] max-[700px]:text-[38px]">
-            Dashboard
-          </h1>
-
-
-          <p className="mt-3 text-[17px] text-[#6b7280]">
-            Welcome back! Here's what's happening
-            with your events.
-          </p>
-
-        </div>
-
-
-        <div className="mt-[14px] flex items-center justify-center">
-
-          <div>
-
-            <span>
-              Welcome,{' '}
-            </span>
-
-            <strong>
-              {userName}
-            </strong>
-
-          </div>
-
-        </div>
-
+        <p className="mt-[14px] text-[#374151]">
+          Welcome, <strong>{userName}</strong>
+        </p>
       </header>
 
-
-      {/* =================================================
-          MAIN DASHBOARD
-          ================================================= */}
-
       <main className="mx-auto w-full max-w-[1400px]">
+        <section className="mb-[30px] grid grid-cols-4 gap-5 max-[900px]:grid-cols-2 max-[700px]:grid-cols-1">
+          {[
+            { label: 'Total Events', value: events.length, color: '#0066ff' },
+            {
+              label: 'Scheduled',
+              value: scheduledEvents.length,
+              color: '#ff7a00',
+            },
+            {
+              label: 'Cancelled',
+              value: cancelledEvents.length,
+              color: '#dc2626',
+            },
+            {
+              label: 'Upcoming',
+              value: upcomingEvents.length,
+              color: '#15803d',
+            },
+          ].map(card => (
+            <div
+              key={card.label}
+              className="rounded-xl border border-[#dfe5ec] border-t-4 bg-white p-[22px] shadow-sm"
+              style={{ borderTopColor: card.color }}
+            >
+              <span className="text-[14px] font-medium text-[#6b7280]">
+                {card.label}
+              </span>
 
-
-        {/* =================================================
-            STATISTICS
-            ================================================= */}
-
-        <section className="mb-[30px] grid w-full grid-cols-4 gap-5 max-[900px]:grid-cols-2 max-[700px]:grid-cols-1">
-
-
-          <div className="rounded-xl border border-[#dfe5ec] bg-white p-[22px] shadow-[0_2px_8px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] border-t-4 border-t-[#0066ff]">
-
-            <span className="block text-[14px] font-medium text-[#6b7280]">
-              Total Events
-            </span>
-
-            <strong className="mt-2 block text-[30px] font-[750] text-[#111827]">
-              {events.length}
-            </strong>
-
-          </div>
-
-
-          <div className="rounded-xl border border-[#dfe5ec] bg-white p-[22px] shadow-[0_2px_8px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] border-t-4 border-t-[#ff7a00]">
-
-            <span className="block text-[14px] font-medium text-[#6b7280]">
-              Scheduled
-            </span>
-
-            <strong className="mt-2 block text-[30px] font-[750] text-[#111827]">
-              {scheduledEvents.length}
-            </strong>
-
-          </div>
-
-
-          <div className="rounded-xl border border-[#dfe5ec] bg-white p-[22px] shadow-[0_2px_8px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] border-t-4 border-t-[#dc2626]">
-
-            <span className="block text-[14px] font-medium text-[#6b7280]">
-              Cancelled
-            </span>
-
-            <strong className="mt-2 block text-[30px] font-[750] text-[#111827]">
-              {cancelledEvents.length}
-            </strong>
-
-          </div>
-
-
-          <div className="rounded-xl border border-[#dfe5ec] bg-white p-[22px] shadow-[0_2px_8px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(15,23,42,0.08)] border-t-4 border-t-[#15803d]">
-
-            <span className="block text-[14px] font-medium text-[#6b7280]">
-              Upcoming
-            </span>
-
-            <strong className="mt-2 block text-[30px] font-[750] text-[#111827]">
-              {upcomingEvents.length}
-            </strong>
-
-          </div>
-
+              <strong className="mt-2 block text-[30px] font-[750] text-[#111827]">
+                {card.value}
+              </strong>
+            </div>
+          ))}
         </section>
 
-
-        {/* =================================================
-            ERROR
-            ================================================= */}
-
         {error && (
+          <div className="mb-5 flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{error}</span>
 
-          <div className="mb-[22px] w-full rounded-[9px] border border-[#fecaca] bg-[#fef2f2] px-[18px] py-[14px] text-[14px] text-[#b91c1c]">
-
-            {error}
-
+            <button
+              type="button"
+              onClick={() => setError('')}
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
           </div>
-
         )}
 
-
-        {/* =================================================
-            CALENDAR + UPCOMING
-            ================================================= */}
-
-        <section className="grid w-full grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)] items-start gap-6 max-[1150px]:grid-cols-1">
-
-
-          {/* =================================================
-              CALENDAR
-              ================================================= */}
-
-          <div className="w-full rounded-[14px] border border-[#dfe5ec] bg-white p-6 shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
-
-
-            {/* Calendar header */}
-
-            <div className="mb-5 flex items-center justify-between max-[700px]:flex-col max-[700px]:items-start max-[700px]:gap-[15px]">
-
+        <section className="grid grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)] items-start gap-6 max-[1150px]:grid-cols-1">
+          <div className="w-full rounded-[14px] border border-[#dfe5ec] bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center justify-between gap-4 max-[700px]:flex-col max-[700px]:items-start">
               <div>
+                <h2 className="m-0 text-xl font-bold text-[#111827]">
+                  Event Calendar
+                </h2>
 
-                <div className="mb-[6px] flex items-center gap-2">
-
-                  <select
-                    className="min-w-[110px] cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-[11px] py-2 text-[14px] font-semibold text-[#111827] outline-none focus:border-[#0066ff] focus:ring-4 focus:ring-[#0066ff]/10"
-                    value={currentMonth}
-                    onChange={
-                      handleMonthChange
-                    }
-                  >
-
-                    {months.map(
-                      (
-                        month,
-                        index
-                      ) => (
-
-                        <option
-                          key={month}
-                          value={index}
-                        >
-                          {month}
-                        </option>
-
-                      )
-                    )}
-
-                  </select>
-
-
-                  <select
-                    className="min-w-[110px] cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-[11px] py-2 text-[14px] font-semibold text-[#111827] outline-none focus:border-[#0066ff] focus:ring-4 focus:ring-[#0066ff]/10"
-                    value={currentYear}
-                    onChange={
-                      handleYearChange
-                    }
-                  >
-
-                    {years.map(
-                      (year) => (
-
-                        <option
-                          key={year}
-                          value={year}
-                        >
-                          {year}
-                        </option>
-
-                      )
-                    )}
-
-                  </select>
-
-                </div>
-
-
-                <p>
-
-                  {monthEvents.length}
-
-                  {' '}
-
-                  event(s) this month
-
+                <p className="mt-1 text-sm text-[#6b7280]">
+                  {monthEvents.length} event
+                  {monthEvents.length === 1 ? '' : 's'} this month
                 </p>
 
+                {selectedDate && (
+                  <p className="mt-1 text-sm text-[#2563eb]">
+                    Selected date:{' '}
+                    {selectedDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </p>
+                )}
               </div>
 
+              {canManageEvents && (
+                <button
+                  type="button"
+                  onClick={openCreateEvent}
+                  className="shrink-0 rounded-lg bg-[#ff7a00] px-4 py-2.5 font-semibold text-white hover:bg-[#e65f00]"
+                >
+                  + Add Event
+                </button>
+              )}
+            </div>
 
-              {/* Calendar buttons */}
+            {loading ? (
+              <p className="py-10 text-center text-sm text-[#6b7280]">
+                Loading events...
+              </p>
+            ) : (
+              <ScheduleComponent
+                cssClass="dashboard-calendar"
+                height="650px"
+                selectedDate={currentDate}
+                currentView="Month"
+                readonly={!canManageEvents}
+                showQuickInfo={true}
+                eventSettings={{ dataSource: schedulerEvents }}
+                cellClick={handleCellClick}
+                cellDoubleClick={handleCellDoubleClick}
+                eventDoubleClick={handleEventDoubleClick}
+                popupOpen={handlePopupOpen}
+                renderCell={handleRenderCell}
+                navigating={(args: any) => {
+                  if (args.currentDate) {
+                    setCurrentDate(args.currentDate)
+                    setSelectedDate(null)
+                  }
+                }}
+              >
+                <ViewsDirective>
+                  <ViewDirective option="Month" />
+                  <ViewDirective option="Week" />
+                  <ViewDirective option="WorkWeek" />
+                  <ViewDirective option="Day" />
+                  <ViewDirective option="Agenda" />
+                </ViewsDirective>
 
-              <div className="flex items-center gap-[7px] max-[700px]:w-full max-[700px]:justify-start">
+                <Inject services={[Month, Week, WorkWeek, Day, Agenda]} />
+              </ScheduleComponent>
+            )}
 
-
-                {/* Header Add Event button */}
-
-                {(
-                  isAdmin ||
-                  isEmployee
-                ) && (
+            {showEventForm && canManageEvents && (
+              <div className="mt-6 rounded-xl border border-[#dfe5ec] bg-[#f9fafb] p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h3 className="text-lg font-bold text-[#111827]">
+                    {editingEventId === null ? 'Create Event' : 'Edit Event'}
+                  </h3>
 
                   <button
                     type="button"
-                    className="cursor-pointer rounded-[7px] border border-[#ff7a00] bg-[#ff7a00] px-3 py-2 text-[13px] font-semibold text-white transition hover:border-[#e65f00] hover:bg-[#e65f00]"
-                    onClick={
-                      openCreateEvent
-                    }
+                    disabled={savingEvent}
+                    onClick={closeEventForm}
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
                   >
-                    + Add Event
+                    Close
                   </button>
+                </div>
 
-                )}
-
-
-                <button
-                  type="button"
-                  className="cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-3 py-2 text-[13px] font-semibold text-[#374151] hover:border-[#9bbcff] hover:bg-[#eaf2ff] hover:text-[#0066ff]"
-                  onClick={
-                    goToPreviousMonth
-                  }
+                <form
+                  onSubmit={saveCalendarEvent}
+                  className="grid gap-4 sm:grid-cols-2"
                 >
-                  &lt;
-                </button>
-
-
-                <button
-                  type="button"
-                  className="cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-3 py-2 text-[13px] font-semibold text-[#374151] hover:border-[#9bbcff] hover:bg-[#eaf2ff] hover:text-[#0066ff]"
-                  onClick={
-                    goToToday
-                  }
-                >
-                  Today
-                </button>
-
-
-                <button
-                  type="button"
-                  className="cursor-pointer rounded-[7px] border border-[#cfd7e2] bg-white px-3 py-2 text-[13px] font-semibold text-[#374151] hover:border-[#9bbcff] hover:bg-[#eaf2ff] hover:text-[#0066ff]"
-                  onClick={
-                    goToNextMonth
-                  }
-                >
-                  &gt;
-                </button>
-
-              </div>
-
-            </div>
-
-
-            {/* =================================================
-                WEEKDAYS
-                ================================================= */}
-
-            <div className="mt-[5px] grid grid-cols-7 border-l border-t border-[#dfe5ec]">
-
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
-                Mon
-              </span>
-
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
-                Tue
-              </span>
-
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
-                Wed
-              </span>
-
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
-                Thu
-              </span>
-
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
-                Fri
-              </span>
-
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
-                Sat
-              </span>
-
-              <span className="border-r border-b border-[#dfe5ec] bg-[#f8fafc] px-[6px] py-[11px] text-center text-[12px] font-bold uppercase tracking-[0.5px] text-[#6b7280]">
-                Sun
-              </span>
-
-            </div>
-
-
-            {/* =================================================
-                CALENDAR DAYS
-                ================================================= */}
-
-            <div className="grid grid-cols-7 border-l border-t border-[#dfe5ec]">
-
-              {calendarDays.map(
-                (
-                  calendarDay,
-                  index
-                ) => {
-
-                  const dayEvents =
-                    getEventsForDate(
-                      calendarDay.date
-                    )
-
-
-                  const selected =
-                    isSelectedDate(
-                      calendarDay.date
-                    )
-
-
-                  return (
-
-                    <div
-                      key={
-                        `${calendarDay.date.toISOString()}-${index}`
+                  <label className="grid gap-1 text-sm font-medium">
+                    Event name
+                    <input
+                      required
+                      value={formData.eventName}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          eventName: e.target.value,
+                        })
                       }
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2"
+                    />
+                  </label>
 
-                      className={`relative min-h-[112px] cursor-pointer border-r border-b border-[#dfe5ec] bg-white p-[9px] transition hover:z-20 hover:bg-[#fbfdff] max-[900px]:min-h-[95px] max-[700px]:min-h-[75px] max-[700px]:p-[5px] ${!calendarDay.currentMonth ? 'bg-[#f8fafc]' : ''} ${isToday(calendarDay.date) ? 'bg-[#f0f6ff]' : ''} ${selected ? 'z-[25] outline-2 outline-[#ff7a00] outline-offset-[-2px]' : ''}`}
-
-                      onClick={() =>
-                        selectCalendarDate(
-                          calendarDay.date
-                        )
+                  <label className="grid gap-1 text-sm font-medium">
+                    Event type
+                    <select
+                      required
+                      value={formData.eventType}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          eventType: e.target.value,
+                        })
                       }
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2"
                     >
+                      <option value="0">Conference</option>
+                      <option value="1">Workshop</option>
+                      <option value="2">Webinar</option>
+                      <option value="3">Cultural Fest</option>
+                      <option value="4">Meeting</option>
+                      <option value="5">Product Launch</option>
+                    </select>
+                  </label>
 
+                  <label className="grid gap-1 text-sm font-medium">
+                    Start date and time
+                    <input
+                      type="datetime-local"
+                      required
+                      value={formData.startDate}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          startDate: e.target.value,
+                        })
+                      }
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2"
+                    />
+                  </label>
 
-                      {/* =================================================
-                          DATE NUMBER
-                          ================================================= */}
+                  <label className="grid gap-1 text-sm font-medium">
+                    End date and time
+                    <input
+                      type="datetime-local"
+                      required
+                      value={formData.endDate}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          endDate: e.target.value,
+                        })
+                      }
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2"
+                    />
+                  </label>
 
-                      <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-[650] text-[#374151] max-[700px]:h-6 max-[700px]:w-6 max-[700px]:text-[11px] ${!calendarDay.currentMonth ? 'text-[#b4bdc9]' : ''} ${isToday(calendarDay.date) ? 'bg-[#0066ff] font-[750] text-white' : ''}`}>
+                  <label className="grid gap-1 text-sm font-medium">
+                    Venue
+                    <select
+                      required
+                      value={formData.venueId}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          venueId: e.target.value,
+                        })
+                      }
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2"
+                    >
+                      <option value="">Select a venue</option>
 
-                        {calendarDay.day}
+                      {venues.map(venue => (
+                        <option key={venue.venueId} value={venue.venueId}>
+                          {venue.venueName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                      </span>
+                  <label className="grid gap-1 text-sm font-medium">
+                    Organization (optional)
+                    <select
+                      value={formData.orgId}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          orgId: e.target.value,
+                        })
+                      }
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2"
+                    >
+                      <option value="">No organization</option>
 
-
-                      {/* =================================================
-                          ADD BUTTON FOR SELECTED DAY
-
-                          Only Admin / Employee can add events.
-                          ================================================= */}
-
-                      {selected &&
-                        (
-                          isAdmin ||
-                          isEmployee
-                        ) && (
-
-                        <button
-                          type="button"
-                          className="ml-[6px] cursor-pointer border-0 bg-transparent p-0 align-middle text-[20px] font-bold leading-none text-[#ff7a00] hover:scale-[1.15] hover:text-[#e65f00]"
-
-                          onClick={(clickEvent) => {
-
-                            clickEvent.stopPropagation()
-
-                            addEventForSelectedDate(
-                              calendarDay.date
-                            )
-
-                          }}
-
-                          title="Add event on this date"
+                      {organizations.map(organization => (
+                        <option
+                          key={organization.orgId}
+                          value={organization.orgId}
                         >
-                          +
-                        </button>
-
-                      )}
-
-
-                      {/* =================================================
-                          EVENTS
-
-                          Cancelled events are already removed by
-                          getEventsForDate(), so they will never
-                          be rendered here.
-                          ================================================= */}
-
-                      {dayEvents.map(
-                        (event) => {
-
-                          const status =
-                            getEventStatus(
-                              event.status
-                            )
-
-
-                          return (
-
-                            <div
-                              key={
-                                event.eventId
-                              }
-
-                              className="relative mt-[6px] w-full cursor-pointer overflow-visible whitespace-nowrap rounded-[5px] border-l-[3px] border-[#ff7a00] bg-[#fff1e6] px-2 py-[6px] text-[11px] font-[650] text-[#b45309] transition hover:z-[100] hover:bg-[#ffe4cc] max-[700px]:p-1 max-[700px]:text-[9px]"
-
-                              onMouseEnter={() =>
-                                setHoveredEventId(
-                                  event.eventId
-                                )
-                              }
-
-                              onMouseLeave={() =>
-                                setHoveredEventId(
-                                  null
-                                )
-                              }
-
-                              onClick={(eventClick) => {
-                                eventClick.stopPropagation()
-                              }}
-                            >
-
-                              {event.eventName}
-
-
-                              {/* =================================================
-                                  EVENT POPUP
-                                  ================================================= */}
-
-                              {hoveredEventId ===
-                                event.eventId && (
-
-                                <div
-                                  className="absolute left-0 top-7 z-[1000] w-[370px] cursor-default rounded-lg border-t-4 border-[#0066ff] bg-white p-[18px] text-left text-[#374151] shadow-[0_8px_24px_rgba(0,0,0,0.18)] max-[700px]:left-auto max-[700px]:right-0 max-[700px]:w-[300px]"
-
-                                  onMouseEnter={() =>
-                                    setHoveredEventId(
-                                      event.eventId
-                                    )
-                                  }
-
-                                  onMouseLeave={() =>
-                                    setHoveredEventId(
-                                      null
-                                    )
-                                  }
-
-                                  onClick={(popupClick) =>
-                                    popupClick.stopPropagation()
-                                  }
-                                >
-
-
-                                  {/* ==============================
-                                      POPUP HEADER
-                                      ============================== */}
-
-                                  <div className="flex items-start justify-between gap-3">
-
-                                    <h3 className="m-0 text-[20px] font-semibold leading-[1.3] text-[#6b7280]">
-                                      {event.eventName}
-                                    </h3>
-
-
-                                    <button
-                                      type="button"
-                                      className="cursor-pointer border-0 bg-transparent px-1 py-0.5 text-[20px] leading-none text-[#6b7280] hover:text-[#0066ff]"
-
-                                      onClick={() =>
-                                        goToEventDetails(
-                                          event.eventId
-                                        )
-                                      }
-
-                                      title="Open event"
-                                    >
-                                      ↗
-                                    </button>
-
-                                  </div>
-
-
-                                  {/* Divider */}
-
-                                  <div className="my-[14px] h-px bg-[#edf0f4]" />
-
-
-                                  {/* ==============================
-                                      DATE / TIME
-                                      ============================== */}
-
-                                  <div className="flex min-h-[35px] items-start gap-3">
-
-                                    <span className="w-[22px] shrink-0 text-center text-[19px] text-[#6b7280]">
-                                      ◷
-                                    </span>
-
-
-                                    <div className="flex flex-col gap-1 text-[14px] leading-[1.4]">
-
-                                      <strong>
-                                        {formatDate(
-                                          event.startDate
-                                        )}
-                                      </strong>
-
-
-                                      <span>
-                                        {formatTime(
-                                          event.startDate
-                                        )}
-
-                                        {' - '}
-
-                                        {formatTime(
-                                          event.endDate
-                                        )}
-                                      </span>
-
-                                    </div>
-
-                                  </div>
-
-
-                                  {/* Divider */}
-
-                                  <div className="my-[14px] h-px bg-[#edf0f4]" />
-
-
-                                  {/* ==============================
-                                      LOCATION
-                                      ============================== */}
-
-                                  <div className="flex min-h-[35px] items-start gap-3">
-
-                                    <span className="w-[22px] shrink-0 text-center text-[19px] text-[#6b7280]">
-                                      ◉
-                                    </span>
-
-
-                                    <div className="flex flex-col gap-1 text-[14px] leading-[1.4]">
-
-                                      <span>
-                                        No location added
-                                      </span>
-
-                                    </div>
-
-                                  </div>
-
-
-                                  {/* Divider */}
-
-                                  <div className="my-[14px] h-px bg-[#edf0f4]" />
-
-
-                                  {/* ==============================
-                                      ORGANIZER
-                                      ============================== */}
-
-                                  <div className="flex min-h-[35px] items-start gap-3">
-
-                                    <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-[#fff1e6] text-[13px] font-bold text-[#e65f00]">
-
-                                      {userName
-                                        .charAt(0)
-                                        .toUpperCase()}
-
-                                    </div>
-
-
-                                    <div className="flex flex-col gap-1 text-[14px] leading-[1.4]">
-
-                                      <span className="text-[#6b7280]">
-                                        You're the organizer.
-                                      </span>
-
-
-                                      <span className="text-[#6b7280]">
-                                        Status: {status}
-                                      </span>
-
-                                    </div>
-
-                                  </div>
-
-
-                                  {/* Divider */}
-
-                                  <div className="my-[14px] h-px bg-[#edf0f4]" />
-
-
-                                  {/* ==============================
-                                      ACTION BUTTONS
-                                      ============================== */}
-
-                                  <div className="mt-1 flex gap-2">
-
-                                    <button
-                                      type="button"
-                                      className="cursor-pointer rounded-[4px] border border-[#dfe5ec] bg-white px-[14px] py-2 text-[14px] text-[#0066ff] hover:border-[#0066ff] hover:bg-[#eaf2ff]"
-
-                                      onClick={() =>
-                                        goToEventDetails(
-                                          event.eventId
-                                        )
-                                      }
-                                    >
-                                      ✎ Edit
-                                    </button>
-
-
-                                    <button
-                                      type="button"
-                                      className="cursor-pointer rounded-[4px] border border-[#dfe5ec] bg-white px-[14px] py-2 text-[14px] text-[#dc2626] hover:border-[#dc2626] hover:bg-[#fee2e2]"
-                                    >
-                                      × Cancel
-                                    </button>
-
-                                  </div>
-
-                                </div>
-
-                              )}
-
-                            </div>
-
-                          )
-
-                        }
-                      )}
-
-                    </div>
-
-                  )
-
-                }
-              )}
-
-            </div>
-
-          </div>
-
-
-          {/* =================================================
-              UPCOMING EVENTS
-              ================================================= */}
-
-          <div className="w-full rounded-[14px] border border-[#dfe5ec] bg-white p-6 shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
-
-
-            <div className="mb-5 flex items-center justify-between max-[700px]:flex-col max-[700px]:items-start max-[700px]:gap-[15px]">
-
-              <div>
-
-                <h2 className="m-0 text-[21px] font-[750] text-[#111827]">
-                  Upcoming Events
-                </h2>
-
-                <p className="mt-[5px] text-[13px] text-[#6b7280]">
-                  Your next scheduled events
-                </p>
-
+                          {organization.orgName}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="grid gap-1 text-sm font-medium sm:col-span-2">
+                    Budget (optional)
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.budget}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          budget: e.target.value,
+                        })
+                      }
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2"
+                    />
+                  </label>
+
+                  <div className="flex gap-3 sm:col-span-2">
+                    <button
+                      type="submit"
+                      disabled={savingEvent}
+                      className="rounded-lg bg-[#ff7a00] px-5 py-2.5 font-semibold text-white hover:bg-[#e65f00] disabled:opacity-60"
+                    >
+                      {savingEvent
+                        ? 'Saving...'
+                        : editingEventId === null
+                          ? 'Create Event'
+                          : 'Save Changes'}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={savingEvent}
+                      onClick={closeEventForm}
+                      className="rounded-lg border border-gray-300 bg-white px-5 py-2.5 font-semibold disabled:opacity-60"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </form>
               </div>
-
-            </div>
-
-
-            {/* Loading */}
-
-            {loading && (
-
-              <p className="m-0 px-0 py-[25px] text-center text-[14px] text-[#6b7280]">
-                Loading events...
-              </p>
-
             )}
 
-
-            {/* No events */}
-
-            {!loading &&
-              upcomingEvents.length ===
-                0 && (
-
-                <p className="m-0 px-0 py-[25px] text-center text-[14px] text-[#6b7280]">
-                  No upcoming events.
-                </p>
-
-              )}
-
-
-            {/* Upcoming events */}
-
-            {!loading &&
-              upcomingEvents.map(
-                (event) => {
-
-                  const eventDate =
-                    new Date(
-                      event.startDate
-                    )
-
-
-                  return (
-
-                    <div
-                      className="flex cursor-pointer items-center gap-[14px] border-b border-[#edf0f4] py-[14px] last:border-b-0 max-[1150px]:mr-[1%] max-[1150px]:inline-flex max-[1150px]:w-[32.5%] max-[1150px]:border max-[1150px]:rounded-[9px] max-[1150px]:p-3 max-[700px]:mb-2 max-[700px]:mr-0 max-[700px]:w-full"
-
-                      key={
-                        event.eventId
-                      }
-
-                      onClick={() =>
-                        goToEventDetails(
-                          event.eventId
-                        )
-                      }
-
-                      title="Go to event details"
-                    >
-
-
-                      {/* Date */}
-
-                      <div className="flex h-[60px] w-[55px] shrink-0 flex-col items-center justify-center rounded-[9px] border border-[#cfe0ff] bg-[#eaf2ff]">
-
-                        <strong className="text-[21px] font-extrabold leading-none text-[#0066ff]">
-                          {
-                            eventDate.getDate()
-                          }
-                        </strong>
-
-
-                        <span className="mt-1 text-[10px] font-extrabold tracking-[0.7px] text-[#ff7a00]">
-
-                          {
-                            eventDate
-                              .toLocaleString(
-                                'en-US',
-                                {
-                                  month:
-                                    'short',
-                                }
-                              )
-                              .toUpperCase()
-                          }
-
-                        </span>
-
-                      </div>
-
-
-                      {/* Event information */}
-
-                      <div>
-
-                        <h3>
-                          {event.eventName}
-                        </h3>
-
-
-                        <p className="m-0 text-[12px] text-[#6b7280]">
-
-                          {eventDate.toLocaleDateString(
-                            'en-US',
-                            {
-                              month:
-                                'short',
-                              day:
-                                'numeric',
-                              year:
-                                'numeric',
-                            }
-                          )}
-
-                        </p>
-
-
-                        <p className="m-0 text-[12px] text-[#6b7280]">
-
-                          {formatTime(
-                            event.startDate
-                          )}
-
-                        </p>
-
-                      </div>
-
-                    </div>
-
-                  )
-
-                }
-              )}
-
+            <p className="mt-3 text-xs text-[#6b7280]">
+              {canManageEvents
+                ? 'Use Add Event to create an event. Open an event popup to edit or cancel it. Double-click an existing event to edit it.'
+                : 'Select a calendar event to view it.'}
+            </p>
           </div>
 
+          <div className="w-full rounded-[14px] border border-[#dfe5ec] bg-white p-6 shadow-sm">
+            <div className="mb-5">
+              <h2 className="m-0 text-[21px] font-[750] text-[#111827]">
+                Upcoming Events
+              </h2>
+
+              <p className="mt-[5px] text-[13px] text-[#6b7280]">
+                Your next scheduled events
+              </p>
+            </div>
+
+            {loading && (
+              <p className="py-6 text-center text-sm text-[#6b7280]">
+                Loading events...
+              </p>
+            )}
+
+            {!loading && upcomingEvents.length === 0 && (
+              <p className="py-6 text-center text-sm text-[#6b7280]">
+                No upcoming events.
+              </p>
+            )}
+
+            {!loading &&
+              upcomingEvents.map(event => {
+                const eventDate = new Date(event.startDate)
+
+                return (
+                  <div
+                    key={event.eventId}
+                    className="flex items-center gap-[14px] border-b border-[#edf0f4] py-[14px] last:border-b-0"
+                  >
+                    <div className="flex h-[60px] w-[55px] shrink-0 flex-col items-center justify-center rounded-[9px] border border-[#cfe0ff] bg-[#eaf2ff]">
+                      <strong className="text-[21px] font-extrabold leading-none text-[#0066ff]">
+                        {eventDate.getDate()}
+                      </strong>
+
+                      <span className="mt-1 text-[10px] font-extrabold tracking-[0.7px] text-[#ff7a00]">
+                        {eventDate
+                          .toLocaleString('en-US', { month: 'short' })
+                          .toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="m-0 font-semibold text-[#111827]">
+                        {event.eventName}
+                      </h3>
+
+                      <p className="m-0 mt-1 text-[12px] text-[#6b7280]">
+                        {formatDisplayDate(event.startDate)}
+                      </p>
+
+                      <p className="m-0 text-[12px] text-[#6b7280]">
+                        {formatTime(event.startDate)}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+          </div>
         </section>
-
       </main>
-
     </div>
-
   )
-
 }
-
 
 export default Dashboard

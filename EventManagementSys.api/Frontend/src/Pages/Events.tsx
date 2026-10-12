@@ -1,6 +1,11 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { useMsal } from '@azure/msal-react'
 import type { AccountInfo } from '@azure/msal-browser'
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom'
 
 type EventStatus = 0 | 1 | 2
 // 0 = Scheduled
@@ -72,6 +77,9 @@ interface EventFormData {
 
 function Events() {
   const { instance, accounts } = useMsal()
+  const navigate = useNavigate()
+  const { eventId: routeEventId } = useParams<{ eventId: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const account: AccountInfo | undefined =
     instance.getActiveAccount() ?? accounts[0]
@@ -599,6 +607,10 @@ function Events() {
 
     setEditingEventId(null)
     setShowCreateForm(false)
+
+    if (routeEventId) {
+      navigate('/events', { replace: true })
+    }
   }
 
   // ---------------------------------------------------------
@@ -623,6 +635,63 @@ function Events() {
 
     setShowCreateForm(true)
   }
+
+  // OPEN CREATE FORM WHEN NAVIGATING FROM DASHBOARD
+
+useEffect(() => {
+  if (searchParams.get('create') !== 'true') {
+    return
+  }
+
+  // Wait until the logged-in account is available.
+  if (!account) {
+    return
+  }
+
+  // Only Admin and Employee can create events.
+  if (!canManageEvents) {
+    setSearchParams({}, { replace: true })
+    return
+  }
+
+  const selectedDate = searchParams.get('date')
+
+  // Use the selected Dashboard date, if provided.
+  const validDate =
+    selectedDate &&
+    /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
+      ? selectedDate
+      : ''
+
+  setError('')
+  setSuccessMessage('')
+  setEditingEventId(null)
+
+  setFormData({
+    eventName: '',
+    startDate: validDate ? `${validDate}T09:00` : '',
+    endDate: validDate ? `${validDate}T10:00` : '',
+    venueId: '',
+    budget: '',
+    eventType: '',
+    orgId: '',
+  })
+
+  setShowCreateForm(true)
+
+  // Remove the query parameters so refreshing won't reopen the form.
+  setSearchParams({}, { replace: true })
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth',
+  })
+}, [
+  searchParams,
+  setSearchParams,
+  accountId,
+  canManageEvents,
+])
 
   // ---------------------------------------------------------
   // CONVERT API DATE TO DATETIME-LOCAL
@@ -711,12 +780,84 @@ function Events() {
     }
 
   // ---------------------------------------------------------
+  // OPEN AN EVENT FROM /events/:eventId
+  // Fetch the selected event and open it in the existing edit form.
+  // ---------------------------------------------------------
+
+  useEffect(() => {
+    if (!routeEventId || !account || !canManageEvents) {
+      return
+    }
+
+    const selectedEventId = Number(routeEventId)
+
+    if (!Number.isInteger(selectedEventId) || selectedEventId <= 0) {
+      setError('Invalid event ID.')
+      return
+    }
+
+    let cancelled = false
+
+    const loadEventForEditing = async () => {
+      try {
+        setError('')
+        setSuccessMessage('')
+
+        const response = await fetch(
+          `${API_URL}/events/${selectedEventId}`,
+          {
+            headers: await getAuthHeaders(),
+          },
+        )
+
+        if (!response.ok) {
+          const message = await response.text()
+          throw new Error(message || 'Failed to load event details.')
+        }
+
+        const event: EventResponse = await response.json()
+
+        if (!cancelled) {
+          openEditForm(event)
+        }
+      } catch (error) {
+        console.error('Failed to open event for editing:', error)
+
+        if (!cancelled) {
+          setError(
+            error instanceof Error
+              ? error.message
+              : 'Failed to load event details.',
+          )
+        }
+      }
+    }
+
+    void loadEventForEditing()
+
+    return () => {
+      cancelled = true
+    }
+  }, [routeEventId, accountId, canManageEvents, instance])
+
+  // ---------------------------------------------------------
   // CREATE EVENT
   // POST /api/events
   // ---------------------------------------------------------
 
   const createEvent =
     async () => {
+      console.log('Time entered in form:', {
+  startDate: formData.startDate,
+  endDate: formData.endDate,
+})
+
+console.log('Browser timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone)
+
+console.log('Converted to UTC:', {
+  startDate: new Date(formData.startDate).toISOString(),
+  endDate: new Date(formData.endDate).toISOString(),
+})
       const request = {
         eventName:
           formData.eventName,
@@ -788,6 +929,8 @@ function Events() {
       const createdEvent:
         EventResponse =
         await response.json()
+
+        console.log('Created event returned by API:', createdEvent)
 
       setEvents(
         (previous) => [
@@ -904,6 +1047,10 @@ function Events() {
       event: FormEvent<HTMLFormElement>,
     ) => {
       event.preventDefault()
+
+      if (saving) {
+        return
+      }
 
       setError('')
       setSuccessMessage('')
@@ -1275,12 +1422,16 @@ function Events() {
   // DATE DISPLAY
   // ---------------------------------------------------------
 
-  const formatDate =
-    (date: string) => {
-      return new Date(
-        date,
-      ).toLocaleString()
-    }
+  const formatDate = (date: string) => {
+  const parsedDate = new Date(date)
+
+  console.log('API date:', date)
+  console.log('Browser timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone)
+  console.log('Local date:', parsedDate.toString())
+  console.log('Displayed date:', parsedDate.toLocaleString())
+
+  return parsedDate.toLocaleString()
+}
 
   // ---------------------------------------------------------
   // STATUS SORT ORDER
@@ -2217,8 +2368,8 @@ function Events() {
                                       type="button"
                                       className="ml-2 rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
                                       onClick={() =>
-                                        openEditForm(
-                                          event,
+                                        navigate(
+                                          `/events/${event.eventId}`,
                                         )
                                       }
                                     >

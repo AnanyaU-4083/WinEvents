@@ -1,7 +1,9 @@
+
 using EventManagementSys.api.DTOs;
 using EventManagementSys.api.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace EventManagementSys.api.Controllers;
 
@@ -33,14 +35,7 @@ public class RegistrationController(
         int eventId,
         CancellationToken cancellationToken)
     {
-        string? email =
-            User.FindFirst(
-                System.Security.Claims.ClaimTypes.Email)?.Value
-            ?? User.FindFirst("preferred_username")?.Value
-            ?? User.FindFirst(
-                System.Security.Claims.ClaimTypes.Upn)?.Value
-            ?? User.FindFirst(
-                System.Security.Claims.ClaimTypes.Name)?.Value;
+        string? email = GetCurrentUserEmail();
 
         if (string.IsNullOrWhiteSpace(email))
         {
@@ -62,14 +57,7 @@ public class RegistrationController(
     public async Task<ActionResult<List<EventResponseDto>>> GetMyRegistrations(
         CancellationToken cancellationToken)
     {
-        string? email =
-            User.FindFirst(
-                System.Security.Claims.ClaimTypes.Email)?.Value
-            ?? User.FindFirst("preferred_username")?.Value
-            ?? User.FindFirst(
-                System.Security.Claims.ClaimTypes.Upn)?.Value
-            ?? User.FindFirst(
-                System.Security.Claims.ClaimTypes.Name)?.Value;
+        string? email = GetCurrentUserEmail();
 
         if (string.IsNullOrWhiteSpace(email))
         {
@@ -118,5 +106,14 @@ public class RegistrationController(
         }
 
         return NoContent();
+    }
+
+    private string? GetCurrentUserEmail()
+    {
+        return User.FindFirst(ClaimTypes.Email)?.Value
+            ?? User.FindFirst("email")?.Value
+            ?? User.FindFirst("preferred_username")?.Value
+            ?? User.FindFirst("upn")?.Value
+            ?? User.FindFirst(ClaimTypes.Upn)?.Value;
     }
 }

@@ -1,9 +1,11 @@
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MsalProvider } from '@azure/msal-react'
 
 import './index.css'
 import '@syncfusion/ej2-tailwind3-theme/styles/schedule/index.css'
+
 import App from './App'
 import { msalInstance } from './auth/msalInstance'
 
@@ -14,7 +16,7 @@ if (!rootElement) {
 }
 
 async function startApp() {
-  // Initialize MSAL before using MsalProvider
+  // Initialize MSAL before rendering the application
   await msalInstance.initialize()
 
   createRoot(rootElement).render(
@@ -26,4 +28,6 @@ async function startApp() {
   )
 }
 
-startApp()
+startApp().catch((error) => {
+  console.error('Failed to start application:', error)
+})
