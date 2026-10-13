@@ -17,6 +17,7 @@ interface EmployeeTaskDto {
   eventId: number
   eventName: string
   employeeId: number
+  name: string
   task: string
   deadline: string | null
   status: string
@@ -60,17 +61,23 @@ function EventNotifications() {
   const accountId = account?.homeAccountId
   const roles = (account?.idTokenClaims?.roles as string[]) ?? []
   const isAttendee = roles.includes('Attendee')
+  const isAdmin = roles.includes('Admin')
   const isEmployee = roles.includes('Employee') || roles.includes('Admin')
 
   const [events, setEvents] = useState<EventDto[]>([])
   const [tasks, setTasks] = useState<EmployeeTaskDto[]>([])
+  const [adminTasks, setAdminTasks] = useState<EmployeeTaskDto[]>([])
+  const [adminTasksLoaded, setAdminTasksLoaded] = useState(false)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [error, setError] = useState('')
 
   const notifiedEventIds = useRef<Set<number>>(new Set())
   const notifiedTaskReminders = useRef<Set<string>>(new Set())
+  const adminTaskStatuses = useRef<Map<number, string> | null>(null)
+  const notifiedAdminOverdue = useRef<Set<string>>(new Set())
   const menuRef = useRef<HTMLDivElement>(null)
+  const eventIdsKey = events.map((event) => event.eventId).join(',')
 
   // Fetch the events visible to the current user.
   useEffect(() => {
@@ -169,6 +176,141 @@ function EventNotifications() {
       window.clearInterval(refreshId)
     }
   }, [accountId, instance, isEmployee])
+
+  // Admins monitor task assignments across every event. Employees continue
+  // to receive reminders only for their own assigned tasks above.
+  useEffect(() => {
+    if (!account || !isAdmin) {
+      setAdminTasks([])
+      setAdminTasksLoaded(false)
+      adminTaskStatuses.current = null
+      return
+    }
+
+    const eventIds = eventIdsKey
+      ? eventIdsKey.split(',').map(Number)
+      : []
+
+    // Wait until the event list is available before baselining task statuses.
+    if (eventIds.length === 0) return
+
+    let isMounted = true
+    let isLoading = false
+
+    const loadAdminTasks = async () => {
+      if (isLoading) return
+      isLoading = true
+
+      try {
+        const tokenResponse = await instance.acquireTokenSilent({
+          scopes: [API_SCOPE],
+          account,
+        })
+        const headers = {
+          Authorization: `Bearer ${tokenResponse.accessToken}`,
+        }
+        const eventAssignments = await Promise.all(
+          eventIds.map(async (eventId) => {
+            const response = await fetch(`/api/events/${eventId}/staff`, {
+              headers,
+            })
+
+            if (!response.ok) {
+              throw new Error(
+                `Unable to load event task assignments (${response.status}).`,
+              )
+            }
+
+            return (await response.json()) as EmployeeTaskDto[]
+          }),
+        )
+
+        if (isMounted) {
+          setAdminTasks(eventAssignments.flat())
+          setAdminTasksLoaded(true)
+        }
+      } catch (err) {
+        console.error('Unable to load admin task notifications:', err)
+      } finally {
+        isLoading = false
+      }
+    }
+
+    void loadAdminTasks()
+    const refreshId = window.setInterval(() => void loadAdminTasks(), 60_000)
+
+    return () => {
+      isMounted = false
+      window.clearInterval(refreshId)
+    }
+  }, [accountId, eventIdsKey, instance, isAdmin])
+
+  // Notify admins when an assignment changes from incomplete to completed.
+  useEffect(() => {
+    if (!isAdmin || !adminTasksLoaded) return
+
+    const previousStatuses = adminTaskStatuses.current
+    const currentStatuses = new Map(
+      adminTasks.map((task) => [task.assignmentId, task.status.toLowerCase()]),
+    )
+
+    if (previousStatuses) {
+      const now = Date.now()
+
+      for (const task of adminTasks) {
+        const wasCompleted =
+          previousStatuses.get(task.assignmentId) === 'completed'
+        const isCompleted = task.status.toLowerCase() === 'completed'
+
+        if (!wasCompleted && isCompleted) {
+          setNotifications((current) => [
+            {
+              id: task.assignmentId,
+              title: 'Task completed',
+              message: `${task.name || `Employee #${task.employeeId}`} completed "${task.task}" for ${task.eventName}.`,
+              startDate: new Date(now).toISOString(),
+              createdAt: now,
+              read: false,
+            },
+            ...current,
+          ])
+        }
+      }
+    }
+
+    adminTaskStatuses.current = currentStatuses
+  }, [adminTasks, adminTasksLoaded, isAdmin])
+
+  // Admin overdue alerts identify the employee and the task that missed its
+  // deadline. These alerts are separate from employees' personal reminders.
+  useEffect(() => {
+    if (!isAdmin || !adminTasksLoaded) return
+
+    const now = Date.now()
+
+    for (const task of adminTasks) {
+      if (!task.deadline || task.status.toLowerCase() === 'completed') continue
+
+      const deadline = new Date(task.deadline).getTime()
+      if (!Number.isFinite(deadline) || deadline > now) continue
+
+      const overdueKey = `${task.assignmentId}:${task.deadline}:admin-overdue`
+      if (notifiedAdminOverdue.current.has(overdueKey)) continue
+
+      notifiedAdminOverdue.current.add(overdueKey)
+      setNotifications((current) => [
+        {
+          id: task.assignmentId,
+          title: 'Employee task overdue',
+          message: `${task.name || `Employee #${task.employeeId}`} is past due on "${task.task}" for ${task.eventName}. Deadline: ${formatEventTime(task.deadline!)}.`,
+          startDate: task.deadline!,
+          createdAt: now,
+          read: false,
+        },
+        ...current,
+      ])
+    }
+  }, [adminTasks, adminTasksLoaded, isAdmin])
 
   // Check upcoming events frequently so reminders appear near the
   // 15-minute mark, including when the app opens within that window.
