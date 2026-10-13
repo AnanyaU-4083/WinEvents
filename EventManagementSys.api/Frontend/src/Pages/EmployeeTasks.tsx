@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMsal } from '@azure/msal-react'
 
 interface EmployeeTask {
+  assignmentId: number
   eventId: number
   eventName: string
   employeeId: number
@@ -18,11 +19,17 @@ function EmployeeTasks() {
   const [tasks, setTasks] = useState<EmployeeTask[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentTime, setCurrentTime] = useState(Date.now())
 
   const account =
     instance.getActiveAccount() ?? accounts[0]
 
   const accountId = account?.homeAccountId
+
+  useEffect(() => {
+    const timerId = window.setInterval(() => setCurrentTime(Date.now()), 15_000)
+    return () => window.clearInterval(timerId)
+  }, [])
 
   useEffect(() => {
     const loadTasks = async () => {
@@ -79,8 +86,7 @@ function EmployeeTasks() {
   }, [accountId, instance])
 
   const markAsCompleted = async (
-    eventId: number,
-    employeeId: number,
+    assignmentId: number,
   ) => {
     if (!account) {
       return
@@ -97,18 +103,14 @@ function EmployeeTasks() {
           account,
         })
 
-      const task = tasks.find(
-        (item) =>
-          item.eventId === eventId &&
-          item.employeeId === employeeId,
-      )
+      const task = tasks.find(item => item.assignmentId === assignmentId)
 
       if (!task) {
         return
       }
 
       const response = await fetch(
-        `/api/events/${eventId}/staff/${employeeId}`,
+        `/api/staff/${assignmentId}`,
         {
           method: 'PUT',
           headers: {
@@ -131,8 +133,7 @@ function EmployeeTasks() {
 
       setTasks((currentTasks) =>
         currentTasks.map((item) =>
-          item.eventId === eventId &&
-          item.employeeId === employeeId
+          item.assignmentId === assignmentId
             ? {
                 ...item,
                 status: 'Completed',
@@ -244,10 +245,32 @@ function EmployeeTasks() {
                   </thead>
 
                   <tbody className="divide-y divide-[#eef2f7]">
-                    {tasks.map((item) => (
-                      <tr
-                        key={`${item.eventId}-${item.employeeId}`}
-                        className="transition hover:bg-[#f8fafc]"
+                    {tasks.map((item) => {
+                      const deadlineTime = item.deadline
+                        ? new Date(item.deadline).getTime()
+                        : Number.NaN
+                      const overdueDuration = currentTime - deadlineTime
+                      const isOverdue =
+                        item.status.toLowerCase() !== 'completed' &&
+                        Number.isFinite(deadlineTime) &&
+                        overdueDuration > 0
+                      const overdueLevel = isOverdue
+                        ? Math.min(
+                            3,
+                            Math.floor(overdueDuration / (90 * 60 * 1000)),
+                          )
+                        : -1
+                      const overdueRowClass = [
+                        'bg-red-50 hover:bg-red-100',
+                        'bg-red-100 hover:bg-red-200',
+                        'bg-red-200 hover:bg-red-300',
+                        'bg-red-300 hover:bg-red-400',
+                      ][overdueLevel]
+
+                      return (
+                        <tr
+                        key={item.assignmentId}
+                        className={`transition ${isOverdue ? overdueRowClass : 'hover:bg-[#f8fafc]'}`}
                       >
                         <td className="px-6 py-4">
                           <p className="font-medium text-[#111827]">
@@ -266,7 +289,13 @@ function EmployeeTasks() {
                             <p className="text-sm text-[#374151]">
                               {new Date(
                                 item.deadline,
-                              ).toLocaleDateString()}
+                              ).toLocaleString([], {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              })}
                             </p>
                           ) : (
                             <p className="text-sm text-[#9ca3af]">
@@ -295,10 +324,7 @@ function EmployeeTasks() {
                             <button
                               type="button"
                               onClick={() =>
-                                markAsCompleted(
-                                  item.eventId,
-                                  item.employeeId,
-                                )
+                                markAsCompleted(item.assignmentId)
                               }
                               className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
                             >
@@ -307,7 +333,8 @@ function EmployeeTasks() {
                           )}
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
 
                 </table>

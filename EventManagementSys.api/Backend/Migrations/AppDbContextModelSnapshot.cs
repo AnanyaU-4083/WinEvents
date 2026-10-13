@@ -160,14 +160,20 @@ namespace EventManagementSys.api.Migrations
 
             modelBuilder.Entity("EventManagementSys.api.Models.EventEmployee", b =>
                 {
-                    b.Property<int>("EventId")
+                    b.Property<int>("AssignmentId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AssignmentId"));
+
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("EmployeeId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("Deadline")
-                        .HasColumnType("datetime2");
+                    b.Property<int>("EventId")
+                        .HasColumnType("int");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -176,9 +182,11 @@ namespace EventManagementSys.api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("EventId", "EmployeeId");
+                    b.HasKey("AssignmentId");
 
                     b.HasIndex("EmployeeId");
+
+                    b.HasIndex("EventId");
 
                     b.ToTable("EventEmployees");
                 });
@@ -234,7 +242,6 @@ namespace EventManagementSys.api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Role")

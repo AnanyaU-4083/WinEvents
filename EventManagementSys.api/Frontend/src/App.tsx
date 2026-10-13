@@ -24,7 +24,7 @@ function MainLayout() {
 
   return (
 
-    <div className="min-h-screen bg-[#f5f8fc]">
+    <div className="min-h-screen bg-[#eaf1fb]">
 
       <Navigationbar />
 

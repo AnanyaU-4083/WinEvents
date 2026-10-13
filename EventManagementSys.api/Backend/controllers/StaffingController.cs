@@ -84,11 +84,10 @@ public class StaffingController(
     }
 
 
-    [HttpPut("{eventId:int}/staff/{employeeId:int}")]
+    [HttpPut("/api/staff/{assignmentId:int}")]
     [Authorize(Roles = "Admin,Employee")]
     public async Task<IActionResult> Update(
-        int eventId,
-        int employeeId,
+        int assignmentId,
         UpdateStaffDto request,
         CancellationToken cancellationToken)
     {
@@ -119,9 +118,7 @@ public class StaffingController(
 
             // Check whether the employee owns this assignment.
             bool ownsTask =
-                myTasks.Any(task =>
-                    task.EventId == eventId &&
-                    task.EmployeeId == employeeId);
+                myTasks.Any(task => task.AssignmentId == assignmentId);
 
             if (!ownsTask)
             {
@@ -131,8 +128,7 @@ public class StaffingController(
 
         bool updated =
             await staffingService.UpdateAsync(
-                eventId,
-                employeeId,
+                assignmentId,
                 request,
                 cancellationToken);
 
@@ -145,17 +141,15 @@ public class StaffingController(
     }
 
 
-    [HttpDelete("{eventId:int}/staff/{employeeId:int}")]
+    [HttpDelete("/api/staff/{assignmentId:int}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Remove(
-        int eventId,
-        int employeeId,
+        int assignmentId,
         CancellationToken cancellationToken)
     {
         bool removed =
             await staffingService.RemoveAsync(
-                eventId,
-                employeeId,
+                assignmentId,
                 cancellationToken);
 
         if (!removed)

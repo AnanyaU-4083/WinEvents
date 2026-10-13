@@ -23,7 +23,7 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<EventEmployee>()
-            .HasKey(ee => new { ee.EventId, ee.EmployeeId });
+            .HasKey(ee => ee.AssignmentId);
 
         modelBuilder.Entity<EventAttendee>()
             .HasKey(ea => new { ea.EventId, ea.AttendeeId });

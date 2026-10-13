@@ -12,6 +12,15 @@ interface EventDto {
   status: EventStatus | number
 }
 
+interface EmployeeTaskDto {
+  assignmentId: number
+  eventId: number
+  eventName: string
+  employeeId: number
+  task: string
+  deadline: string | null
+  status: string
+}
 interface NotificationItem {
   id: number
   title: string
@@ -51,13 +60,16 @@ function EventNotifications() {
   const accountId = account?.homeAccountId
   const roles = (account?.idTokenClaims?.roles as string[]) ?? []
   const isAttendee = roles.includes('Attendee')
+  const isEmployee = roles.includes('Employee') || roles.includes('Admin')
 
   const [events, setEvents] = useState<EventDto[]>([])
+  const [tasks, setTasks] = useState<EmployeeTaskDto[]>([])
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [error, setError] = useState('')
 
   const notifiedEventIds = useRef<Set<number>>(new Set())
+  const notifiedTaskReminders = useRef<Set<string>>(new Set())
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Fetch the events visible to the current user.
@@ -120,6 +132,44 @@ function EventNotifications() {
     }
   }, [accountId, instance, isAttendee])
 
+  useEffect(() => {
+    if (!account || !isEmployee) {
+      setTasks([])
+      return
+    }
+
+    let isMounted = true
+
+    const loadTasks = async () => {
+      try {
+        const tokenResponse = await instance.acquireTokenSilent({
+          scopes: [API_SCOPE],
+          account,
+        })
+        const response = await fetch('/api/employees/my-tasks', {
+          headers: { Authorization: `Bearer ${tokenResponse.accessToken}` },
+        })
+
+        if (!response.ok) {
+          throw new Error(`Unable to load assigned tasks (${response.status}).`)
+        }
+
+        const data: EmployeeTaskDto[] = await response.json()
+        if (isMounted) setTasks(data)
+      } catch (err) {
+        console.error('Unable to load task reminders:', err)
+      }
+    }
+
+    void loadTasks()
+    const refreshId = window.setInterval(() => void loadTasks(), 60_000)
+
+    return () => {
+      isMounted = false
+      window.clearInterval(refreshId)
+    }
+  }, [accountId, instance, isEmployee])
+
   // Check upcoming events frequently so reminders appear near the
   // 15-minute mark, including when the app opens within that window.
   useEffect(() => {
@@ -160,6 +210,69 @@ function EventNotifications() {
 
     return () => window.clearInterval(checkId)
   }, [events])
+
+  useEffect(() => {
+    const checkTaskDeadlines = () => {
+      const now = Date.now()
+      const reminderStages = [
+        { key: '24-hours', threshold: 24 * 60 * 60 * 1000, lowerBound: 2 * 60 * 60 * 1000, timeLeft: '24 hours' },
+        { key: '2-hours', threshold: 2 * 60 * 60 * 1000, lowerBound: 30 * 60 * 1000, timeLeft: '2 hours' },
+        { key: '30-minutes', threshold: 30 * 60 * 1000, lowerBound: 0, timeLeft: '0.5 hours (30 minutes)' },
+      ]
+
+      for (const task of tasks) {
+        if (!task.deadline || task.status.toLowerCase() === 'completed') continue
+
+        const deadline = new Date(task.deadline).getTime()
+        const timeRemaining = deadline - now
+        if (!Number.isFinite(deadline)) continue
+
+        if (timeRemaining <= 0) {
+          const overdueKey = `${task.assignmentId}:${task.employeeId}:${task.task}:${task.deadline}:overdue`
+          if (notifiedTaskReminders.current.has(overdueKey)) continue
+
+          notifiedTaskReminders.current.add(overdueKey)
+          setNotifications(current => [
+            {
+              id: task.assignmentId,
+              title: 'Task overdue',
+              message: `${task.eventName} | ${task.task}: the deadline has passed and this task is still incomplete.`,
+              startDate: task.deadline!,
+              createdAt: now,
+              read: false,
+            },
+            ...current,
+          ])
+          continue
+        }
+
+        const stage = reminderStages.find(
+          reminder => timeRemaining <= reminder.threshold && timeRemaining > reminder.lowerBound,
+        )
+        if (!stage) continue
+
+        const reminderKey = `${task.assignmentId}:${task.employeeId}:${task.task}:${task.deadline}:${stage.key}`
+        if (notifiedTaskReminders.current.has(reminderKey)) continue
+
+        notifiedTaskReminders.current.add(reminderKey)
+        setNotifications(current => [
+          {
+            id: task.eventId,
+            title: 'Task deadline reminder',
+            message: `${task.eventName} | ${task.task}: ${stage.timeLeft} left to complete.`,
+            startDate: task.deadline,
+            createdAt: now,
+            read: false,
+          },
+          ...current,
+        ])
+      }
+    }
+
+    checkTaskDeadlines()
+    const checkId = window.setInterval(checkTaskDeadlines, 15_000)
+    return () => window.clearInterval(checkId)
+  }, [tasks])
 
   // Close the notification panel when clicking outside it.
   useEffect(() => {
@@ -241,7 +354,7 @@ function EventNotifications() {
                 Notifications
               </h2>
               <p className="mt-0.5 text-xs text-gray-500">
-                Event reminders
+                Event and task reminders
               </p>
             </div>
 
@@ -285,7 +398,7 @@ function EventNotifications() {
                   You're all caught up
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
-                  We'll remind you about events 15 minutes before they start.
+                  We'll remind you before events and assigned task deadlines.
                 </p>
               </div>
             ) : (

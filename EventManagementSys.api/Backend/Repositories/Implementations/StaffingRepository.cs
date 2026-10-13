@@ -8,20 +8,15 @@ namespace EventManagementSys.api.Repository.Implementations;
 public class StaffingRepository(
     AppDbContext dbContext) : IStaffingRepository
 {
-    public async Task<EventEmployee?> GetAsync(
-        int eventId,
-        int employeeId,
+    public async Task<EventEmployee?> GetByAssignmentIdAsync(
+        int assignmentId,
         CancellationToken cancellationToken)
     {
         return await dbContext.EventEmployees
-            .Include(assignment =>
-                assignment.EmployeeNavigation)
-            .Include(assignment =>
-                assignment.EventNavigation)
+            .Include(assignment => assignment.EmployeeNavigation)
+            .Include(assignment => assignment.EventNavigation)
             .FirstOrDefaultAsync(
-                assignment =>
-                    assignment.EventId == eventId &&
-                    assignment.EmployeeId == employeeId,
+                assignment => assignment.AssignmentId == assignmentId,
                 cancellationToken);
     }
 

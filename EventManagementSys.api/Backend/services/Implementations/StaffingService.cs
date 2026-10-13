@@ -13,23 +13,29 @@ public class StaffService(
         AssignStaffDto request,
         CancellationToken cancellationToken)
     {
-        EventEmployee? existingAssignment =
-            await staffingRepository.GetAsync(
+        string taskName = request.Task.Trim();
+        List<EventEmployee> eventAssignments =
+            await staffingRepository.GetByEventIdAsync(
                 eventId,
-                request.EmployeeId,
                 cancellationToken);
 
-        if (existingAssignment is not null)
+        bool duplicateTask = eventAssignments.Any(assignment =>
+            assignment.EmployeeId == request.EmployeeId &&
+            string.Equals(
+                assignment.Task.Trim(),
+                taskName,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (duplicateTask)
         {
             throw new InvalidOperationException(
-                "This employee is already assigned to this event.");
+                "This task is already assigned to this employee for this event.");
         }
-
         EventEmployee assignment = new()
         {
             EventId = eventId,
             EmployeeId = request.EmployeeId,
-            Task = request.Task,
+            Task = taskName,
             Deadline = request.Deadline,
             Status =
                 EventEmployee.AssignmentStatus.Pending
@@ -41,9 +47,8 @@ public class StaffService(
                 cancellationToken);
 
         EventEmployee? assignmentWithEmployee =
-            await staffingRepository.GetAsync(
-                createdAssignment.EventId,
-                createdAssignment.EmployeeId,
+            await staffingRepository.GetByAssignmentIdAsync(
+                createdAssignment.AssignmentId,
                 cancellationToken);
 
         return MapToResponse(
@@ -93,15 +98,13 @@ public class StaffService(
     }
 
     public async Task<bool> UpdateAsync(
-        int eventId,
-        int employeeId,
+        int assignmentId,
         UpdateStaffDto request,
         CancellationToken cancellationToken)
     {
         EventEmployee? assignment =
-            await staffingRepository.GetAsync(
-                eventId,
-                employeeId,
+            await staffingRepository.GetByAssignmentIdAsync(
+                assignmentId,
                 cancellationToken);
 
         if (assignment is null)
@@ -109,7 +112,27 @@ public class StaffService(
             return false;
         }
 
-        assignment.Task = request.Task;
+        List<EventEmployee> eventAssignments =
+            await staffingRepository.GetByEventIdAsync(
+                assignment.EventId,
+                cancellationToken);
+        string taskName = request.Task.Trim();
+
+        bool duplicateTask = eventAssignments.Any(existing =>
+            existing.AssignmentId != assignmentId &&
+            existing.EmployeeId == assignment.EmployeeId &&
+            string.Equals(
+                existing.Task.Trim(),
+                taskName,
+                StringComparison.OrdinalIgnoreCase));
+
+        if (duplicateTask)
+        {
+            throw new InvalidOperationException(
+                "This task is already assigned to this employee for this event.");
+        }
+
+        assignment.Task = taskName;
         assignment.Deadline = request.Deadline;
         assignment.Status = request.Status;
 
@@ -121,14 +144,12 @@ public class StaffService(
     }
 
     public async Task<bool> RemoveAsync(
-        int eventId,
-        int employeeId,
+        int assignmentId,
         CancellationToken cancellationToken)
     {
         EventEmployee? assignment =
-            await staffingRepository.GetAsync(
-                eventId,
-                employeeId,
+            await staffingRepository.GetByAssignmentIdAsync(
+                assignmentId,
                 cancellationToken);
 
         if (assignment is null)
@@ -148,6 +169,7 @@ public class StaffService(
     {
         return new StaffDto
         {
+            AssignmentId = assignment.AssignmentId,
             EventId = assignment.EventId,
 
             EventName =
@@ -166,7 +188,11 @@ public class StaffService(
 
             Task = assignment.Task,
 
-            Deadline = assignment.Deadline,
+            Deadline = assignment.Deadline.HasValue
+                ? DateTime.SpecifyKind(
+                    assignment.Deadline.Value,
+                    DateTimeKind.Utc)
+                : null,
 
             Status = assignment.Status.ToString()
         };

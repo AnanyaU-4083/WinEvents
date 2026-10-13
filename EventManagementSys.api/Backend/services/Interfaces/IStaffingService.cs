@@ -22,13 +22,11 @@ public interface IStaffingService
         CancellationToken cancellationToken);
 
     Task<bool> UpdateAsync(
-        int eventId,
-        int employeeId,
+        int assignmentId,
         UpdateStaffDto request,
         CancellationToken cancellationToken);
 
     Task<bool> RemoveAsync(
-        int eventId,
-        int employeeId,
+        int assignmentId,
         CancellationToken cancellationToken);
 }

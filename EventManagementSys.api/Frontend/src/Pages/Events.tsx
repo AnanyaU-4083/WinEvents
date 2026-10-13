@@ -55,6 +55,7 @@ interface Employee {
 }
 
 interface StaffAssignment {
+  assignmentId: number
   eventId: number
   eventName: string
   employeeId: number
@@ -2071,7 +2072,7 @@ console.log('Converted to UTC:', {
                         {assignedStaff.map(
                           (assignment) => (
                             <tr
-                              key={`${assignment.eventId}-${assignment.employeeId}`}
+                              key={assignment.assignmentId}
                               className="border-t border-[#edf0f4]"
                             >
                               <td className="px-4 py-3">

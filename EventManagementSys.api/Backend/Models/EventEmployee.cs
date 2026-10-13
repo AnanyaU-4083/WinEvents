@@ -3,7 +3,9 @@ namespace EventManagementSys.api.Models;
 
 public class EventEmployee
 {
-    [Key] public int EventId { get; set; }
+    [Key] public int AssignmentId { get; set; }
+
+    public int EventId { get; set; }
 
     public int EmployeeId { get; set; }
 

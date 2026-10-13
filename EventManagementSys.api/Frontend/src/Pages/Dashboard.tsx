@@ -127,6 +127,7 @@ function Dashboard() {
   const [editingEventId, setEditingEventId] = useState<number | null>(null)
   const [formData, setFormData] = useState<EventFormData>(emptyForm)
   const [savingEvent, setSavingEvent] = useState(false)
+  const [attendeeEventPopup, setAttendeeEventPopup] = useState<{ event: EventDto; top: number; left: number } | null>(null)
 
   const currentMonth = currentDate.getMonth()
   const currentYear = currentDate.getFullYear()
@@ -231,6 +232,8 @@ function Dashboard() {
                 obj,
                 'venueName',
                 'VenueName',
+                'address',
+                'Address',
                 'name',
                 'Name',
               ),
@@ -344,6 +347,7 @@ function Dashboard() {
       Subject: event.eventName,
       StartTime: new Date(event.startDate),
       EndTime: new Date(event.endDate),
+      Status: getEventStatus(event.status),
     }))
 
   const isSameDay = (a: Date, b: Date) =>
@@ -380,8 +384,10 @@ function Dashboard() {
       return
     }
 
-    if (getEventStatus(event.status) === 'Cancelled') {
-      setError('Cancelled events cannot be edited.')
+    const status = getEventStatus(event.status)
+
+    if (status === 'Cancelled' || status === 'Completed') {
+      setError(status === 'Completed' ? 'Completed events cannot be edited.' : 'Cancelled events cannot be edited.')
       return
     }
 
@@ -418,6 +424,13 @@ function Dashboard() {
       return
     }
 
+    if (editingEventId !== null) {
+      const eventBeingEdited = events.find(item => item.eventId === editingEventId)
+      if (!eventBeingEdited || getEventStatus(eventBeingEdited.status) !== 'Scheduled') {
+        setError('Only scheduled events can be edited.')
+        return
+      }
+    }
     const startDate = new Date(formData.startDate)
     const endDate = new Date(formData.endDate)
     const venueId = Number(formData.venueId)
@@ -574,13 +587,39 @@ function Dashboard() {
 
   // Use explicit popup actions rather than Syncfusion's delete behavior.
   const handlePopupOpen = (args: any) => {
-    if (args.type !== 'QuickInfo' || !args.data || !canManageEvents) return
+    if (args.type !== 'QuickInfo' || !args.data) return
 
     const eventId = Number(
       args.data.Id ?? args.data.EventId ?? args.data.eventId,
     )
 
     if (!Number.isInteger(eventId) || eventId <= 0) return
+
+    if (isAttendee) {
+      args.cancel = true
+      const event = events.find(item => item.eventId === eventId)
+      if (event) {
+        const target = args.target as HTMLElement | undefined
+        const rect = target?.getBoundingClientRect()
+        const popupWidth = 320
+        const popupHeight = 170
+        const left = rect
+          ? rect.right + popupWidth + 16 <= window.innerWidth
+            ? rect.right + 8
+            : Math.max(16, rect.left - popupWidth - 8)
+          : 16
+        const top = rect
+          ? Math.min(Math.max(16, rect.top), window.innerHeight - popupHeight - 16)
+          : 16
+
+        setAttendeeEventPopup({ event, top, left })
+      } else {
+        setAttendeeEventPopup(null)
+      }
+      return
+    }
+
+    if (!canManageEvents) return
 
     window.setTimeout(() => {
       const popup = document.querySelector<HTMLElement>(
@@ -589,25 +628,26 @@ function Dashboard() {
 
       if (!popup) return
 
-      const editButton = popup.querySelector<HTMLElement>(
-        '.e-event-edit, .e-edit',
-      )
+      const event = events.find(item => item.eventId === eventId)
 
-      if (editButton) {
-        editButton.onclick = e => {
-          e.preventDefault()
-          e.stopPropagation()
-          openEditEvent(eventId)
-        }
+      const removePopupActions = () => {
+        popup.querySelectorAll<HTMLElement>(
+          '.e-event-edit, .e-edit, .e-event-delete, .e-delete, [title="Edit"], [aria-label="Edit"], [title="Delete"], [aria-label="Delete"]',
+        ).forEach(button => button.remove())
+
+        popup.querySelectorAll<HTMLElement>('button, .e-btn').forEach(button => {
+          if (['edit', 'delete'].includes(button.textContent?.trim().toLowerCase() ?? '')) {
+            button.remove()
+          }
+        })
       }
 
-      const deleteButton = popup.querySelector<HTMLElement>(
-        '.e-event-delete, .e-delete',
-      )
+      removePopupActions()
+      const popupObserver = new MutationObserver(removePopupActions)
+      popupObserver.observe(popup, { childList: true, subtree: true })
+      window.setTimeout(() => popupObserver.disconnect(), 5000)
 
-      if (deleteButton) {
-        deleteButton.style.display = 'none'
-      }
+      if (!event || getEventStatus(event.status) !== 'Scheduled') return
 
       if (popup.querySelector('[data-custom-cancel-event="true"]')) {
         return
@@ -712,9 +752,27 @@ function Dashboard() {
         args.data?.Id,
     )
 
-    if (Number.isInteger(eventId) && eventId > 0) {
+    const event = events.find(item => item.eventId === eventId)
+    if (
+      Number.isInteger(eventId) &&
+      eventId > 0 &&
+      event &&
+      getEventStatus(event.status) === 'Scheduled'
+    ) {
       openEditEvent(eventId)
     }
+  }
+
+  const handleEventRendered = (args: any) => {
+    if (args.data?.Status !== 'Completed') return
+
+    args.element.style.setProperty('background-color', '#ede9fe', 'important')
+    args.element.style.setProperty('border-color', '#c4b5fd', 'important')
+    args.element.style.setProperty('color', '#5b21b6', 'important')
+    args.element.querySelectorAll<HTMLElement>('*').forEach(child => {
+      child.style.setProperty('color', '#5b21b6', 'important')
+    })
+    args.element.style.setProperty('opacity', '1', 'important')
   }
 
   const handleRenderCell = (args: {
@@ -864,6 +922,7 @@ function Dashboard() {
                 readonly={!canManageEvents}
                 showQuickInfo={true}
                 eventSettings={{ dataSource: schedulerEvents }}
+                eventRendered={handleEventRendered}
                 cellClick={handleCellClick}
                 cellDoubleClick={handleCellDoubleClick}
                 eventDoubleClick={handleEventDoubleClick}
@@ -888,8 +947,35 @@ function Dashboard() {
               </ScheduleComponent>
             )}
 
+            {attendeeEventPopup && isAttendee && (
+              <div
+                className="fixed z-[1100] w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-[#fed7aa] bg-[#fff1e6] p-4 text-[#7c2d12] shadow-lg" style={{ top: attendeeEventPopup.top, left: attendeeEventPopup.left }}
+                role="dialog"
+                aria-labelledby="attendee-event-title"
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h3 id="attendee-event-title" className="text-base font-semibold">
+                    {attendeeEventPopup.event.eventName}
+                  </h3>
+                  <button
+                    type="button"
+                    aria-label="Close event details"
+                    onClick={() => setAttendeeEventPopup(null)}
+                    className="text-xl leading-none text-[#9a3412] hover:text-[#7c2d12]"
+                  >
+                    X
+                  </button>
+                </div>
+                <p className="mb-2 text-sm">
+                  {formatDisplayDate(attendeeEventPopup.event.startDate)} | {formatTime(attendeeEventPopup.event.startDate)} - {formatTime(attendeeEventPopup.event.endDate)}
+                </p>
+                <p className="text-sm">
+                  Location: {venues.find(venue => venue.venueId === attendeeEventPopup.event.venueId)?.venueName ?? 'Location unavailable'}
+                </p>
+              </div>
+            )}
             {showEventForm && canManageEvents && (
-              <div className="mt-6 rounded-xl border border-[#dfe5ec] bg-[#f9fafb] p-5">
+              <div className={editingEventId !== null ? 'fixed left-1/2 top-1/2 z-[1000] max-h-[90vh] w-full max-w-3xl -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-[#dfe5ec] bg-white p-5 shadow-xl' : 'mt-6 rounded-xl border border-[#dfe5ec] bg-[#f9fafb] p-5'}>
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h3 className="text-lg font-bold text-[#111827]">
                     {editingEventId === null ? 'Create Event' : 'Edit Event'}
@@ -979,7 +1065,7 @@ function Dashboard() {
                   </label>
 
                   <label className="grid gap-1 text-sm font-medium">
-                    Venue
+                    Location
                     <select
                       required
                       value={formData.venueId}

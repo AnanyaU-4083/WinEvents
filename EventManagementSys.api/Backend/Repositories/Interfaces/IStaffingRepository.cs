@@ -4,9 +4,8 @@ namespace EventManagementSys.api.Repository.Interfaces;
 
 public interface IStaffingRepository
 {
-    Task<EventEmployee?> GetAsync(
-        int eventId,
-        int employeeId,
+    Task<EventEmployee?> GetByAssignmentIdAsync(
+        int assignmentId,
         CancellationToken cancellationToken);
 
     Task<List<EventEmployee>> GetByEventIdAsync(
