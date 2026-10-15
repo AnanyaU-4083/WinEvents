@@ -7,6 +7,7 @@ public class EventAttendee
     [Key] public int EventId { get; set; }
     [Key] public int AttendeeId { get; set; }
     public DateTime RegisteredTime { get; set; }
+    public bool IsCancelled { get; set; }
 
     // Navigation properties
     public virtual Event? EventNavigation { get; set; }

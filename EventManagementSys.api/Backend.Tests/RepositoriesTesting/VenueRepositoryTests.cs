@@ -5,7 +5,7 @@ using EventEntity = EventManagementSys.api.Models.Event;
 
 namespace EventManagementSys.api.Tests.Repositories;
 
-public class VenueRepositoryTests : SqliteRepositoryTestBase
+public class VenueRepositoryTests : UnitRepositoryTestBase
 {
     private readonly CancellationToken _token = CancellationToken.None;
 
@@ -15,15 +15,15 @@ public class VenueRepositoryTests : SqliteRepositoryTestBase
         var repository = new VenueRepository(Context);
         var venue = await repository.AddAsync(new Venue { Address = "Town Hall", Capacity = 80 }, _token);
         var otherVenue = await repository.AddAsync(new Venue { Address = "Library", Capacity = 30 }, _token);
-        var eventAtVenue = new EventEntity { EventName = "Meetup", VenueId = venue.VenueId };
-        var eventAtOtherVenue = new EventEntity { EventName = "Workshop", VenueId = otherVenue.VenueId };
+        var eventAtVenue = new EventEntity { EventName = "Meetup", VenueId = venue.VenueId, VenueNavigation = venue };
+        var eventAtOtherVenue = new EventEntity { EventName = "Workshop", VenueId = otherVenue.VenueId, VenueNavigation = otherVenue };
         var attendee = new Attendee { Name = "Asha", Email = "asha@example.com" };
         Context.Events.AddRange(eventAtVenue, eventAtOtherVenue);
         Context.Attendees.Add(attendee);
         await Context.SaveChangesAsync(_token);
         Context.EventAttendees.AddRange(
-            new EventAttendee { EventId = eventAtVenue.EventId, AttendeeId = attendee.AttendeeId },
-            new EventAttendee { EventId = eventAtOtherVenue.EventId, AttendeeId = attendee.AttendeeId });
+            new EventAttendee { EventId = eventAtVenue.EventId, AttendeeId = attendee.AttendeeId, EventNavigation = eventAtVenue },
+            new EventAttendee { EventId = eventAtOtherVenue.EventId, AttendeeId = attendee.AttendeeId, EventNavigation = eventAtOtherVenue });
         await Context.SaveChangesAsync(_token);
 
         Assert.Equal("Town Hall", (await repository.GetByIdAsync(venue.VenueId, _token))!.Address);

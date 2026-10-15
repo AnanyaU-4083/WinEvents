@@ -10,6 +10,7 @@ interface EventDto {
   startDate: string
   endDate: string
   status: EventStatus | number
+  isRegistrationCancelled?: boolean
 }
 
 interface EmployeeTaskDto {
@@ -319,7 +320,7 @@ function EventNotifications() {
       const now = Date.now()
 
       for (const event of events) {
-        if (getEventStatus(event.status) === 'Cancelled') continue
+        if (getEventStatus(event.status) === 'Cancelled' || event.isRegistrationCancelled) continue
         if (notifiedEventIds.current.has(event.eventId)) continue
 
         const startTime = new Date(event.startDate).getTime()
@@ -489,7 +490,7 @@ function EventNotifications() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-3 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+        <div className="absolute right-0 z-50 mt-3 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[#1e5b79]/35 bg-white shadow-2xl shadow-slate-900/25">
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <div>
               <h2 className="text-sm font-bold text-gray-900">

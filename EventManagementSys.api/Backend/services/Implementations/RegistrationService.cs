@@ -13,7 +13,21 @@ public class RegistrationService(IRegistrationRepository registrationRepository,
 
         if (existingRegistration is not null)
         {
-            throw new InvalidOperationException("The attendee is already registered for this event.");
+            if (!existingRegistration.IsCancelled)
+            {
+                throw new InvalidOperationException("The attendee is already registered for this event.");
+            }
+
+            existingRegistration.IsCancelled = false;
+            existingRegistration.RegisteredTime = DateTime.UtcNow;
+            await registrationRepository.UpdateAsync(existingRegistration, cancellationToken);
+
+            return new RegistrationDto
+            {
+                EventId = existingRegistration.EventId,
+                AttendeeId = existingRegistration.AttendeeId,
+                RegisteredAt = existingRegistration.RegisteredTime
+            };
         }
 
         EventAttendee registration = new()
@@ -55,6 +69,38 @@ public class RegistrationService(IRegistrationRepository registrationRepository,
         cancellationToken);
 }
 
+    public async Task<bool> CancelCurrentUserRegistrationAsync(
+        int eventId,
+        string email,
+        CancellationToken cancellationToken)
+    {
+        Attendee? attendee = await attendeeRepository.GetByUserEmailAsync(email, cancellationToken);
+
+        if (attendee is null)
+        {
+            throw new KeyNotFoundException(
+                "The logged-in Microsoft user is not connected to an attendee.");
+        }
+
+        EventAttendee? registration = await registrationRepository.GetAsync(
+            eventId,
+            attendee.AttendeeId,
+            cancellationToken);
+
+        if (registration is null)
+        {
+            return false;
+        }
+
+        if (!registration.IsCancelled)
+        {
+            registration.IsCancelled = true;
+            await registrationRepository.UpdateAsync(registration, cancellationToken);
+        }
+
+        return true;
+    }
+
     public async Task<List<EventResponseDto>> GetRegisteredEventsAsync(
     string email,
     CancellationToken cancellationToken)
@@ -77,18 +123,18 @@ public class RegistrationService(IRegistrationRepository registrationRepository,
 
     return registrations
         .Where(registration => registration.EventNavigation is not null)
-        .Select(registration => registration.EventNavigation!)
-        .Select(eventItem => new EventResponseDto
+        .Select(registration => new EventResponseDto
         {
-            EventId = eventItem.EventId,
-            EventName = eventItem.EventName,
-            StartDate = eventItem.StartDate,
-            EndDate = eventItem.EndDate,
-            Budget = eventItem.Budget,
-            EventType = eventItem.EventType,
-            Status = eventItem.Status,
-            VenueId = eventItem.VenueId,
-            OrgId = eventItem.OrgId
+            EventId = registration.EventNavigation!.EventId,
+            EventName = registration.EventNavigation.EventName,
+            StartDate = registration.EventNavigation.StartDate,
+            EndDate = registration.EventNavigation.EndDate,
+            Budget = registration.EventNavigation.Budget,
+            EventType = registration.EventNavigation.EventType,
+            Status = registration.EventNavigation.Status,
+            VenueId = registration.EventNavigation.VenueId,
+            OrgId = registration.EventNavigation.OrgId,
+            IsRegistrationCancelled = registration.IsCancelled
         })
         .ToList();
 }
@@ -98,6 +144,7 @@ public class RegistrationService(IRegistrationRepository registrationRepository,
         List<EventAttendee> registrations = await registrationRepository.GetByEventIdAsync(eventId,cancellationToken);
 
         return registrations
+            .Where(r => !r.IsCancelled)
             .Where(r => r.AttendeeNavigation is not null)
             .Select(r => new ParticipantDto
             {

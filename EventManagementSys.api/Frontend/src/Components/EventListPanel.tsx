@@ -1,0 +1,251 @@
+import StatusBadge from './StatusBadge'
+
+type EventStatus = 0 | 1 | 2
+type EventType = 0 | 1 | 2 | 3 | 4 | 5
+
+interface EventListItem {
+  eventId: number
+  eventName: string
+  startDate: string
+  endDate: string
+  budget: number | null
+  eventType: EventType
+  status: EventStatus
+  venueId: number | null
+  orgId: number | null
+}
+
+interface EventListPanelProps {
+  events: EventListItem[]
+  loading: boolean
+  searchValue: string
+  statusFilter: string
+  canManageEvents: boolean
+  isAttendee: boolean
+  registeringEventId: number | null
+  cancellingRegistrationEventId: number | null
+  onSearchChange: (value: string) => void
+  onStatusFilterChange: (value: string) => void
+  isRegistered: (eventId: number) => boolean
+  isRegistrationCancelled: (eventId: number) => boolean
+  getEventTypeText: (eventType: EventType) => string
+  formatDate: (date: string) => string
+  onAssign: (event: EventListItem) => void
+  onEdit: (eventId: number) => void
+  onCancel: (eventId: number) => void
+  onRegister: (eventId: number) => void
+  onCancelRegistration: (eventId: number) => void
+}
+
+function EventListPanel({
+  events,
+  loading,
+  searchValue,
+  statusFilter,
+  canManageEvents,
+  isAttendee,
+  registeringEventId,
+  cancellingRegistrationEventId,
+  onSearchChange,
+  onStatusFilterChange,
+  isRegistered,
+  isRegistrationCancelled,
+  getEventTypeText,
+  formatDate,
+  onAssign,
+  onEdit,
+  onCancel,
+  onRegister,
+  onCancelRegistration,
+}: EventListPanelProps) {
+  const emptyMessage =
+    statusFilter === 'scheduled'
+      ? 'There are no scheduled events.'
+      : statusFilter === 'completed'
+        ? 'There are no past events.'
+        : statusFilter === 'cancelled'
+          ? 'There are no cancelled events.'
+          : canManageEvents
+            ? 'Create your first event to see it here.'
+            : 'There are no events matching your search.'
+
+  return (
+    <section className="mb-6 w-full overflow-hidden rounded-xl border border-[#1e5b79]/35 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.17)]">
+      <header className="border-b border-[#edf0f4] px-6 py-5">
+        <h2 className="text-lg font-semibold text-[#111827]">Events</h2>
+        <p className="mt-1 text-sm text-[#6b7280]">
+          {canManageEvents
+            ? 'View and manage your events.'
+            : 'View available events and register for the ones you want to attend.'}
+        </p>
+      </header>
+
+      <div className="flex flex-col gap-3 border-b border-[#edf0f4] p-6 md:flex-row">
+        <input
+          className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
+          type="text"
+          placeholder="Search events..."
+          value={searchValue}
+          onChange={(event) => onSearchChange(event.target.value)}
+        />
+        <select
+          className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
+          value={statusFilter}
+          onChange={(event) => onStatusFilterChange(event.target.value)}
+        >
+          <option value="scheduled">Scheduled Events</option>
+          <option value="all">All Statuses</option>
+          <option value="completed">Past Events</option>
+          <option value="cancelled">Cancelled Events</option>
+        </select>
+      </div>
+
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-full border-collapse text-left text-sm">
+          <thead>
+            <tr>
+              {['Event Name', 'Type', 'Start Date', 'End Date', 'Status', 'Actions'].map((heading) => (
+                <th
+                  key={heading}
+                  className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]"
+                >
+                  {heading}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={6}>
+                  <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                    <h3>Loading events...</h3>
+                  </div>
+                </td>
+              </tr>
+            ) : events.length === 0 ? (
+              <tr>
+                <td colSpan={6}>
+                  <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                    <h3>No events found</h3>
+                    <p className="mt-2 text-sm text-[#6b7280]">{emptyMessage}</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              events.map((event) => {
+                const registered = isRegistered(event.eventId)
+                const registrationCancelled = isRegistrationCancelled(event.eventId)
+                return (
+                  <tr key={event.eventId}>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
+                      {event.eventName}
+                    </td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
+                      {getEventTypeText(event.eventType)}
+                    </td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
+                      {formatDate(event.startDate)}
+                    </td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
+                      {formatDate(event.endDate)}
+                    </td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
+                      {event.status === 0 && <StatusBadge status="Scheduled" />}
+                      {event.status === 1 && <StatusBadge status="Cancelled" />}
+                      {event.status === 2 && <StatusBadge status="Completed" />}
+                    </td>
+                    <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
+                      {canManageEvents && (
+                        <>
+                          {event.status !== 1 && event.status !== 2 && (
+                            <>
+                              <button
+                                type="button"
+                                className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc]"
+                                onClick={() => onAssign(event)}
+                              >
+                                Assign Task
+                              </button>
+                              <button
+                                type="button"
+                                className="ml-2 rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
+                                onClick={() => onEdit(event.eventId)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="ml-2 rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
+                                onClick={() => onCancel(event.eventId)}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          )}
+                          {event.status === 1 && <span className="text-sm text-[#6b7280]">Cancelled</span>}
+                          {event.status === 2 && <span className="text-sm text-[#6b7280]">Completed</span>}
+                        </>
+                      )}
+
+                      {isAttendee && (
+                        <>
+                          {registered ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
+                                Registered
+                              </span>
+                              {event.status === 0 && (
+                                <button
+                                  type="button"
+                                  className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                  disabled={cancellingRegistrationEventId === event.eventId}
+                                  onClick={() => onCancelRegistration(event.eventId)}
+                                >
+                                  {cancellingRegistrationEventId === event.eventId ? 'Cancelling...' : 'Cancel Registration'}
+                                </button>
+                              )}
+                            </div>
+                          ) : registrationCancelled ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800">
+                                Cancelled
+                              </span>
+                              {event.status === 0 && (
+                                <button
+                                  type="button"
+                                  className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:opacity-50"
+                                  disabled={registeringEventId === event.eventId}
+                                  onClick={() => onRegister(event.eventId)}
+                                >
+                                  {registeringEventId === event.eventId ? 'Registering...' : 'Re-register'}
+                                </button>
+                              )}
+                            </div>
+                          ) : event.status === 0 ? (
+                            <button
+                              type="button"
+                              className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:opacity-50"
+                              disabled={registeringEventId === event.eventId}
+                              onClick={() => onRegister(event.eventId)}
+                            >
+                              {registeringEventId === event.eventId ? 'Registering...' : 'Register'}
+                            </button>
+                          ) : (
+                            <span className="text-sm text-[#6b7280]">Not available</span>
+                          )}
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
+export default EventListPanel

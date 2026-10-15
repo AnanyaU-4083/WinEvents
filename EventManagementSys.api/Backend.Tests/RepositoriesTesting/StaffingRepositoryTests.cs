@@ -5,7 +5,7 @@ using EventEntity = EventManagementSys.api.Models.Event;
 
 namespace EventManagementSys.api.Tests.Repositories;
 
-public class StaffingRepositoryTests : SqliteRepositoryTestBase
+public class StaffingRepositoryTests : UnitRepositoryTestBase
 {
     private readonly CancellationToken _token = CancellationToken.None;
 
@@ -21,12 +21,12 @@ public class StaffingRepositoryTests : SqliteRepositoryTestBase
         await Context.SaveChangesAsync(_token);
         var assignment = await repository.AddAsync(new EventEmployee
         {
-            EventId = eventEntity.EventId, EmployeeId = employee.EmployeeId,
+            EventId = eventEntity.EventId, EmployeeId = employee.EmployeeId, EventNavigation = eventEntity, EmployeeNavigation = employee,
             Task = "Sound check", Deadline = DateTime.UtcNow.AddHours(1),
         }, _token);
         await repository.AddAsync(new EventEmployee
         {
-            EventId = eventEntity.EventId, EmployeeId = otherEmployee.EmployeeId, Task = "Welcome desk",
+            EventId = eventEntity.EventId, EmployeeId = otherEmployee.EmployeeId, Task = "Welcome desk", EventNavigation = eventEntity, EmployeeNavigation = otherEmployee,
         }, _token);
 
         var byId = await repository.GetByAssignmentIdAsync(assignment.AssignmentId, _token);
@@ -50,7 +50,7 @@ public class StaffingRepositoryTests : SqliteRepositoryTestBase
         await Context.SaveChangesAsync(_token);
         var assignment = await repository.AddAsync(new EventEmployee
         {
-            EventId = eventEntity.EventId, EmployeeId = employee.EmployeeId, Task = "Setup",
+            EventId = eventEntity.EventId, EmployeeId = employee.EmployeeId, Task = "Setup", EventNavigation = eventEntity, EmployeeNavigation = employee,
         }, _token);
 
         assignment.Task = "Cleanup";

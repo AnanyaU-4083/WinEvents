@@ -4,7 +4,7 @@ using Xunit;
 
 namespace EventManagementSys.api.Tests.Repositories;
 
-public class AttendeeRepositoryTests : SqliteRepositoryTestBase
+public class AttendeeRepositoryTests : UnitRepositoryTestBase
 {
     private readonly CancellationToken _token = CancellationToken.None;
 
@@ -32,7 +32,7 @@ public class AttendeeRepositoryTests : SqliteRepositoryTestBase
         var user = new User { Username = "asha", Email = "asha@example.com" };
         Context.Users.Add(user);
         await Context.SaveChangesAsync(_token);
-        Context.Attendees.Add(new Attendee { UserId = user.UserId, Name = "Asha", Email = "other@example.com" });
+        Context.Attendees.Add(new Attendee { UserId = user.UserId, User = user, Name = "Asha", Email = "other@example.com" });
         await Context.SaveChangesAsync(_token);
 
         var attendee = await repository.GetByUserEmailAsync("asha@example.com", _token);

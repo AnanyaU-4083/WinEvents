@@ -5,7 +5,7 @@ using EventEntity = EventManagementSys.api.Models.Event;
 
 namespace EventManagementSys.api.Tests.Repositories;
 
-public class RegistrationRepositoryTests : SqliteRepositoryTestBase
+public class RegistrationRepositoryTests : UnitRepositoryTestBase
 {
     private readonly CancellationToken _token = CancellationToken.None;
 
@@ -23,6 +23,8 @@ public class RegistrationRepositoryTests : SqliteRepositoryTestBase
             EventId = eventEntity.EventId,
             AttendeeId = attendee.AttendeeId,
             RegisteredTime = DateTime.UtcNow,
+            EventNavigation = eventEntity,
+            AttendeeNavigation = attendee,
         }, _token);
 
         var found = await repository.GetAsync(eventEntity.EventId, attendee.AttendeeId, _token);
@@ -31,6 +33,10 @@ public class RegistrationRepositoryTests : SqliteRepositoryTestBase
         var attendeeRegistrations = await repository.GetByAttendeeIdAsync(attendee.AttendeeId, _token);
         Assert.Equal("Community Day", Assert.Single(attendeeRegistrations).EventNavigation!.EventName);
         Assert.Null(await repository.GetAsync(-1, attendee.AttendeeId, _token));
+
+        registration.IsCancelled = true;
+        await repository.UpdateAsync(registration, _token);
+        Assert.True((await repository.GetAsync(eventEntity.EventId, attendee.AttendeeId, _token))!.IsCancelled);
 
         await repository.DeleteAsync(registration, _token);
         Assert.Empty(await repository.GetByEventIdAsync(eventEntity.EventId, _token));

@@ -13,5 +13,7 @@ public interface IRegistrationRepository
     CancellationToken cancellationToken);
     Task<EventAttendee> AddAsync(EventAttendee registration,CancellationToken cancellationToken);
 
+    Task UpdateAsync(EventAttendee registration,CancellationToken cancellationToken);
+
     Task DeleteAsync(EventAttendee registration,CancellationToken cancellationToken);
 }

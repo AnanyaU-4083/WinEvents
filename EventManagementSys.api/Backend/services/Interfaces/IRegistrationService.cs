@@ -11,6 +11,11 @@ public interface IRegistrationService
     string email,
     CancellationToken cancellationToken);
 
+    Task<bool> CancelCurrentUserRegistrationAsync(
+        int eventId,
+        string email,
+        CancellationToken cancellationToken);
+
     Task<List<EventResponseDto>> GetRegisteredEventsAsync(
     string email,
     CancellationToken cancellationToken);

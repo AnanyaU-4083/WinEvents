@@ -5,7 +5,7 @@ using EventEntity = EventManagementSys.api.Models.Event;
 
 namespace EventManagementSys.api.Tests.Repositories;
 
-public class EventRepositoryTests : SqliteRepositoryTestBase
+public class EventRepositoryTests : UnitRepositoryTestBase
 {
     private readonly CancellationToken _token = CancellationToken.None;
 
@@ -18,7 +18,7 @@ public class EventRepositoryTests : SqliteRepositoryTestBase
         await Context.SaveChangesAsync(_token);
         DateTime now = DateTime.UtcNow;
         Context.Events.AddRange(
-            new EventEntity { EventName = "Upcoming", StartDate = now.AddDays(1), EndDate = now.AddDays(1).AddHours(1), VenueId = venue.VenueId, Status = EventStatus.Scheduled },
+            new EventEntity { EventName = "Upcoming", StartDate = now.AddDays(1), EndDate = now.AddDays(1).AddHours(1), VenueId = venue.VenueId, VenueNavigation = venue, Status = EventStatus.Scheduled },
             new EventEntity { EventName = "Upcoming cancelled", StartDate = now.AddDays(2), EndDate = now.AddDays(2).AddHours(1), Status = EventStatus.Cancelled },
             new EventEntity { EventName = "Past", StartDate = now.AddDays(-2), EndDate = now.AddDays(-1), Status = EventStatus.Completed },
             new EventEntity { EventName = "Past cancelled", StartDate = now.AddDays(-3), EndDate = now.AddDays(-2), Status = EventStatus.Cancelled });
@@ -38,11 +38,12 @@ public class EventRepositoryTests : SqliteRepositoryTestBase
     public async Task EventCrudAndSaveChangesPersistValues()
     {
         var repository = new EventRepository(Context);
-        var venue = await Context.Venues.AddAsync(new Venue { Address = "Hall", Capacity = 40 }, _token);
+        var venue = new Venue { Address = "Hall", Capacity = 40 };
+        Context.Venues.Add(venue);
         await Context.SaveChangesAsync(_token);
         var eventEntity = await repository.AddAsync(new EventEntity
         {
-            EventName = "Original", StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddHours(2), VenueId = venue.Entity.VenueId,
+            EventName = "Original", StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddHours(2), VenueId = venue.VenueId, VenueNavigation = venue,
         }, _token);
 
         Assert.True(eventEntity.EventId > 0);

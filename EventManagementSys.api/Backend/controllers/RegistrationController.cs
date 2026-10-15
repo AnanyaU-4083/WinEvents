@@ -52,6 +52,34 @@ public class RegistrationController(
         return Ok(registration);
     }
 
+    [HttpDelete("{eventId:int}/register")]
+    [Authorize(Roles = "Attendee")]
+    public async Task<IActionResult> CancelCurrentUserRegistration(
+        int eventId,
+        CancellationToken cancellationToken)
+    {
+        string? email = GetCurrentUserEmail();
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return Unauthorized(
+                "Unable to determine the logged-in user's email.");
+        }
+
+        bool cancelled =
+            await registrationService.CancelCurrentUserRegistrationAsync(
+                eventId,
+                email,
+                cancellationToken);
+
+        if (!cancelled)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
     [HttpGet("my-registrations")]
     [Authorize(Roles = "Attendee")]
     public async Task<ActionResult<List<EventResponseDto>>> GetMyRegistrations(

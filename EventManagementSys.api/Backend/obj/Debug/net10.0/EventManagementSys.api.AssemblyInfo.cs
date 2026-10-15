@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EventManagementSys.api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f02573d9f597731b638bac631869e29e08894fff")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4449bae93acedc6b2b86ca9787f9893c2d87190f")]
 [assembly: System.Reflection.AssemblyProductAttribute("EventManagementSys.api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EventManagementSys.api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

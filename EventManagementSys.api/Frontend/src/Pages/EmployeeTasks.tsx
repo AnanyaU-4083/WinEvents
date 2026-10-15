@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMsal } from '@azure/msal-react'
+import PageHeader from '../Components/PageHeader'
+import StatusBadge from '../Components/StatusBadge'
 
 interface EmployeeTask {
   assignmentId: number
@@ -153,37 +155,18 @@ function EmployeeTasks() {
     }
   }
 
-  const getStatusClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'completed':
-        return 'bg-green-100 text-green-700'
-
-      case 'inprogress':
-      case 'in progress':
-        return 'bg-blue-100 text-blue-700'
-
-      case 'pending':
-      default:
-        return 'bg-yellow-100 text-yellow-700'
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[#f5f8fc] px-6 py-8">
       <div className="mx-auto max-w-7xl">
 
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#111827]">
-            My Tasks
-          </h1>
-
-          <p className="mt-1 text-sm text-[#6b7280]">
-            View the tasks assigned to you for upcoming events.
-          </p>
-        </div>
+        <PageHeader
+          title="My Tasks"
+          description="View the tasks assigned to you for upcoming events."
+          layout="left"
+        />
 
         {loading && (
-          <div className="rounded-xl border border-[#dfe5ec] bg-white p-8 text-center">
+          <div className="rounded-xl border border-[#1e5b79]/35 bg-white p-8 text-center shadow-lg shadow-slate-900/15">
             <p className="text-sm text-[#6b7280]">
               Loading your tasks...
             </p>
@@ -201,7 +184,7 @@ function EmployeeTasks() {
         {!loading &&
           !error &&
           tasks.length === 0 && (
-            <div className="rounded-xl border border-[#dfe5ec] bg-white p-10 text-center">
+            <div className="rounded-xl border border-[#1e5b79]/35 bg-white p-10 text-center shadow-lg shadow-slate-900/15">
               <h2 className="text-lg font-semibold text-[#111827]">
                 No tasks assigned
               </h2>
@@ -216,7 +199,7 @@ function EmployeeTasks() {
         {!loading &&
           !error &&
           tasks.length > 0 && (
-            <div className="overflow-hidden rounded-xl border border-[#dfe5ec] bg-white shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-[#1e5b79]/35 bg-white shadow-lg shadow-slate-900/15">
               <div className="overflow-x-auto">
                 <table className="min-w-full">
 
@@ -305,13 +288,7 @@ function EmployeeTasks() {
                         </td>
 
                         <td className="px-6 py-4">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getStatusClass(
-                              item.status,
-                            )}`}
-                          >
-                            {item.status}
-                          </span>
+                          <StatusBadge context="task" status={item.status} />
                         </td>
 
                         <td className="px-6 py-4">

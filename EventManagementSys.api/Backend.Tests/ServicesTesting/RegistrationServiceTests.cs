@@ -33,6 +33,49 @@ public class RegistrationServiceTests
     }
 
     [Fact]
+    public async Task RegisterReactivatesCancelledRegistration()
+    {
+        var registration = new EventAttendee { EventId = 5, AttendeeId = 8, IsCancelled = true };
+        _registrations.Setup(repository => repository.GetAsync(5, 8, _token)).ReturnsAsync(registration);
+        _registrations.Setup(repository => repository.UpdateAsync(registration, _token)).Returns(Task.CompletedTask);
+
+        var result = await _service.RegisterAsync(5, 8, _token);
+
+        Assert.False(registration.IsCancelled);
+        Assert.Equal((5, 8), (result.EventId, result.AttendeeId));
+        Assert.NotEqual(default, result.RegisteredAt);
+        _registrations.Verify(repository => repository.UpdateAsync(registration, _token), Times.Once);
+        _registrations.Verify(repository => repository.AddAsync(It.IsAny<EventAttendee>(), _token), Times.Never);
+    }
+
+    [Fact]
+    public async Task CancelCurrentUserRegistrationHandlesMissingAttendeeAndRegistration()
+    {
+        _attendees.Setup(repository => repository.GetByUserEmailAsync("missing@example.com", _token)).ReturnsAsync((Attendee?)null);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.CancelCurrentUserRegistrationAsync(5, "missing@example.com", _token));
+
+        _attendees.Setup(repository => repository.GetByUserEmailAsync("user@example.com", _token)).ReturnsAsync(new Attendee { AttendeeId = 8 });
+        _registrations.Setup(repository => repository.GetAsync(5, 8, _token)).ReturnsAsync((EventAttendee?)null);
+
+        Assert.False(await _service.CancelCurrentUserRegistrationAsync(5, "user@example.com", _token));
+        _registrations.Verify(repository => repository.UpdateAsync(It.IsAny<EventAttendee>(), _token), Times.Never);
+    }
+
+    [Fact]
+    public async Task CancelCurrentUserRegistrationMarksRecordAndIsIdempotent()
+    {
+        var registration = new EventAttendee { EventId = 5, AttendeeId = 8 };
+        _attendees.Setup(repository => repository.GetByUserEmailAsync("user@example.com", _token)).ReturnsAsync(new Attendee { AttendeeId = 8 });
+        _registrations.Setup(repository => repository.GetAsync(5, 8, _token)).ReturnsAsync(registration);
+        _registrations.Setup(repository => repository.UpdateAsync(registration, _token)).Returns(Task.CompletedTask);
+
+        Assert.True(await _service.CancelCurrentUserRegistrationAsync(5, "user@example.com", _token));
+        Assert.True(registration.IsCancelled);
+        Assert.True(await _service.CancelCurrentUserRegistrationAsync(5, "user@example.com", _token));
+        _registrations.Verify(repository => repository.UpdateAsync(registration, _token), Times.Once);
+    }
+
+    [Fact]
     public async Task RegisterCurrentUserRequiresMappedAttendee()
     {
         _attendees.Setup(repository => repository.GetByUserEmailAsync("missing@example.com", _token)).ReturnsAsync((Attendee?)null);
@@ -55,11 +98,13 @@ public class RegistrationServiceTests
         _registrations.Setup(repository => repository.GetByAttendeeIdAsync(8, _token)).ReturnsAsync(
         [
             new EventAttendee(),
-            new EventAttendee { EventNavigation = new EventEntity { EventId = 5, EventName = "Meetup" } },
+            new EventAttendee { EventNavigation = new EventEntity { EventId = 5, EventName = "Meetup" }, IsCancelled = true },
         ]);
 
         var events = await _service.GetRegisteredEventsAsync("user@example.com", _token);
-        Assert.Equal("Meetup", Assert.Single(events).EventName);
+        var cancelledEvent = Assert.Single(events);
+        Assert.Equal("Meetup", cancelledEvent.EventName);
+        Assert.True(cancelledEvent.IsRegistrationCancelled);
     }
 
     [Fact]
@@ -69,6 +114,7 @@ public class RegistrationServiceTests
         [
             new EventAttendee(),
             new EventAttendee { AttendeeNavigation = new Attendee { AttendeeId = 8, Name = "Mina", Email = "mina@example.com", Phone = "123", Ticket = "VIP" } },
+            new EventAttendee { IsCancelled = true, AttendeeNavigation = new Attendee { AttendeeId = 9, Name = "Cancelled", Email = "cancelled@example.com" } },
         ]);
 
         var participants = await _service.GetParticipantsAsync(5, _token);

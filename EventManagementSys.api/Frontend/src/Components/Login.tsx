@@ -39,7 +39,7 @@ function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f5f8fc] px-4">
 
-      <div className="w-full max-w-md rounded-2xl border border-[#dfe5ec] bg-white p-8 text-center shadow-[0_6px_20px_rgba(15,23,42,0.08)]">
+      <div className="w-full max-w-md rounded-2xl border border-[#1e5b79]/35 bg-white p-8 text-center shadow-[0_10px_28px_rgba(15,23,42,0.17)]">
 
         <h1 className="text-3xl font-bold">
           <span className="text-[#0066ff]">

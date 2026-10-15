@@ -35,4 +35,5 @@ public class EventResponseDto
     public EventStatus Status { get; set; }
     public int? VenueId { get; set; }
     public int? OrgId { get; set; }
+    public bool IsRegistrationCancelled { get; set; }
 }

@@ -4,6 +4,8 @@ import type { AccountInfo } from '@azure/msal-browser'
 
 import SearchBar from '../Components/SearchBar'
 import EventFilter from '../Components/EventFilter'
+import PageHeader from '../Components/PageHeader'
+import FormField from '../Components/FormField'
 
 interface Attendee {
   attendeeId: number
@@ -841,43 +843,10 @@ function Participants() {
     >
 
       {/* PAGE HEADER */}
-
-      <div
-        className="
-          mb-6
-          flex
-          items-center
-          justify-between
-          gap-4
-        "
-      >
-
-        <div>
-
-          <h1
-            className="
-              text-2xl
-              font-bold
-              text-[#111827]
-            "
-          >
-            Participants
-          </h1>
-
-          <p
-            className="
-              mt-1
-              text-sm
-              text-[#6b7280]
-            "
-          >
-            Manage attendees and event
-            registrations.
-          </p>
-
-        </div>
-
-      </div>
+      <PageHeader
+        title="Participants"
+        description="Manage attendees and event registrations."
+      />
 
 
       {/* MAIN CONTENT CARD */}
@@ -887,9 +856,9 @@ function Participants() {
           overflow-hidden
           rounded-xl
           border
-          border-[#dfe5ec]
+          border-[#1e5b79]/35
           bg-white
-          shadow-[0_6px_20px_rgba(15,23,42,0.08)]
+          shadow-[0_10px_28px_rgba(15,23,42,0.17)]
         "
       >
 
@@ -1011,24 +980,7 @@ function Participants() {
 
               {/* NAME */}
 
-              <div
-                className="
-                  flex
-                  flex-col
-                  gap-2
-                "
-              >
-
-                <label
-                  className="
-                    text-sm
-                    font-medium
-                    text-[#374151]
-                  "
-                >
-                  Name
-                </label>
-
+              <FormField label="Name" className="gap-2">
                 <input
                   type="text"
                   name="name"
@@ -1038,29 +990,12 @@ function Participants() {
                   required
                 />
 
-              </div>
+              </FormField>
 
 
               {/* EMAIL */}
 
-              <div
-                className="
-                  flex
-                  flex-col
-                  gap-2
-                "
-              >
-
-                <label
-                  className="
-                    text-sm
-                    font-medium
-                    text-[#374151]
-                  "
-                >
-                  Email
-                </label>
-
+              <FormField label="Email" className="gap-2">
                 <input
                   type="email"
                   name="email"
@@ -1070,29 +1005,12 @@ function Participants() {
                   required
                 />
 
-              </div>
+              </FormField>
 
 
               {/* PHONE */}
 
-              <div
-                className="
-                  flex
-                  flex-col
-                  gap-2
-                "
-              >
-
-                <label
-                  className="
-                    text-sm
-                    font-medium
-                    text-[#374151]
-                  "
-                >
-                  Phone
-                </label>
-
+              <FormField label="Phone" className="gap-2">
                 <input
                   type="text"
                   name="phone"
@@ -1102,29 +1020,12 @@ function Participants() {
                   required
                 />
 
-              </div>
+              </FormField>
 
 
               {/* TICKET */}
 
-              <div
-                className="
-                  flex
-                  flex-col
-                  gap-2
-                "
-              >
-
-                <label
-                  className="
-                    text-sm
-                    font-medium
-                    text-[#374151]
-                  "
-                >
-                  Ticket
-                </label>
-
+              <FormField label="Ticket" className="gap-2">
                 <input
                   type="text"
                   name="ticket"
@@ -1134,29 +1035,12 @@ function Participants() {
                   required
                 />
 
-              </div>
+              </FormField>
 
 
               {/* EVENT */}
 
-              <div
-                className="
-                  flex
-                  flex-col
-                  gap-2
-                "
-              >
-
-                <label
-                  className="
-                    text-sm
-                    font-medium
-                    text-[#374151]
-                  "
-                >
-                  Event
-                </label>
-
+              <FormField label="Event" className="gap-2">
                 <select
                   name="eventId"
                   value={attendeeForm.eventId}
@@ -1184,7 +1068,7 @@ function Participants() {
 
                 </select>
 
-              </div>
+              </FormField>
 
             </div>
 

@@ -34,7 +34,7 @@ function Navigationbar() {
   }
 
   return (
-    <nav className="flex items-center justify-between border-b border-gray-200 bg-white px-8 py-4 shadow-sm">
+    <nav className="sticky top-0 z-50 flex items-center justify-between border-b border-[#1e5b79]/40 bg-white px-8 py-4 shadow-md shadow-slate-900/10">
 
       {/* LEFT SIDE */}
       <div className="flex items-center gap-10">

@@ -1,0 +1,158 @@
+import type { ReactNode } from 'react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import DashboardCalendarPanel from '../src/Components/DashboardCalendarPanel'
+
+vi.mock('@syncfusion/ej2-react-schedule', () => ({
+  ScheduleComponent: (props: Record<string, any>) => (
+    <div data-testid="schedule" data-readonly={String(props.readonly)}>
+      {props.children}
+      <button onClick={() => props.navigating({ currentDate: new Date('2026-11-01') })}>Navigate calendar</button>
+      <button onClick={() => props.navigating({})}>Navigate without date</button>
+      <button onClick={() => props.cellClick({})}>Cell click</button>
+      <button onClick={() => props.cellDoubleClick({})}>Cell double click</button>
+      <button onClick={() => props.eventDoubleClick({})}>Event double click</button>
+      <button onClick={() => props.popupOpen({})}>Popup open</button>
+      <button onClick={() => props.eventRendered({})}>Event rendered</button>
+      <button onClick={() => props.renderCell({})}>Render cell</button>
+    </div>
+  ),
+  ViewsDirective: ({ children }: { children: ReactNode }) => <>{children}</>,
+  ViewDirective: () => null,
+  Inject: () => null,
+  Month: {}, Week: {}, WorkWeek: {}, Day: {}, Agenda: {},
+}))
+
+const callbacks = {
+  onSetCurrentDate: vi.fn(), onClearSelectedDate: vi.fn(), onCreateEvent: vi.fn(),
+  onEventRendered: vi.fn(), onCellClick: vi.fn(), onCellDoubleClick: vi.fn(),
+  onEventDoubleClick: vi.fn(), onPopupOpen: vi.fn(), onRenderCell: vi.fn(),
+  onCloseAttendeePopup: vi.fn(), onReregister: vi.fn(), reregisteringEventId: null,
+  formatDisplayDate: vi.fn(() => 'Oct 20, 2026'),
+  formatTime: vi.fn(() => '5:30 PM'), onCloseEventForm: vi.fn(),
+  onSaveEvent: vi.fn((event) => event.preventDefault()), onFormChange: vi.fn(),
+}
+
+function props(overrides: Record<string, unknown> = {}) {
+  return {
+    monthEventCount: 1,
+    selectedDate: null,
+    currentDate: new Date('2026-10-01'),
+    schedulerEvents: [],
+    loading: false,
+    canManageEvents: true,
+    isAttendee: false,
+    venues: [{ venueId: 2, venueName: 'Main Hall' }],
+    organizations: [{ orgId: 5, orgName: 'WinWire' }],
+    attendeeEventPopup: null,
+    showEventForm: false,
+    editingEventId: null,
+    savingEvent: false,
+    formData: { eventName: '', eventType: '0', startDate: '', endDate: '', venueId: '', orgId: '', budget: '' },
+    ...callbacks,
+    ...overrides,
+  }
+}
+
+beforeEach(() => vi.clearAllMocks())
+
+describe('Dashboard calendar panel', () => {
+  it('shows loading, singular and plural event counts, and the selected date', () => {
+    const { rerender } = render(<DashboardCalendarPanel {...props({ loading: true, monthEventCount: 1 }) as any} />)
+    expect(screen.getByText('Loading events...')).toBeInTheDocument()
+    expect(screen.getByText('1 event this month')).toBeInTheDocument()
+    rerender(<DashboardCalendarPanel {...props({ monthEventCount: 3, selectedDate: new Date('2026-10-08') }) as any} />)
+    expect(screen.getByText('3 events this month')).toBeInTheDocument()
+    expect(screen.getByText('Selected date: Oct 8, 2026')).toBeInTheDocument()
+  })
+
+  it('provides calendar callbacks and allows a manager to open the create form', () => {
+    render(<DashboardCalendarPanel {...props()} />)
+    expect(screen.getByTestId('schedule')).toHaveAttribute('data-readonly', 'false')
+    fireEvent.click(screen.getByRole('button', { name: '+ Add Event' }))
+    expect(callbacks.onCreateEvent).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: 'Navigate calendar' }))
+    expect(callbacks.onSetCurrentDate).toHaveBeenCalledWith(new Date('2026-11-01'))
+    expect(callbacks.onClearSelectedDate).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getByRole('button', { name: 'Navigate without date' }))
+    expect(callbacks.onClearSelectedDate).toHaveBeenCalledOnce()
+    for (const label of ['Cell click', 'Cell double click', 'Event double click', 'Popup open', 'Event rendered', 'Render cell']) {
+      fireEvent.click(screen.getByRole('button', { name: label }))
+    }
+    expect(callbacks.onCellClick).toHaveBeenCalledOnce()
+    expect(callbacks.onCellDoubleClick).toHaveBeenCalledOnce()
+    expect(callbacks.onEventDoubleClick).toHaveBeenCalledOnce()
+    expect(callbacks.onPopupOpen).toHaveBeenCalledOnce()
+    expect(callbacks.onEventRendered).toHaveBeenCalledOnce()
+    expect(callbacks.onRenderCell).toHaveBeenCalledOnce()
+    expect(screen.getByText(/Use Add Event to create/)).toBeInTheDocument()
+  })
+
+  it('shows an inline create form and binds fields, venue, organization, save, and close actions', () => {
+    render(<DashboardCalendarPanel {...props({ showEventForm: true }) as any} />)
+    expect(screen.getByRole('heading', { name: 'Create Event' })).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Event name'), { target: { value: 'Launch' } })
+    expect(callbacks.onFormChange).toHaveBeenCalledWith('eventName', 'Launch')
+    fireEvent.change(screen.getByLabelText('Event type'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Location'), { target: { value: '2' } })
+    fireEvent.change(screen.getByLabelText('Organization (optional)'), { target: { value: '5' } })
+    fireEvent.change(screen.getByLabelText('Budget (optional)'), { target: { value: '250' } })
+    expect(screen.getByRole('option', { name: 'Main Hall' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'WinWire' })).toBeInTheDocument()
+    fireEvent.submit(document.querySelector('form')!)
+    expect(callbacks.onSaveEvent).toHaveBeenCalledOnce()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0])
+    expect(callbacks.onCloseEventForm).toHaveBeenCalledOnce()
+  })
+
+  it('shows the edit modal and saving states', () => {
+    render(<DashboardCalendarPanel {...props({ showEventForm: true, editingEventId: 12, savingEvent: true }) as any} />)
+    expect(screen.getByRole('dialog', { name: 'Edit event' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Edit Event' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled()
+    expect(screen.getAllByRole('button', { name: 'Close' })[0]).toBeDisabled()
+  })
+
+  it('renders read-only attendee calendar details and location fallback', () => {
+    const event = { eventId: 4, eventName: 'Town Hall', startDate: '2026-10-20T17:30:00', endDate: '2026-10-20T18:30:00', eventType: 0, status: 'Scheduled', venueId: 99 }
+    const { rerender } = render(<DashboardCalendarPanel {...props({ canManageEvents: false, isAttendee: true, attendeeEventPopup: { event, top: 20, left: 30 } }) as any} />)
+    expect(screen.getByTestId('schedule')).toHaveAttribute('data-readonly', 'true')
+    expect(screen.queryByRole('button', { name: '+ Add Event' })).not.toBeInTheDocument()
+    expect(screen.getByText('Location: Location unavailable')).toBeInTheDocument()
+    expect(screen.getByText(/Oct 20, 2026/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Close event details' }))
+    expect(callbacks.onCloseAttendeePopup).toHaveBeenCalledOnce()
+    rerender(<DashboardCalendarPanel {...props({ canManageEvents: false, isAttendee: false, attendeeEventPopup: { event, top: 20, left: 30 } }) as any} />)
+    expect(screen.queryByRole('dialog', { name: 'Town Hall' })).not.toBeInTheDocument()
+    expect(screen.getByText('Select a calendar event to view it.')).toBeInTheDocument()
+  })
+
+  it('shows cancellation status and re-register action in the attendee event popup', () => {
+    const event = {
+      eventId: 14,
+      eventName: 'Town Hall',
+      startDate: '2026-10-20T17:30:00',
+      endDate: '2026-10-20T18:30:00',
+      eventType: 0,
+      status: 'Scheduled',
+      isRegistrationCancelled: true,
+    }
+    const { rerender } = render(<DashboardCalendarPanel {...props({
+      canManageEvents: false,
+      isAttendee: true,
+      attendeeEventPopup: { event, top: 20, left: 30 },
+    }) as any} />)
+
+    expect(screen.getByText('Cancelled')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Re-register' }))
+    expect(callbacks.onReregister).toHaveBeenCalledWith(14)
+
+    rerender(<DashboardCalendarPanel {...props({
+      canManageEvents: false,
+      isAttendee: true,
+      reregisteringEventId: 14,
+      attendeeEventPopup: { event, top: 20, left: 30 },
+    }) as any} />)
+    expect(screen.getByRole('button', { name: 'Re-registering...' })).toBeDisabled()
+  })
+})

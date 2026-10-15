@@ -6,6 +6,10 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom'
+import PageHeader from '../Components/PageHeader'
+import EventTaskAssignmentPanel from '../Components/EventTaskAssignmentPanel'
+import EventEditorForm from '../Components/EventEditorForm'
+import EventListPanel from '../Components/EventListPanel'
 
 type EventStatus = 0 | 1 | 2
 // 0 = Scheduled
@@ -30,6 +34,7 @@ interface EventResponse {
   status: EventStatus
   venueId: number | null
   orgId: number | null
+  isRegistrationCancelled?: boolean
 }
 
 interface Venue {
@@ -129,6 +134,8 @@ function Events() {
   // ---------------------------------------------------------
 
   const [registeredEventIds, setRegisteredEventIds] =
+    useState<number[]>([])
+  const [cancelledRegistrationEventIds, setCancelledRegistrationEventIds] =
     useState<number[]>([])
 
   // ---------------------------------------------------------
@@ -397,9 +404,10 @@ function Events() {
         await response.json()
 
       setRegisteredEventIds(
-        data.map(
-          (event) => event.eventId,
-        ),
+        data.filter((event) => !event.isRegistrationCancelled).map((event) => event.eventId),
+      )
+      setCancelledRegistrationEventIds(
+        data.filter((event) => event.isRegistrationCancelled).map((event) => event.eventId),
       )
     }
 
@@ -539,10 +547,11 @@ function Events() {
 
         setRegisteredEventIds(
           (previous) => [
-            ...previous,
+            ...previous.filter((id) => id !== eventId),
             eventId,
           ],
         )
+        setCancelledRegistrationEventIds((previous) => previous.filter((id) => id !== eventId))
 
         setSuccessMessage(
           'You have successfully registered for the event.',
@@ -563,6 +572,33 @@ function Events() {
       }
     }
 
+  const cancelRegistration = async (eventId: number) => {
+    setError('')
+    setSuccessMessage('')
+    setRegisteringEventId(eventId)
+
+    try {
+      const response = await fetch(`${API_URL}/events/${eventId}/register`, {
+        method: 'DELETE',
+        headers: await getAuthHeaders(),
+      })
+
+      if (!response.ok) {
+        const message = await response.text()
+        throw new Error(message || 'Failed to cancel your registration.')
+      }
+
+      setRegisteredEventIds((previous) => previous.filter((id) => id !== eventId))
+      setCancelledRegistrationEventIds((previous) => [...new Set([...previous, eventId])])
+      setSuccessMessage('Your event registration has been cancelled.')
+    } catch (error) {
+      console.error('Registration cancellation failed:', error)
+      setError(error instanceof Error ? error.message : 'Failed to cancel your registration.')
+    } finally {
+      setRegisteringEventId(null)
+    }
+  }
+
   // ---------------------------------------------------------
   // CHECK WHETHER EVENT IS REGISTERED
   // ---------------------------------------------------------
@@ -573,6 +609,9 @@ function Events() {
         eventId,
       )
     }
+
+  const isRegistrationCancelled = (eventId: number) =>
+    cancelledRegistrationEventIds.includes(eventId)
 
   // ---------------------------------------------------------
   // FORM INPUT CHANGE
@@ -1530,24 +1569,14 @@ console.log('Converted to UTC:', {
     <div className="min-h-full bg-[#f5f8fc] p-6 md:p-8">
 
       {/* PAGE HEADER */}
-
-      <div className="mb-6 flex items-center justify-between gap-4">
-
-        <div>
-          <h1 className="text-2xl font-bold text-[#111827]">
-            Events
-          </h1>
-
-          <p className="mt-1 text-sm text-[#6b7280]">
-            {canManageEvents
-              ? 'Create and manage your events.'
-              : 'View and register for events.'}
-          </p>
-        </div>
-
-        {/* ONLY ADMIN / EMPLOYEE CAN CREATE */}
-
-        {canManageEvents && (
+      <PageHeader
+        title="Events"
+        description={
+          canManageEvents
+            ? 'Create and manage your events.'
+            : 'View and register for events.'
+        }
+        action={canManageEvents && (
           <button
             type="button"
             className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:opacity-50"
@@ -1564,8 +1593,7 @@ console.log('Converted to UTC:', {
               : '+ Create Event'}
           </button>
         )}
-
-      </div>
+      />
 
       {/* ERROR MESSAGE */}
 
@@ -1584,880 +1612,59 @@ console.log('Converted to UTC:', {
       )}
 
       {/* CREATE / EDIT FORM */}
-
-      {showCreateForm &&
-        canManageEvents && (
-          <div className="mb-6 overflow-hidden rounded-xl border border-[#dfe5ec] bg-white shadow-[0_6px_20px_rgba(15,23,42,0.08)]">
-
-            <div className="border-b border-[#edf0f4] px-6 py-5">
-
-              <h2 className="text-lg font-semibold text-[#111827]">
-                {editingEventId !== null
-                  ? 'Edit Event'
-                  : 'Create Event'}
-              </h2>
-
-            </div>
-
-            <form
-              className="space-y-5 p-6"
-              onSubmit={handleSubmit}
-            >
-
-              {/* EVENT NAME + EVENT TYPE */}
-
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
-                <div className="flex flex-col gap-2">
-
-                  <label
-                    className="text-sm font-medium text-[#374151]"
-                    htmlFor="eventName"
-                  >
-                    Event Name
-                  </label>
-
-                  <input
-                    className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                    id="eventName"
-                    type="text"
-                    placeholder="Enter event name"
-                    value={
-                      formData.eventName
-                    }
-                    onChange={(event) =>
-                      handleInputChange(
-                        'eventName',
-                        event.target.value,
-                      )
-                    }
-                  />
-
-                </div>
-
-                <div className="flex flex-col gap-2">
-
-                  <label
-                    className="text-sm font-medium text-[#374151]"
-                    htmlFor="eventType"
-                  >
-                    Event Type
-                  </label>
-
-                  <select
-                    className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                    id="eventType"
-                    value={
-                      formData.eventType
-                    }
-                    onChange={(event) =>
-                      handleInputChange(
-                        'eventType',
-                        event.target.value,
-                      )
-                    }
-                  >
-                    <option value="">
-                      Select event type
-                    </option>
-
-                    <option value="0">
-                      Conference
-                    </option>
-
-                    <option value="1">
-                      Workshop
-                    </option>
-
-                    <option value="2">
-                      Webinar
-                    </option>
-
-                    <option value="3">
-                      Cultural Fest
-                    </option>
-
-                    <option value="4">
-                      Meeting
-                    </option>
-
-                    <option value="5">
-                      Product Launch
-                    </option>
-                  </select>
-
-                </div>
-
-              </div>
-
-              {/* START + END DATE */}
-
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
-                <div className="flex flex-col gap-2">
-
-                  <label
-                    className="text-sm font-medium text-[#374151]"
-                    htmlFor="startDate"
-                  >
-                    Start Date
-                  </label>
-
-                  <input
-                    className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                    id="startDate"
-                    type="datetime-local"
-                    value={
-                      formData.startDate
-                    }
-                    onChange={(event) =>
-                      handleInputChange(
-                        'startDate',
-                        event.target.value,
-                      )
-                    }
-                  />
-
-                </div>
-
-                <div className="flex flex-col gap-2">
-
-                  <label
-                    className="text-sm font-medium text-[#374151]"
-                    htmlFor="endDate"
-                  >
-                    End Date
-                  </label>
-
-                  <input
-                    className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                    id="endDate"
-                    type="datetime-local"
-                    value={
-                      formData.endDate
-                    }
-                    onChange={(event) =>
-                      handleInputChange(
-                        'endDate',
-                        event.target.value,
-                      )
-                    }
-                  />
-
-                </div>
-
-              </div>
-
-              {/* VENUE + ORGANIZATION */}
-
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
-                <div className="flex flex-col gap-2">
-
-                  <label
-                    className="text-sm font-medium text-[#374151]"
-                    htmlFor="venue"
-                  >
-                    Venue
-                  </label>
-
-                  <select
-                    className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                    id="venue"
-                    value={
-                      formData.venueId
-                    }
-                    onChange={(event) =>
-                      handleInputChange(
-                        'venueId',
-                        event.target.value,
-                      )
-                    }
-                  >
-                    <option value="">
-                      Select venue
-                    </option>
-
-                    {venues.map(
-                      (venue) => (
-                        <option
-                          key={
-                            venue.venueId
-                          }
-                          value={
-                            venue.venueId
-                          }
-                        >
-                          {venue.address} -
-                          Capacity:{' '}
-                          {
-                            venue.capacity
-                          }
-                        </option>
-                      ),
-                    )}
-                  </select>
-
-                </div>
-
-                <div className="flex flex-col gap-2">
-
-                  <label
-                    className="text-sm font-medium text-[#374151]"
-                    htmlFor="organization"
-                  >
-                    Organization
-                  </label>
-
-                  <select
-                    className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                    id="organization"
-                    value={
-                      formData.orgId
-                    }
-                    onChange={(event) =>
-                      handleInputChange(
-                        'orgId',
-                        event.target.value,
-                      )
-                    }
-                  >
-                    <option value="">
-                      No organization
-                    </option>
-
-                    {organizations.map(
-                      (
-                        organization,
-                      ) => (
-                        <option
-                          key={
-                            organization.orgId
-                          }
-                          value={
-                            organization.orgId
-                          }
-                        >
-                          {
-                            organization.name
-                          }
-                        </option>
-                      ),
-                    )}
-                  </select>
-
-                </div>
-
-              </div>
-
-              {/* BUDGET */}
-
-              <div className="flex flex-col gap-2">
-
-                <label
-                  className="text-sm font-medium text-[#374151]"
-                  htmlFor="budget"
-                >
-                  Budget
-                </label>
-
-                <input
-                  className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                  id="budget"
-                  type="number"
-                  min="0"
-                  placeholder="Enter budget"
-                  value={
-                    formData.budget
-                  }
-                  onChange={(event) =>
-                    handleInputChange(
-                      'budget',
-                      event.target.value,
-                    )
-                  }
-                />
-
-              </div>
-
-              {/* FORM BUTTONS */}
-
-              <div className="flex flex-wrap justify-end gap-3 pt-2">
-
-                <button
-                  type="button"
-                  className="rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
-                  onClick={resetForm}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={saving}
-                >
-                  {saving
-                    ? 'Saving...'
-                    : editingEventId !==
-                        null
-                      ? 'Update Event'
-                      : 'Create Event'}
-                </button>
-
-              </div>
-
-            </form>
-
-          </div>
-        )}
+      {showCreateForm && canManageEvents && (
+        <EventEditorForm
+          formData={formData}
+          venues={venues}
+          organizations={organizations}
+          isEditing={editingEventId !== null}
+          saving={saving}
+          onInputChange={handleInputChange}
+          onSubmit={handleSubmit}
+          onCancel={resetForm}
+        />
+      )}
 
       {/* ASSIGN EMPLOYEE TASK FORM */}
-
-      {showAssignForm &&
-        assigningEvent &&
-        canManageEvents && (
-          <div className="mb-6 overflow-hidden rounded-xl border border-[#dfe5ec] bg-white shadow-[0_6px_20px_rgba(15,23,42,0.08)]">
-
-            <div className="flex items-center justify-between border-b border-[#edf0f4] px-6 py-5">
-
-              <div>
-                <h2 className="text-lg font-semibold text-[#111827]">
-                  Assign Employee Task
-                </h2>
-
-                <p className="mt-1 text-sm text-[#6b7280]">
-                  Event: {assigningEvent.eventName}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className="rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
-                onClick={closeAssignForm}
-              >
-                Close
-              </button>
-
-            </div>
-
-            <div className="space-y-5 p-6">
-
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-[#374151]"
-                    htmlFor="assignedEmployee"
-                  >
-                    Employee
-                  </label>
-
-                  <select
-                    id="assignedEmployee"
-                    className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                    value={selectedEmployeeId}
-                    onChange={(event) =>
-                      setSelectedEmployeeId(
-                        event.target.value,
-                      )
-                    }
-                  >
-                    <option value="">
-                      Select employee
-                    </option>
-
-                    {employees.map(
-                      (employee) => (
-                        <option
-                          key={employee.employeeId}
-                          value={employee.employeeId}
-                        >
-                          {employee.name}
-                          {employee.jobTitle
-                            ? ` - ${employee.jobTitle}`
-                            : ''}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-sm font-medium text-[#374151]"
-                    htmlFor="taskDeadline"
-                  >
-                    Deadline
-                  </label>
-
-                  <input
-                    id="taskDeadline"
-                    type="datetime-local"
-                    className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                    value={deadline}
-                    onChange={(event) =>
-                      setDeadline(
-                        event.target.value,
-                      )
-                    }
-                  />
-                </div>
-
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label
-                  className="text-sm font-medium text-[#374151]"
-                  htmlFor="employeeTask"
-                >
-                  Task
-                </label>
-
-                <textarea
-                  id="employeeTask"
-                  rows={3}
-                  placeholder="Enter the task assigned to this employee"
-                  className="w-full resize-none rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-                  value={task}
-                  onChange={(event) =>
-                    setTask(event.target.value)
-                  }
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={assigning}
-                  onClick={assignEmployeeTask}
-                >
-                  {assigning
-                    ? 'Assigning...'
-                    : 'Assign Task'}
-                </button>
-              </div>
-
-              <div className="border-t border-[#edf0f4] pt-5">
-                <h3 className="mb-4 text-base font-semibold text-[#111827]">
-                  Assigned Employees
-                </h3>
-
-                {assignedStaff.length === 0 ? (
-                  <p className="text-sm text-[#6b7280]">
-                    No employees have been assigned to this event yet.
-                  </p>
-                ) : (
-                  <div className="overflow-x-auto rounded-lg border border-[#dfe5ec]">
-                    <table className="min-w-full text-left text-sm">
-                      <thead>
-                        <tr className="bg-[#f5f8fc]">
-                          <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                            Employee
-                          </th>
-                          <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                            Task
-                          </th>
-                          <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                            Deadline
-                          </th>
-                          <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                            Status
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {assignedStaff.map(
-                          (assignment) => (
-                            <tr
-                              key={assignment.assignmentId}
-                              className="border-t border-[#edf0f4]"
-                            >
-                              <td className="px-4 py-3">
-                                <p className="font-medium text-[#111827]">
-                                  {assignment.name}
-                                </p>
-                                <p className="text-xs text-[#6b7280]">
-                                  {assignment.jobTitle}
-                                </p>
-                              </td>
-
-                              <td className="px-4 py-3 text-[#374151]">
-                                {assignment.task}
-                              </td>
-
-                              <td className="px-4 py-3 text-[#374151]">
-                                {assignment.deadline
-                                  ? new Date(
-                                      assignment.deadline,
-                                    ).toLocaleString()
-                                  : 'No deadline'}
-                              </td>
-
-                              <td className="px-4 py-3">
-                                <span className="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-                                  {assignment.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ),
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-            </div>
-
-          </div>
-        )}
+      {showAssignForm && assigningEvent && canManageEvents && (
+        <EventTaskAssignmentPanel
+          eventName={assigningEvent.eventName}
+          employees={employees}
+          assignedStaff={assignedStaff}
+          selectedEmployeeId={selectedEmployeeId}
+          setSelectedEmployeeId={setSelectedEmployeeId}
+          task={task}
+          setTask={setTask}
+          deadline={deadline}
+          setDeadline={setDeadline}
+          assigning={assigning}
+          onAssign={assignEmployeeTask}
+          onClose={closeAssignForm}
+        />
+      )}
 
       {/* EVENTS LIST */}
-
-      <div className="mb-6 w-full overflow-hidden rounded-xl border border-[#dfe5ec] bg-white shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
-
-        <div className="border-b border-[#edf0f4] px-6 py-5">
-
-          <div>
-
-            <h2 className="text-lg font-semibold text-[#111827]">
-              Events
-            </h2>
-
-            <p className="mt-1 text-sm text-[#6b7280]">
-              {canManageEvents
-                ? 'View and manage your events.'
-                : 'View available events and register for the ones you want to attend.'}
-            </p>
-
-          </div>
-
-        </div>
-
-        {/* FILTERS */}
-
-        <div className="flex flex-col gap-3 border-b border-[#edf0f4] p-6 md:flex-row">
-
-          {/* SEARCH */}
-
-          <input
-            className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-            type="text"
-            placeholder="Search events..."
-            value={searchText}
-            onChange={(event) =>
-              setSearchText(
-                event.target.value,
-              )
-            }
-          />
-
-          {/* STATUS FILTER */}
-
-          <select
-            className="w-full rounded-lg border border-[#dfe5ec] bg-white px-3 py-2.5 text-sm text-[#111827] outline-none transition focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/10"
-            value={statusFilter}
-            onChange={(event) =>
-              setStatusFilter(
-                event.target.value,
-              )
-            }
-          >
-            <option value="scheduled">
-              Scheduled Events
-            </option>
-
-            <option value="all">
-              All Statuses
-            </option>
-
-            <option value="completed">
-              Past Events
-            </option>
-
-            <option value="cancelled">
-              Cancelled Events
-            </option>
-          </select>
-
-        </div>
-
-        {/* TABLE */}
-
-        <div className="w-full overflow-x-auto">
-
-          <table className="min-w-full border-collapse text-left text-sm">
-
-            <thead>
-
-              <tr>
-
-                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                  Event Name
-                </th>
-
-                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                  Type
-                </th>
-
-                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                  Start Date
-                </th>
-
-                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                  End Date
-                </th>
-
-                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                  Status
-                </th>
-
-                <th className="bg-[#f5f8fc] px-5 py-3 text-xs font-semibold uppercase tracking-wide text-[#6b7280]">
-                  Actions
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {loading ? (
-
-                <tr>
-
-                  <td colSpan={6}>
-
-                    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-
-                      <h3>
-                        Loading events...
-                      </h3>
-
-                    </div>
-
-                  </td>
-
-                </tr>
-
-              ) : filteredEvents.length === 0 ? (
-
-                <tr>
-
-                  <td colSpan={6}>
-
-                    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-
-                      <h3>
-                        No events found
-                      </h3>
-
-                      <p className="mt-2 text-sm text-[#6b7280]">
-                        {statusFilter ===
-                        'scheduled'
-                          ? 'There are no scheduled events.'
-                          : statusFilter ===
-                              'completed'
-                            ? 'There are no past events.'
-                            : statusFilter ===
-                                'cancelled'
-                              ? 'There are no cancelled events.'
-                              : canManageEvents
-                                ? 'Create your first event to see it here.'
-                                : 'There are no events matching your search.'}
-                      </p>
-
-                    </div>
-
-                  </td>
-
-                </tr>
-
-              ) : (
-
-                filteredEvents.map(
-                  (event) => {
-
-                    const registered =
-                      isEventRegistered(
-                        event.eventId,
-                      )
-
-                    return (
-                      <tr
-                        key={
-                          event.eventId
-                        }
-                      >
-
-                        <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
-                          {
-                            event.eventName
-                          }
-                        </td>
-
-                        <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
-                          {getEventTypeText(
-                            event.eventType,
-                          )}
-                        </td>
-
-                        <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
-                          {formatDate(
-                            event.startDate,
-                          )}
-                        </td>
-
-                        <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
-                          {formatDate(
-                            event.endDate,
-                          )}
-                        </td>
-
-                        <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
-
-                          {event.status ===
-                            0 && (
-                            <span className="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-                              Scheduled
-                            </span>
-                          )}
-
-                          {event.status ===
-                            1 && (
-                            <span className="inline-flex rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
-                              Cancelled
-                            </span>
-                          )}
-
-                          {event.status ===
-                            2 && (
-                            <span className="inline-flex rounded-lg border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
-                              Completed
-                            </span>
-                          )}
-
-                        </td>
-
-                        <td className="border-t border-[#edf0f4] px-5 py-4 text-sm text-[#374151]">
-
-                          {/* ADMIN / EMPLOYEE */}
-
-                          {canManageEvents && (
-                            <>
-                              {event.status !==
-                                1 &&
-                                event.status !==
-                                  2 && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc]"
-                                      onClick={() =>
-                                        openAssignForm(
-                                          event,
-                                        )
-                                      }
-                                    >
-                                      Assign Task
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      className="ml-2 rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
-                                      onClick={() =>
-                                        navigate(
-                                          `/events/${event.eventId}`,
-                                        )
-                                      }
-                                    >
-                                      Edit
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      className="ml-2 rounded-lg border border-[#dfe5ec] bg-white px-4 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#f5f8fc]"
-                                      onClick={() =>
-                                        cancelEvent(
-                                          event.eventId,
-                                        )
-                                      }
-                                    >
-                                      Cancel
-                                    </button>
-                                  </>
-                                )}
-
-                              {event.status ===
-                                1 && (
-                                <span className="text-sm text-[#6b7280]">
-                                  Cancelled
-                                </span>
-                              )}
-
-                              {event.status ===
-                                2 && (
-                                <span className="text-sm text-[#6b7280]">
-                                  Completed
-                                </span>
-                              )}
-                            </>
-                          )}
-
-                          {/* ATTENDEE */}
-
-                          {isAttendee && (
-                            <>
-                              {registered ? (
-                                <span className="inline-flex rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
-                                  Registered
-                                </span>
-                              ) : event.status ===
-                                0 ? (
-                                <button
-                                  type="button"
-                                  className="rounded-lg bg-[#0066ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#0052cc] disabled:cursor-not-allowed disabled:opacity-50"
-                                  disabled={
-                                    registeringEventId ===
-                                    event.eventId
-                                  }
-                                  onClick={() =>
-                                    registerForEvent(
-                                      event.eventId,
-                                    )
-                                  }
-                                >
-                                  {registeringEventId ===
-                                  event.eventId
-                                    ? 'Registering...'
-                                    : 'Register'}
-                                </button>
-                              ) : (
-                                <span className="text-sm text-[#6b7280]">
-                                  Not available
-                                </span>
-                              )}
-                            </>
-                          )}
-
-                        </td>
-
-                      </tr>
-                    )
-                  },
-                )
-              )}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </div>
+      <EventListPanel
+        events={filteredEvents}
+        loading={loading}
+        searchValue={searchText}
+        statusFilter={statusFilter}
+        canManageEvents={canManageEvents}
+        isAttendee={isAttendee}
+        registeringEventId={registeringEventId}
+        cancellingRegistrationEventId={registeringEventId}
+        onSearchChange={setSearchText}
+        onStatusFilterChange={setStatusFilter}
+        isRegistered={isEventRegistered}
+        isRegistrationCancelled={isRegistrationCancelled}
+        getEventTypeText={getEventTypeText}
+        formatDate={formatDate}
+        onAssign={openAssignForm}
+        onEdit={(id) => navigate(`/events/${id}`)}
+        onCancel={cancelEvent}
+        onRegister={registerForEvent}
+        onCancelRegistration={cancelRegistration}
+      />
 
     </div>
   )

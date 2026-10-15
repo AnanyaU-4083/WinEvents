@@ -37,6 +37,12 @@ public class RegistrationRepository(AppDbContext dbContext) : IRegistrationRepos
         return registration;
     }
 
+    public async Task UpdateAsync(EventAttendee registration,CancellationToken cancellationToken)
+    {
+        dbContext.EventAttendees.Update(registration);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<List<EventAttendee>> GetByAttendeeIdAsync(
     int attendeeId,
     CancellationToken cancellationToken)

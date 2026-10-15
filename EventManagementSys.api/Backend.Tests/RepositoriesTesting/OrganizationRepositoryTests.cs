@@ -4,7 +4,7 @@ using Xunit;
 
 namespace EventManagementSys.api.Tests.Repositories;
 
-public class OrganizationRepositoryTests : SqliteRepositoryTestBase
+public class OrganizationRepositoryTests : UnitRepositoryTestBase
 {
     private readonly CancellationToken _token = CancellationToken.None;
 

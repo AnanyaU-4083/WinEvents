@@ -39,6 +39,24 @@ public class RegistrationControllerTests
     }
 
     [Fact]
+    public async Task CancelCurrentUserRegistrationRequiresEmailAndReturnsExpectedStatus()
+    {
+        ControllerTestHelpers.SetUser(_controller);
+        var unauthorized = Assert.IsType<UnauthorizedObjectResult>(
+            await _controller.CancelCurrentUserRegistration(4, _token));
+        Assert.Equal("Unable to determine the logged-in user's email.", unauthorized.Value);
+
+        ControllerTestHelpers.SetUser(_controller, new Claim("email", "person@example.com"));
+        _service.Setup(service => service.CancelCurrentUserRegistrationAsync(4, "person@example.com", _token))
+            .ReturnsAsync(false);
+        Assert.IsType<NotFoundResult>(await _controller.CancelCurrentUserRegistration(4, _token));
+
+        _service.Setup(service => service.CancelCurrentUserRegistrationAsync(4, "person@example.com", _token))
+            .ReturnsAsync(true);
+        Assert.IsType<NoContentResult>(await _controller.CancelCurrentUserRegistration(4, _token));
+    }
+
+    [Fact]
     public async Task GetMyRegistrationsRequiresEmailAndReturnsEvents()
     {
         ControllerTestHelpers.SetUser(_controller);

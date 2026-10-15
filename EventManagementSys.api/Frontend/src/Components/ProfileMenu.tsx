@@ -96,7 +96,7 @@ function ProfileMenu() {
       {isOpen && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-3 w-64 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
+          className="absolute right-0 z-50 mt-3 w-64 overflow-hidden rounded-xl border border-[#1e5b79]/35 bg-white shadow-2xl shadow-slate-900/25"
         >
           <div className="border-b border-gray-100 px-4 py-4">
             <div className="flex items-center gap-3">

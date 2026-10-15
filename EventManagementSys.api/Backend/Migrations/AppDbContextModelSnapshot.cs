@@ -148,6 +148,9 @@ namespace EventManagementSys.api.Migrations
                     b.Property<int>("AttendeeId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsCancelled")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("RegisteredTime")
                         .HasColumnType("datetime2");
 
