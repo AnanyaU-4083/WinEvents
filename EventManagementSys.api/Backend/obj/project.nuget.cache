@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "WwPqgpMAov8=",
+  "dgSpecHash": "+49mOwviwPo=",
   "success": true,
-  "projectFilePath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj",
+  "projectFilePath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\AnanyaUrlam\\.nuget\\packages\\azure.core\\1.50.0\\azure.core.1.50.0.nupkg.sha512",
     "C:\\Users\\AnanyaUrlam\\.nuget\\packages\\azure.identity\\1.17.2\\azure.identity.1.17.2.nupkg.sha512",
@@ -85,9 +85,9 @@
       "code": "NU1902",
       "level": "Warning",
       "message": "Package 'System.Security.Cryptography.Pkcs' 10.0.10 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-2fmv-rv2c-59x7",
-      "projectPath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj",
+      "projectPath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj",
       "warningLevel": 1,
-      "filePath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj",
+      "filePath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj",
       "libraryId": "System.Security.Cryptography.Pkcs",
       "targetGraphs": [
         "net10.0"
@@ -97,9 +97,9 @@
       "code": "NU1903",
       "level": "Warning",
       "message": "Package 'System.Security.Cryptography.Pkcs' 10.0.10 has a known high severity vulnerability, https://github.com/advisories/GHSA-846f-f764-76mx",
-      "projectPath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj",
+      "projectPath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj",
       "warningLevel": 1,
-      "filePath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj",
+      "filePath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj",
       "libraryId": "System.Security.Cryptography.Pkcs",
       "targetGraphs": [
         "net10.0"

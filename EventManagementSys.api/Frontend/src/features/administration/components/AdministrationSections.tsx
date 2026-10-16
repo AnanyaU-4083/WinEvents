@@ -3,6 +3,7 @@ import AdminDataTable from './AdminDataTable';
 import AdminSectionPanel from './AdminSectionPanel';
 import EmptyTableRow from '@/shared/components/EmptyTableRow';
 import FormField from '@/shared/components/FormField';
+import Modal from '@/shared/components/Modal';
 
 export interface Organization {
   orgId: number;
@@ -87,15 +88,17 @@ export function OrganizationSection({
       onAdd={onOpenAdd}
     >
       {formOpen && (
-        <form
-          onSubmit={onSubmit}
-          className="mb-6 rounded-xl border border-border-default bg-surface-muted p-5"
+        <Modal
+          open={formOpen}
+          ariaLabel={editingId === null ? 'Add organization' : 'Edit organization'}
+          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
         >
+        <form onSubmit={onSubmit}>
           <h3 className="mb-5 text-base font-semibold text-text-primary">
             {editingId === null ? 'Add Organization' : 'Edit Organization'}
           </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField label="Name">
+            <FormField label="Name" required>
               <input
                 type="text"
                 name="name"
@@ -105,7 +108,7 @@ export function OrganizationSection({
                 className={inputClass}
               />
             </FormField>
-            <FormField label="Email">
+            <FormField label="Email" required>
               <input
                 type="email"
                 name="email"
@@ -115,7 +118,7 @@ export function OrganizationSection({
                 className={inputClass}
               />
             </FormField>
-            <FormField label="Phone">
+            <FormField label="Phone" required>
               <input
                 type="text"
                 name="phone"
@@ -143,6 +146,7 @@ export function OrganizationSection({
             updateLabel="Update Organization"
           />
         </form>
+        </Modal>
       )}
 
       <AdminDataTable
@@ -221,15 +225,17 @@ export function EmployeeSection({
       onAdd={onOpenAdd}
     >
       {formOpen && (
-        <form
-          onSubmit={onSubmit}
-          className="mb-6 rounded-xl border border-border-default bg-surface-muted p-5"
+        <Modal
+          open={formOpen}
+          ariaLabel={editingId === null ? 'Add employee' : 'Edit employee'}
+          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
         >
+        <form onSubmit={onSubmit}>
           <h3 className="mb-5 text-base font-semibold text-text-primary">
             {editingId === null ? 'Add Employee' : 'Edit Employee'}
           </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField label="Name">
+            <FormField label="Name" required>
               <input
                 type="text"
                 name="name"
@@ -239,7 +245,7 @@ export function EmployeeSection({
                 className={inputClass}
               />
             </FormField>
-            <FormField label="Job Title">
+            <FormField label="Job Title" required>
               <input
                 type="text"
                 name="jobTitle"
@@ -249,7 +255,7 @@ export function EmployeeSection({
                 className={inputClass}
               />
             </FormField>
-            <FormField label="Email">
+            <FormField label="Email" required>
               <input
                 type="email"
                 name="email"
@@ -259,7 +265,7 @@ export function EmployeeSection({
                 className={inputClass}
               />
             </FormField>
-            <FormField label="Organization">
+            <FormField label="Organization" required>
               <select
                 name="orgId"
                 value={form.orgId}
@@ -284,6 +290,7 @@ export function EmployeeSection({
             updateLabel="Update Employee"
           />
         </form>
+        </Modal>
       )}
 
       <AdminDataTable
@@ -353,13 +360,15 @@ export function VenueSection({
       onAdd={onOpenAdd}
     >
       {formOpen && (
-        <form
-          onSubmit={onSubmit}
-          className="mb-6 rounded-xl border border-border-default bg-surface-muted p-5"
+        <Modal
+          open={formOpen}
+          ariaLabel="Add venue"
+          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
         >
+        <form onSubmit={onSubmit}>
           <h3 className="mb-5 text-base font-semibold text-text-primary">Add Venue</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField label="Address">
+            <FormField label="Address" required>
               <input
                 type="text"
                 name="address"
@@ -369,7 +378,7 @@ export function VenueSection({
                 className={inputClass}
               />
             </FormField>
-            <FormField label="Capacity">
+            <FormField label="Capacity" required>
               <input
                 type="number"
                 name="capacity"
@@ -389,6 +398,7 @@ export function VenueSection({
             updateLabel="Add Venue"
           />
         </form>
+        </Modal>
       )}
 
       <AdminDataTable minWidth="600px" headers={['Venue', 'Location', 'Capacity']}>

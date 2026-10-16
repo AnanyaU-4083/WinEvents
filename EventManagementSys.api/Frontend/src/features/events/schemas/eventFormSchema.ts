@@ -8,7 +8,8 @@ export const eventFormSchema = z
     venueId: z.string().min(1, 'Please select a venue.'),
     budget: z
       .string()
-      .refine((value) => value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0), {
+      .min(1, 'Budget is required.')
+      .refine((value) => Number.isFinite(Number(value)) && Number(value) >= 0, {
         message: 'Budget must be zero or greater.',
       }),
     eventType: z.string().refine((value) => ['0', '1', '2', '3', '4', '5'].includes(value), {

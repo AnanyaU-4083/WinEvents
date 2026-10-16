@@ -78,8 +78,7 @@ const callbacks = {
   formatDisplayDate: vi.fn(() => 'Oct 20, 2026'),
   formatTime: vi.fn(() => '5:30 PM'),
   onCloseEventForm: vi.fn(),
-  onSaveEvent: vi.fn((event) => event.preventDefault()),
-  onFormChange: vi.fn(),
+  onSaveEvent: vi.fn(),
 };
 
 function props(overrides: Partial<DashboardCalendarPanelProps> = {}): DashboardCalendarPanelProps {
@@ -91,8 +90,8 @@ function props(overrides: Partial<DashboardCalendarPanelProps> = {}): DashboardC
     loading: false,
     canManageEvents: true,
     isAttendee: false,
-    venues: [{ venueId: 2, venueName: 'Main Hall' }],
-    organizations: [{ orgId: 5, orgName: 'WinWire' }],
+    venues: [{ venueId: 2, address: 'Main Hall', capacity: 100 }],
+    organizations: [{ orgId: 5, name: 'WinWire' }],
     attendeeEventPopup: null,
     showEventForm: false,
     editingEventId: null,
@@ -158,16 +157,20 @@ describe('Dashboard calendar panel', () => {
     expect(screen.getByText(/Use Add Event to create/)).toBeInTheDocument();
   });
 
-  it('shows an inline create form and binds fields, venue, organization, save, and close actions', () => {
+  it('shows the create modal with required budget and loaded venue and organization options', () => {
     render(<DashboardCalendarPanel {...props({ showEventForm: true })} />);
+    expect(screen.getByRole('dialog', { name: 'Create event' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Create Event' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Event name'), { target: { value: 'Launch' } });
-    expect(callbacks.onFormChange).toHaveBeenCalledWith('eventName', 'Launch');
-    fireEvent.change(screen.getByLabelText('Event type'), { target: { value: '2' } });
-    fireEvent.change(screen.getByLabelText('Location'), { target: { value: '2' } });
-    fireEvent.change(screen.getByLabelText('Organization (optional)'), { target: { value: '5' } });
-    fireEvent.change(screen.getByLabelText('Budget (optional)'), { target: { value: '250' } });
-    expect(screen.getByRole('option', { name: 'Main Hall' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Event Name/), { target: { value: 'Launch' } });
+    fireEvent.change(screen.getByLabelText(/Start Date and Time/), {
+      target: { value: '2026-10-20T09:00' },
+    });
+    fireEvent.change(screen.getByLabelText(/End Date and Time/), {
+      target: { value: '2026-10-20T10:00' },
+    });
+    fireEvent.change(screen.getByLabelText(/Venue/), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText(/Budget/), { target: { value: '250' } });
+    expect(screen.getByRole('option', { name: 'Main Hall - Capacity: 100' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'WinWire' })).toBeInTheDocument();
     fireEvent.submit(document.querySelector('form')!);
     expect(callbacks.onSaveEvent).toHaveBeenCalledOnce();

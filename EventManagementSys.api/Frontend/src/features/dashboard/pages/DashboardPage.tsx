@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import DashboardSummaryCards from '@/features/dashboard/components/DashboardSummaryCards';
 import UpcomingEventsPanel from '@/features/dashboard/components/UpcomingEventsPanel';
 import DashboardCalendarPanel from '@/features/dashboard/components/DashboardCalendarPanel';
+import FeedbackModal from '@/shared/components/FeedbackModal';
+import type { EventFormData } from '@/features/events/schemas/eventFormSchema';
 type EventStatus = 'Scheduled' | 'Cancelled' | 'Completed';
 interface EventDto {
   eventId: number;
@@ -20,20 +22,12 @@ interface EventDto {
 }
 interface VenueOption {
   venueId: number;
-  venueName: string;
+  address: string;
+  capacity: number;
 }
 interface OrganizationOption {
   orgId: number;
-  orgName: string;
-}
-interface EventFormData {
-  eventName: string;
-  eventType: string;
-  startDate: string;
-  endDate: string;
-  venueId: string;
-  orgId: string;
-  budget: string;
+  name: string;
 }
 const emptyForm: EventFormData = {
   eventName: '',
@@ -88,6 +82,7 @@ function DashboardPage() {
   const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventForm, setShowEventForm] = useState(false);
@@ -98,6 +93,7 @@ function DashboardPage() {
     event: EventDto;
     top: number;
     left: number;
+    isCompleted: boolean;
   } | null>(null);
   const [reregisteringEventId, setReregisteringEventId] = useState<number | null>(null);
   const currentMonth = currentDate.getMonth();
@@ -174,18 +170,19 @@ function DashboardPage() {
             const obj = item as Record<string, unknown>;
             return {
               venueId: getObjectId(obj, 'venueId', 'VenueId', 'id', 'Id'),
-              venueName: getObjectString(
+              address: getObjectString(
                 obj,
-                'venueName',
-                'VenueName',
                 'address',
                 'Address',
+                'venueName',
+                'VenueName',
                 'name',
                 'Name',
               ),
+              capacity: getObjectId(obj, 'capacity', 'Capacity'),
             };
           })
-          .filter((venue) => venue.venueId > 0 && venue.venueName !== '');
+          .filter((venue) => venue.venueId > 0 && venue.address !== '');
         const organizationData: OrganizationOption[] = organizationJson
           .map((item: unknown) => {
             const obj = item as Record<string, unknown>;
@@ -199,7 +196,7 @@ function DashboardPage() {
                 'id',
                 'Id',
               ),
-              orgName: getObjectString(
+              name: getObjectString(
                 obj,
                 'orgName',
                 'OrgName',
@@ -210,7 +207,7 @@ function DashboardPage() {
               ),
             };
           })
-          .filter((organization) => organization.orgId > 0 && organization.orgName !== '');
+          .filter((organization) => organization.orgId > 0 && organization.name !== '');
         if (active) {
           setVenues(venueData);
           setOrganizations(organizationData);
@@ -275,8 +272,13 @@ function DashboardPage() {
     a.getDate() === b.getDate();
   const openCreateEvent = () => {
     if (!canManageEvents) return;
-    const start = selectedDate ? new Date(selectedDate) : new Date();
-    start.setHours(9, 0, 0, 0);
+    const now = new Date();
+    const start = selectedDate ? new Date(selectedDate) : now;
+    if (isSameDay(start, now)) {
+      start.setHours(now.getHours(), now.getMinutes(), 0, 0);
+    } else {
+      start.setHours(9, 0, 0, 0);
+    }
     const end = new Date(start);
     end.setHours(end.getHours() + 1);
     setEditingEventId(null);
@@ -286,6 +288,7 @@ function DashboardPage() {
       endDate: toDateTimeLocal(end),
     });
     setError('');
+    setSuccessMessage('');
     setShowEventForm(true);
   };
   const openEditEvent = (eventId: number) => {
@@ -323,8 +326,7 @@ function DashboardPage() {
     setEditingEventId(null);
     setFormData(emptyForm);
   };
-  const saveCalendarEvent = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const saveCalendarEvent = async (values: EventFormData) => {
     if (!canManageEvents) {
       setError('You do not have permission to manage events.');
       return;
@@ -336,47 +338,19 @@ function DashboardPage() {
         return;
       }
     }
-    const startDate = new Date(formData.startDate);
-    const endDate = new Date(formData.endDate);
-    const venueId = Number(formData.venueId);
-    const orgId = formData.orgId ? Number(formData.orgId) : null;
-    const budget = formData.budget ? Number(formData.budget) : null;
-    const eventType = Number(formData.eventType);
-    if (!formData.eventName.trim() || !formData.venueId) {
-      setError('Event name and venue are required.');
-      return;
-    }
-    if (
-      Number.isNaN(startDate.getTime()) ||
-      Number.isNaN(endDate.getTime()) ||
-      endDate <= startDate
-    ) {
-      setError('Enter valid dates. The end must be after the start.');
-      return;
-    }
-    if (!Number.isInteger(venueId) || venueId <= 0) {
-      setError('Please select a valid venue.');
-      return;
-    }
-    if (orgId !== null && (!Number.isInteger(orgId) || orgId <= 0)) {
-      setError('Please select a valid organization.');
-      return;
-    }
-    if (budget !== null && (!Number.isFinite(budget) || budget < 0)) {
-      setError('Budget must be zero or greater.');
-      return;
-    }
-    if (!Number.isInteger(eventType) || eventType < 0 || eventType > 5) {
-      setError('Please select a valid event type.');
-      return;
-    }
+    const startDate = new Date(values.startDate);
+    const endDate = new Date(values.endDate);
+    const venueId = Number(values.venueId);
+    const orgId = values.orgId ? Number(values.orgId) : null;
+    const budget = Number(values.budget);
+    const eventType = Number(values.eventType);
     try {
       setSavingEvent(true);
       setError('');
       const token = await getAccessToken();
       const isEditing = editingEventId !== null;
       const payload = {
-        eventName: formData.eventName.trim(),
+        eventName: values.eventName.trim(),
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
         venueId,
@@ -401,6 +375,11 @@ function DashboardPage() {
           message || `Unable to ${isEditing ? 'update' : 'create'} event (${response.status}).`,
         );
       }
+      setSuccessMessage(
+        editingEventId === null
+          ? 'Event created successfully.'
+          : 'Event changes saved successfully.',
+      );
       setShowEventForm(false);
       setEditingEventId(null);
       setFormData(emptyForm);
@@ -466,9 +445,12 @@ function DashboardPage() {
       args.cancel = true;
       return;
     }
-    if (isAttendee) {
+    const event = events.find((item) => item.eventId === eventId);
+    const showDetailsInApp =
+      isAttendee ||
+      (canManageEvents && event !== undefined && getEventStatus(event.status) === 'Completed');
+    if (showDetailsInApp) {
       args.cancel = true;
-      const event = events.find((item) => item.eventId === eventId);
       if (event) {
         const target = args.target as HTMLElement | undefined;
         const rect = target?.getBoundingClientRect();
@@ -482,7 +464,12 @@ function DashboardPage() {
         const top = rect
           ? Math.min(Math.max(16, rect.top), window.innerHeight - popupHeight - 16)
           : 16;
-        setAttendeeEventPopup({ event, top, left });
+        setAttendeeEventPopup({
+          event,
+          top,
+          left,
+          isCompleted: getEventStatus(event.status) === 'Completed',
+        });
       } else {
         setAttendeeEventPopup(null);
       }
@@ -726,10 +713,10 @@ function DashboardPage() {
             formatDisplayDate={formatDisplayDate}
             formatTime={formatTime}
             onCloseEventForm={closeEventForm}
+            onCancelEditingEvent={() => {
+              if (editingEventId !== null) void cancelCalendarEvent(editingEventId);
+            }}
             onSaveEvent={saveCalendarEvent}
-            onFormChange={(field, value) =>
-              setFormData((current) => ({ ...current, [field]: value }))
-            }
           />
 
           <UpcomingEventsPanel
@@ -740,6 +727,12 @@ function DashboardPage() {
           />
         </section>
       </main>
+      <FeedbackModal
+        open={Boolean(successMessage)}
+        title="Event saved"
+        message={successMessage}
+        onClose={() => setSuccessMessage('')}
+      />
     </div>
   );
 }

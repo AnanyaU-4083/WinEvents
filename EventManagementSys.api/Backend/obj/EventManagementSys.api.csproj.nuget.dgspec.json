@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj": {}
+    "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj": {
+    "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj",
+        "projectUniqueName": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj",
         "projectName": "EventManagementSys.api",
-        "projectPath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\EventManagementSys.api.csproj",
+        "projectPath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\EventManagementSys.api.csproj",
         "packagesPath": "C:\\Users\\AnanyaUrlam\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\backend\\obj\\",
+        "outputPath": "C:\\Users\\AnanyaUrlam\\OneDrive - WinWire\\TrainingPractice\\Project\\EventManagementSys.api\\Backend\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\AnanyaUrlam\\AppData\\Roaming\\NuGet\\NuGet.Config"

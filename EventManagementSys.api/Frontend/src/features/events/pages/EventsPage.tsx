@@ -8,6 +8,8 @@ import PageHeader from '@/shared/components/PageHeader';
 import EventTaskAssignmentPanel from '@/features/events/components/EventTaskAssignmentPanel';
 import EventEditorForm from '@/features/events/components/EventEditorForm';
 import EventListPanel from '@/features/events/components/EventListPanel';
+import Modal from '@/shared/components/Modal';
+import FeedbackModal from '@/shared/components/FeedbackModal';
 import type { EventFormData } from '../schemas/eventFormSchema';
 
 type EventStatus = 0 | 1 | 2;
@@ -137,20 +139,12 @@ function EventsPage() {
   // Default is Scheduled.
   // ---------------------------------------------------------
 
-  const [statusFilter, setStatusFilter] = useState('scheduled');
+  const [statusFilter, setStatusFilter] = useState('upcoming');
 
   const eventsQuery = useQuery({
-    queryKey: ['events', accountId, statusFilter],
+    queryKey: ['events', accountId],
     queryFn: async (): Promise<EventResponse[]> => {
-      let url = `${API_URL}/events`;
-
-      if (statusFilter === 'scheduled') {
-        url = `${API_URL}/events?upcomingOnly=true`;
-      } else if (statusFilter === 'completed') {
-        url = `${API_URL}/events?upcomingOnly=false`;
-      }
-
-      const response = await apiRequest(url);
+      const response = await apiRequest(`${API_URL}/events`);
       if (!response.ok) {
         throw new Error(`Failed to load events. Status: ${response.status}`);
       }
@@ -519,13 +513,21 @@ function EventsPage() {
 
     setEditingEventId(null);
 
+    const start = new Date();
+    start.setSeconds(0, 0);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const toLocalInput = (date: Date) => {
+      const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return localDate.toISOString().slice(0, 16);
+    };
+
     setFormData({
       eventName: '',
-      startDate: '',
-      endDate: '',
+      startDate: toLocalInput(start),
+      endDate: toLocalInput(end),
       venueId: '',
       budget: '',
-      eventType: '',
+      eventType: '0',
       orgId: '',
     });
 
@@ -559,10 +561,25 @@ function EventsPage() {
     setSuccessMessage('');
     setEditingEventId(null);
 
+    const now = new Date();
+    const startDate = validDate ? new Date(`${validDate}T09:00:00`) : now;
+    if (
+      startDate.getFullYear() === now.getFullYear() &&
+      startDate.getMonth() === now.getMonth() &&
+      startDate.getDate() === now.getDate()
+    ) {
+      startDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+    }
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    const toLocalInput = (date: Date) => {
+      const adjustedDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return adjustedDate.toISOString().slice(0, 16);
+    };
+
     setFormData({
       eventName: '',
-      startDate: validDate ? `${validDate}T09:00` : '',
-      endDate: validDate ? `${validDate}T10:00` : '',
+      startDate: toLocalInput(startDate),
+      endDate: toLocalInput(endDate),
       venueId: '',
       budget: '',
       eventType: '',
@@ -705,7 +722,7 @@ function EventsPage() {
 
       venueId: Number(values.venueId),
 
-      budget: values.budget === '' ? null : Number(values.budget),
+      budget: Number(values.budget),
 
       eventType: Number(values.eventType),
 
@@ -729,9 +746,9 @@ function EventsPage() {
       throw new Error(message || 'Failed to create event.');
     }
 
-    await loadEvents();
-
     setSuccessMessage('Event created successfully.');
+
+    await loadEvents();
 
     resetForm();
   };
@@ -753,7 +770,7 @@ function EventsPage() {
 
       endDate: new Date(values.endDate).toISOString(),
 
-      budget: values.budget === '' ? null : Number(values.budget),
+      budget: Number(values.budget),
 
       eventType: Number(values.eventType),
 
@@ -922,13 +939,17 @@ function EventsPage() {
       return;
     }
 
+    const validationErrors: string[] = [];
     if (!selectedEmployeeId) {
-      setError('Please select an employee.');
-      return;
+      validationErrors.push('Please select an employee.');
     }
 
     if (!task.trim()) {
-      setError('Task is required.');
+      validationErrors.push('Task is required.');
+    }
+
+    if (validationErrors.length > 0) {
+      setError(validationErrors.join(' '));
       return;
     }
 
@@ -1042,12 +1063,18 @@ function EventsPage() {
   const filteredEvents = events
     .filter((event) => {
       const matchesSearch = event.eventName.toLowerCase().includes(searchText.toLowerCase());
-
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'scheduled' && event.status === 0) ||
-        (statusFilter === 'completed' && event.status === 2) ||
-        (statusFilter === 'cancelled' && event.status === 1);
+      const now = Date.now();
+      const start = new Date(event.startDate).getTime();
+      const end = new Date(event.endDate).getTime();
+      const displayStatus =
+        event.status === 1
+          ? 'cancelled'
+          : event.status === 2 || end < now
+            ? 'completed'
+            : start <= now
+              ? 'ongoing'
+              : 'upcoming';
+      const matchesStatus = statusFilter === 'all' || statusFilter === displayStatus;
 
       return matchesSearch && matchesStatus;
     })
@@ -1101,43 +1128,47 @@ function EventsPage() {
         </div>
       )}
 
-      {/* SUCCESS MESSAGE */}
-
-      {successMessage && (
-        <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-          {successMessage}
-        </div>
-      )}
-
       {/* CREATE / EDIT FORM */}
       {showCreateForm && canManageEvents && (
-        <EventEditorForm
-          formData={formData}
-          venues={venues}
-          organizations={organizations}
-          isEditing={editingEventId !== null}
-          saving={saving}
-          onSubmit={handleSubmit}
-          onCancel={resetForm}
-        />
+        <Modal
+          open={showCreateForm}
+          ariaLabel={editingEventId === null ? 'Create event' : 'Edit event'}
+          className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-2xl"
+        >
+          <EventEditorForm
+            formData={formData}
+            venues={venues}
+            organizations={organizations}
+            isEditing={editingEventId !== null}
+            saving={saving}
+            onSubmit={handleSubmit}
+            onCancel={resetForm}
+          />
+        </Modal>
       )}
 
       {/* ASSIGN EMPLOYEE TASK FORM */}
       {showAssignForm && assigningEvent && canManageEvents && (
-        <EventTaskAssignmentPanel
-          eventName={assigningEvent.eventName}
-          employees={employees}
-          assignedStaff={assignedStaff}
-          selectedEmployeeId={selectedEmployeeId}
-          setSelectedEmployeeId={setSelectedEmployeeId}
-          task={task}
-          setTask={setTask}
-          deadline={deadline}
-          setDeadline={setDeadline}
-          assigning={assigning}
-          onAssign={assignEmployeeTask}
-          onClose={closeAssignForm}
-        />
+        <Modal
+          open={showAssignForm}
+          ariaLabel="Assign employee task"
+          className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-2xl"
+        >
+          <EventTaskAssignmentPanel
+            eventName={assigningEvent.eventName}
+            employees={employees}
+            assignedStaff={assignedStaff}
+            selectedEmployeeId={selectedEmployeeId}
+            setSelectedEmployeeId={setSelectedEmployeeId}
+            task={task}
+            setTask={setTask}
+            deadline={deadline}
+            setDeadline={setDeadline}
+            assigning={assigning}
+            onAssign={assignEmployeeTask}
+            onClose={closeAssignForm}
+          />
+        </Modal>
       )}
 
       {/* EVENTS LIST */}
@@ -1161,6 +1192,20 @@ function EventsPage() {
         onCancel={cancelEvent}
         onRegister={registerForEvent}
         onCancelRegistration={cancelRegistration}
+      />
+
+      <FeedbackModal
+        open={Boolean(error)}
+        title="Action failed"
+        message={error}
+        tone="error"
+        onClose={() => setError('')}
+      />
+      <FeedbackModal
+        open={Boolean(successMessage)}
+        title="Success"
+        message={successMessage}
+        onClose={() => setSuccessMessage('')}
       />
     </div>
   );

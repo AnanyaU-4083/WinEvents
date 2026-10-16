@@ -1,4 +1,5 @@
 using EventManagementSys.api.DTOs;
+using EventManagementSys.api.Models;
 using EventManagementSys.api.Services.Interfaces;
 
 using Microsoft.AspNetCore.Authorization;
@@ -130,6 +131,62 @@ public class StaffingController(
             await staffingService.UpdateAsync(
                 assignmentId,
                 request,
+                cancellationToken);
+
+        if (!updated)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
+
+    [HttpPost("/api/staff/{assignmentId:int}/decline")]
+    [Authorize(Roles = "Employee")]
+    public async Task<IActionResult> Decline(
+        int assignmentId,
+        CancellationToken cancellationToken)
+    {
+        string? email =
+            User.FindFirst("preferred_username")?.Value
+            ?? User.FindFirst("email")?.Value
+            ?? User.FindFirst("upn")?.Value
+            ?? User.FindFirst("name")?.Value;
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return Unauthorized(
+                "Unable to determine the logged-in employee's email.");
+        }
+
+        List<StaffDto> myTasks =
+            await staffingService.GetTasksByEmployeeEmailAsync(
+                email,
+                cancellationToken);
+
+        StaffDto? assignment =
+            myTasks.FirstOrDefault(task => task.AssignmentId == assignmentId);
+
+        if (assignment is null)
+        {
+            return Forbid();
+        }
+
+        if (!string.Equals(assignment.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+        {
+            return Conflict("Only pending tasks can be declined.");
+        }
+
+        bool updated =
+            await staffingService.UpdateAsync(
+                assignmentId,
+                new UpdateStaffDto
+                {
+                    Status = EventEmployee.AssignmentStatus.Declined,
+                    Task = assignment.Task,
+                    Deadline = assignment.Deadline
+                },
                 cancellationToken);
 
         if (!updated)

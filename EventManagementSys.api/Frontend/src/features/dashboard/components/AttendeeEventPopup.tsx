@@ -7,6 +7,7 @@ interface AttendeeEvent {
 
 interface AttendeeEventPopupProps {
   event: AttendeeEvent;
+  isCompleted?: boolean;
   top: number;
   left: number;
   location: string;
@@ -19,6 +20,7 @@ interface AttendeeEventPopupProps {
 
 function AttendeeEventPopup({
   event,
+  isCompleted = false,
   top,
   left,
   location,
@@ -31,7 +33,12 @@ function AttendeeEventPopup({
   return (
     <div
       className="fixed z-[1100] w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-orange-border-soft bg-surface-orange-popup p-4 text-text-orange-rich shadow-panel"
-      style={{ top, left }}
+      style={{
+        top,
+        left,
+        backgroundColor: 'rgba(255, 241, 230, 0.62)',
+        backdropFilter: 'blur(14px)',
+      }}
       role="dialog"
       aria-labelledby="attendee-event-title"
     >
@@ -52,6 +59,11 @@ function AttendeeEventPopup({
         {formatDate(event.startDate)} | {formatTime(event.startDate)} - {formatTime(event.endDate)}
       </p>
       <p className="text-sm">Location: {location}</p>
+      {isCompleted && (
+        <span className="mt-3 inline-flex rounded-md bg-purple-100/80 px-2.5 py-1 text-sm font-semibold text-purple-800">
+          Completed
+        </span>
+      )}
       {event.isRegistrationCancelled && (
         <div className="mt-3 flex items-center justify-between gap-3">
           <span className="rounded-md bg-orange-border-light px-2.5 py-1 text-sm font-semibold text-text-orange-deep">

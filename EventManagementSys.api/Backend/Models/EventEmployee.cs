@@ -16,7 +16,8 @@ public class EventEmployee
 {
     Pending,
     InProgress,
-    Completed
+    Completed,
+    Declined
 }
      public AssignmentStatus Status { get; set; } = AssignmentStatus.Pending;
 

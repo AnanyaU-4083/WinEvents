@@ -1,0 +1,103 @@
+<main class="tasks-page">
+  <header class="page-header">
+    <div>
+      <h1>My Tasks</h1>
+      <p>View and manage the tasks assigned to you.</p>
+    </div>
+  </header>
+
+  @if (error()) {
+    <div class="feedback error" role="alert">{{ error() }}</div>
+  }
+  @if (notice()) {
+    <div class="feedback success" role="status">{{ notice() }}</div>
+  }
+
+  @if (loading()) {
+    <section class="empty-card" role="status">Loading your tasks...</section>
+  } @else if (tasks().length === 0) {
+    <section class="empty-card">
+      <h2>No tasks assigned</h2>
+      <p>You currently don't have any tasks assigned to you.</p>
+    </section>
+  } @else {
+    <section class="table-card" aria-label="Assigned tasks">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Event</th>
+              <th scope="col">Task</th>
+              <th scope="col">Deadline</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (task of tasks(); track task.assignmentId) {
+              <tr [class]="'task-row overdue-' + overdueLevel(task)">
+                <td class="event-name">{{ task.eventName }}</td>
+                <td>{{ task.task }}</td>
+                <td>{{ formatDeadline(task.deadline) }}</td>
+                <td>
+                  <span class="status" [class]="'status ' + task.status.toLowerCase()">
+                    {{ task.status }}
+                  </span>
+                </td>
+                <td class="actions">
+                  @if (task.status.toLowerCase() === 'completed') {
+                    <span class="completed-label">Completed</span>
+                  } @else if (task.status.toLowerCase() === 'declined') {
+                    <span class="declined-label">Declined</span>
+                  } @else {
+                    <button
+                      type="button"
+                      class="complete-button"
+                      [disabled]="savingAssignmentId() === task.assignmentId"
+                      (click)="markAsCompleted(task)"
+                    >
+                      {{ savingAssignmentId() === task.assignmentId ? 'Saving...' : 'Mark Complete' }}
+                    </button>
+                    @if (task.status.toLowerCase() === 'pending') {
+                      <button
+                        type="button"
+                        class="decline-button"
+                        [disabled]="savingAssignmentId() === task.assignmentId"
+                        (click)="confirmDecline(task)"
+                      >
+                        Opt Out
+                      </button>
+                    }
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+
+  @if (taskToDecline(); as selectedTask) {
+    <div class="modal-backdrop">
+      <section class="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="decline-title">
+        <h2 id="decline-title">Opt out of this task?</h2>
+        <p>
+          You’ll be removed from <strong>{{ selectedTask.task }}</strong> for
+          <strong>{{ selectedTask.eventName }}</strong>.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="cancel-button" (click)="cancelDecline()">Keep Task</button>
+          <button
+            type="button"
+            class="decline-confirm-button"
+            [disabled]="savingAssignmentId() === selectedTask.assignmentId"
+            (click)="declineTask()"
+          >
+            {{ savingAssignmentId() === selectedTask.assignmentId ? 'Opting out...' : 'Confirm Opt Out' }}
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</main>

@@ -7,6 +7,7 @@ import SearchBar from '@/shared/components/SearchBar';
 import EventFilter from '@/shared/components/EventFilter';
 import PageHeader from '@/shared/components/PageHeader';
 import FormField from '@/shared/components/FormField';
+import Modal from '@/shared/components/Modal';
 
 interface Attendee {
   attendeeId: number;
@@ -519,7 +520,7 @@ function ParticipantsPage() {
     'w-full rounded-lg border border-border-default bg-white px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20';
 
   const primaryButtonClass =
-    'rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50';
+    'rounded-lg bg-brand-primary px-3 py-2 text-xs font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50';
 
   const secondaryButtonClass =
     'rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-brand-primary hover:bg-surface-blue hover:text-brand-primary-hover';
@@ -615,18 +616,12 @@ function ParticipantsPage() {
 
         {/* ADD PARTICIPANT FORM */}
 
-        {showAddForm && (
-          <form
-            onSubmit={addParticipant}
-            className="
-              m-6
-              rounded-xl
-              border
-              border-border-default
-              bg-surface-muted
-              p-6
-            "
-          >
+        <Modal
+          open={showAddForm}
+          ariaLabel="Add participant"
+          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
+        >
+          <form onSubmit={addParticipant}>
             <h3
               className="
                 mb-5
@@ -638,6 +633,12 @@ function ParticipantsPage() {
               Add Participant
             </h3>
 
+            {error && (
+              <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </p>
+            )}
+
             <div
               className="
                 grid
@@ -648,7 +649,7 @@ function ParticipantsPage() {
             >
               {/* NAME */}
 
-              <FormField label="Name" className="gap-2">
+              <FormField label="Name" className="gap-2" required>
                 <input
                   type="text"
                   name="name"
@@ -661,7 +662,7 @@ function ParticipantsPage() {
 
               {/* EMAIL */}
 
-              <FormField label="Email" className="gap-2">
+              <FormField label="Email" className="gap-2" required>
                 <input
                   type="email"
                   name="email"
@@ -674,7 +675,7 @@ function ParticipantsPage() {
 
               {/* PHONE */}
 
-              <FormField label="Phone" className="gap-2">
+              <FormField label="Phone" className="gap-2" required>
                 <input
                   type="text"
                   name="phone"
@@ -687,7 +688,7 @@ function ParticipantsPage() {
 
               {/* TICKET */}
 
-              <FormField label="Ticket" className="gap-2">
+              <FormField label="Ticket" className="gap-2" required>
                 <input
                   type="text"
                   name="ticket"
@@ -700,7 +701,7 @@ function ParticipantsPage() {
 
               {/* EVENT */}
 
-              <FormField label="Event" className="gap-2">
+              <FormField label="Event" className="gap-2" required>
                 <select
                   name="eventId"
                   value={attendeeForm.eventId}
@@ -743,7 +744,7 @@ function ParticipantsPage() {
               </button>
             </div>
           </form>
-        )}
+        </Modal>
 
         {/* FILTERS */}
 

@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import StatusBadge from '@/shared/components/StatusBadge';
+import FormField from '@/shared/components/FormField';
 
 interface EmployeeOption {
   employeeId: number;
@@ -46,7 +47,7 @@ function EventTaskAssignmentPanel({
   onClose,
 }: EventTaskAssignmentPanelProps) {
   return (
-    <section className="mb-6 overflow-hidden rounded-xl border border-border-accent/35 bg-white shadow-card">
+    <section className="mb-6 overflow-hidden rounded-xl border border-border-accent/35 bg-white/60 shadow-card backdrop-blur-md">
       <header className="flex items-center justify-between border-b border-border-subtle px-6 py-5">
         <div>
           <h2 className="text-lg font-semibold text-text-primary">Assign Employee Task</h2>
@@ -63,10 +64,7 @@ function EventTaskAssignmentPanel({
 
       <div className="space-y-5 p-6">
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-text-secondary" htmlFor="assignedEmployee">
-              Employee
-            </label>
+          <FormField label="Employee" htmlFor="assignedEmployee" required>
             <select
               id="assignedEmployee"
               className="w-full rounded-lg border border-border-default bg-white px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
@@ -81,7 +79,7 @@ function EventTaskAssignmentPanel({
                 </option>
               ))}
             </select>
-          </div>
+          </FormField>
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-text-secondary" htmlFor="taskDeadline">
@@ -97,10 +95,7 @@ function EventTaskAssignmentPanel({
           </div>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-text-secondary" htmlFor="employeeTask">
-            Task
-          </label>
+        <FormField label="Task" htmlFor="employeeTask" required>
           <textarea
             id="employeeTask"
             rows={3}
@@ -109,7 +104,7 @@ function EventTaskAssignmentPanel({
             value={task}
             onChange={(event) => setTask(event.target.value)}
           />
-        </div>
+        </FormField>
 
         <div className="flex justify-end">
           <button

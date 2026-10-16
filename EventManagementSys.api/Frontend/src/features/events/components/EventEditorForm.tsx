@@ -23,6 +23,7 @@ interface EventEditorFormProps {
   saving: boolean;
   onSubmit: (values: EventFormData) => void;
   onCancel: () => void;
+  onCancelEvent?: () => void;
 }
 
 const inputClass =
@@ -36,6 +37,7 @@ function EventEditorForm({
   saving,
   onSubmit,
   onCancel,
+  onCancelEvent,
 }: EventEditorFormProps) {
   const {
     register,
@@ -52,7 +54,7 @@ function EventEditorForm({
   }, [formData, reset]);
 
   return (
-    <section className="mb-6 overflow-hidden rounded-xl border border-border-accent/35 bg-white shadow-card">
+    <section className="overflow-hidden rounded-xl border border-border-accent/35 bg-white/60 shadow-card backdrop-blur-md">
       <header className="border-b border-border-subtle px-6 py-5">
         <h2 className="text-lg font-semibold text-text-primary">
           {isEditing ? 'Edit Event' : 'Create Event'}
@@ -61,7 +63,7 @@ function EventEditorForm({
 
       <form className="space-y-5 p-6" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <FormField label="Event Name" htmlFor="eventName" className="gap-2">
+          <FormField label="Event Name" htmlFor="eventName" className="gap-2" required>
             <input
               className={inputClass}
               id="eventName"
@@ -78,7 +80,7 @@ function EventEditorForm({
             )}
           </FormField>
 
-          <FormField label="Event Type" htmlFor="eventType" className="gap-2">
+          <FormField label="Event Type" htmlFor="eventType" className="gap-2" required>
             <select
               className={inputClass}
               id="eventType"
@@ -103,7 +105,7 @@ function EventEditorForm({
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <FormField label="Start Date" htmlFor="startDate" className="gap-2">
+          <FormField label="Start Date and Time" htmlFor="startDate" className="gap-2" required>
             <input
               className={inputClass}
               id="startDate"
@@ -118,7 +120,7 @@ function EventEditorForm({
               </span>
             )}
           </FormField>
-          <FormField label="End Date" htmlFor="endDate" className="gap-2">
+          <FormField label="End Date and Time" htmlFor="endDate" className="gap-2" required>
             <input
               className={inputClass}
               id="endDate"
@@ -136,7 +138,7 @@ function EventEditorForm({
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <FormField label="Venue" htmlFor="venue" className="gap-2">
+          <FormField label="Venue" htmlFor="venue" className="gap-2" required>
             <select
               className={inputClass}
               id="venue"
@@ -169,7 +171,7 @@ function EventEditorForm({
           </FormField>
         </div>
 
-        <FormField label="Budget" htmlFor="budget" className="gap-2">
+        <FormField label="Budget" htmlFor="budget" className="gap-2" required>
           <input
             className={inputClass}
             id="budget"
@@ -187,21 +189,33 @@ function EventEditorForm({
           )}
         </FormField>
 
-        <div className="flex flex-wrap justify-end gap-3 pt-2">
-          <button
-            type="button"
-            className="rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={saving}
-          >
-            {saving ? 'Saving...' : isEditing ? 'Update Event' : 'Create Event'}
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          {isEditing && onCancelEvent && (
+            <button
+              type="button"
+              className="rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={onCancelEvent}
+              disabled={saving}
+            >
+              Cancel Event
+            </button>
+          )}
+          <div className="ml-auto flex gap-3">
+            <button
+              type="button"
+              className="rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : isEditing ? 'Update Event' : 'Create Event'}
+            </button>
+          </div>
         </div>
       </form>
     </section>

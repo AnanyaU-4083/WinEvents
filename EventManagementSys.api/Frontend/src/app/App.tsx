@@ -135,7 +135,9 @@ function createRoutes(): RouteObject[] {
           children: [
             {
               index: true,
-              lazy: async () => ({ Component: (await import('../features/tasks')).default }),
+              lazy: async () => ({
+                Component: (await import('../features/tasks/pages/MyTaskPageAngular')).default,
+              }),
             },
           ],
         },

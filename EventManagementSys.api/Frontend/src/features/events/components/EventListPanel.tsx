@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import StatusBadge from '@/shared/components/StatusBadge';
 
 type EventStatus = 0 | 1 | 2;
@@ -58,16 +59,26 @@ function EventListPanel({
   onRegister,
   onCancelRegistration,
 }: EventListPanelProps) {
+  const [now, setNow] = useState(0);
+
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const emptyMessage =
-    statusFilter === 'scheduled'
-      ? 'There are no scheduled events.'
-      : statusFilter === 'completed'
-        ? 'There are no past events.'
-        : statusFilter === 'cancelled'
-          ? 'There are no cancelled events.'
-          : canManageEvents
-            ? 'Create your first event to see it here.'
-            : 'There are no events matching your search.';
+    statusFilter === 'upcoming'
+      ? 'There are no upcoming events.'
+      : statusFilter === 'ongoing'
+        ? 'There are no ongoing events.'
+        : statusFilter === 'completed'
+          ? 'There are no past or completed events.'
+          : statusFilter === 'cancelled'
+            ? 'There are no cancelled events.'
+            : canManageEvents
+              ? 'Create your first event to see it here.'
+              : 'There are no events matching your search.';
 
   return (
     <section className="mb-6 w-full overflow-hidden rounded-xl border border-border-accent/35 bg-white shadow-card">
@@ -93,9 +104,10 @@ function EventListPanel({
           value={statusFilter}
           onChange={(event) => onStatusFilterChange(event.target.value)}
         >
-          <option value="scheduled">Scheduled Events</option>
+          <option value="upcoming">Upcoming Events</option>
+          <option value="ongoing">Ongoing Events</option>
           <option value="all">All Statuses</option>
-          <option value="completed">Past Events</option>
+          <option value="completed">Past / Completed Events</option>
           <option value="cancelled">Cancelled Events</option>
         </select>
       </div>
@@ -138,6 +150,19 @@ function EventListPanel({
               events.map((event) => {
                 const registered = isRegistered(event.eventId);
                 const registrationCancelled = isRegistrationCancelled(event.eventId);
+                const start = new Date(event.startDate).getTime();
+                const end = new Date(event.endDate).getTime();
+                const displayStatus =
+                  event.status === 1
+                    ? 'Cancelled'
+                    : event.status === 2
+                      ? 'Completed'
+                      : end < now
+                        ? 'Past'
+                        : start <= now
+                          ? 'Ongoing'
+                          : 'Upcoming';
+                const eventIsPast = displayStatus === 'Past' || displayStatus === 'Completed';
                 return (
                   <tr key={event.eventId}>
                     <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
@@ -153,14 +178,12 @@ function EventListPanel({
                       {formatDate(event.endDate)}
                     </td>
                     <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                      {event.status === 0 && <StatusBadge status="Scheduled" />}
-                      {event.status === 1 && <StatusBadge status="Cancelled" />}
-                      {event.status === 2 && <StatusBadge status="Completed" />}
+                      <StatusBadge status={displayStatus} />
                     </td>
                     <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
                       {canManageEvents && (
                         <>
-                          {event.status !== 1 && event.status !== 2 && (
+                          {event.status !== 1 && event.status !== 2 && !eventIsPast && (
                             <>
                               <button
                                 type="button"
@@ -201,7 +224,7 @@ function EventListPanel({
                               <span className="inline-flex rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
                                 Registered
                               </span>
-                              {event.status === 0 && (
+                              {event.status === 0 && !eventIsPast && (
                                 <button
                                   type="button"
                                   className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -219,7 +242,7 @@ function EventListPanel({
                               <span className="inline-flex rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800">
                                 Cancelled
                               </span>
-                              {event.status === 0 && (
+                              {event.status === 0 && !eventIsPast && (
                                 <button
                                   type="button"
                                   className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
@@ -232,7 +255,7 @@ function EventListPanel({
                                 </button>
                               )}
                             </div>
-                          ) : event.status === 0 ? (
+                          ) : event.status === 0 && displayStatus === 'Upcoming' ? (
                             <button
                               type="button"
                               className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"

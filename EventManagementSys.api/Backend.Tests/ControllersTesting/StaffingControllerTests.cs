@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using EventManagementSys.api.Controllers;
 using EventManagementSys.api.DTOs;
+using EventManagementSys.api.Models;
 using EventManagementSys.api.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -79,5 +80,51 @@ public class StaffingControllerTests
         _service.Setup(service => service.RemoveAsync(12, _token)).ReturnsAsync(false);
         Assert.IsType<NoContentResult>(await _controller.Remove(11, _token));
         Assert.IsType<NotFoundResult>(await _controller.Remove(12, _token));
+    }
+
+    [Fact]
+    public async Task DeclineRequiresEmailAndAssignmentOwnership()
+    {
+        ControllerTestHelpers.SetUser(_controller, new Claim(ClaimTypes.Role, "Employee"));
+        Assert.IsType<UnauthorizedObjectResult>(await _controller.Decline(11, _token));
+
+        ControllerTestHelpers.SetUser(
+            _controller,
+            new Claim(ClaimTypes.Role, "Employee"),
+            new Claim("email", "worker@example.com"));
+        _service.Setup(service => service.GetTasksByEmployeeEmailAsync("worker@example.com", _token))
+            .ReturnsAsync([]);
+
+        Assert.IsType<ForbidResult>(await _controller.Decline(11, _token));
+        _service.Verify(
+            service => service.UpdateAsync(It.IsAny<int>(), It.IsAny<UpdateStaffDto>(), _token),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task DeclineOnlyUpdatesOwnedPendingAssignments()
+    {
+        ControllerTestHelpers.SetUser(
+            _controller,
+            new Claim(ClaimTypes.Role, "Employee"),
+            new Claim("email", "worker@example.com"));
+        _service.Setup(service => service.GetTasksByEmployeeEmailAsync("worker@example.com", _token))
+            .ReturnsAsync([
+                new StaffDto { AssignmentId = 11, Task = "Prepare room", Status = "Pending" },
+                new StaffDto { AssignmentId = 12, Task = "Check in", Status = "Completed" }
+            ]);
+        _service.Setup(service => service.UpdateAsync(11, It.IsAny<UpdateStaffDto>(), _token))
+            .ReturnsAsync(true);
+
+        Assert.IsType<ConflictObjectResult>(await _controller.Decline(12, _token));
+        Assert.IsType<NoContentResult>(await _controller.Decline(11, _token));
+        _service.Verify(
+            service => service.UpdateAsync(
+                11,
+                It.Is<UpdateStaffDto>(request =>
+                    request.Status == EventEmployee.AssignmentStatus.Declined &&
+                    request.Task == "Prepare room"),
+                _token),
+            Times.Once);
     }
 }

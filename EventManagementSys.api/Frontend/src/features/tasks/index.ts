@@ -1,1 +1,1 @@
-export { default } from './pages/MyTasksPage';
+export { default } from './pages/MyTaskPageAngular';

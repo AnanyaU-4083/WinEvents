@@ -4,10 +4,11 @@ interface FormFieldProps {
   label: string;
   htmlFor?: string;
   className?: string;
+  required?: boolean;
   children: ReactNode;
 }
 
-function FormField({ label, htmlFor, className = '', children }: FormFieldProps) {
+function FormField({ label, htmlFor, className = '', required = false, children }: FormFieldProps) {
   const generatedId = useId();
   const controlId = htmlFor ?? generatedId;
   const control = isValidElement(children)
@@ -18,7 +19,14 @@ function FormField({ label, htmlFor, className = '', children }: FormFieldProps)
 
   return (
     <div className={`grid gap-1 text-sm font-medium ${className}`}>
-      <label htmlFor={controlId}>{label}</label>
+      <label htmlFor={controlId}>
+        {label}
+        {required && (
+          <span className="ml-1 text-red-600" aria-label="required">
+            *
+          </span>
+        )}
+      </label>
       {control}
     </div>
   );

@@ -12,6 +12,12 @@ function StatusBadge({ status, context = 'event' }: StatusBadgeProps) {
       colorClass = 'border-blue-200 bg-blue-50 text-blue-700';
     } else if (normalizedStatus === 'cancelled' || normalizedStatus === 'canceled') {
       colorClass = 'border-red-200 bg-red-50 text-red-700';
+    } else if (normalizedStatus === 'upcoming') {
+      colorClass = 'border-blue-200 bg-blue-50 text-blue-700';
+    } else if (normalizedStatus === 'ongoing') {
+      colorClass = 'border-green-200 bg-green-50 text-green-700';
+    } else if (normalizedStatus === 'past' || normalizedStatus === 'completed') {
+      colorClass = 'border-violet-200 bg-violet-50 text-violet-700';
     }
   } else if (normalizedStatus === 'completed') {
     colorClass = 'border-green-200 bg-green-50 text-green-700';
