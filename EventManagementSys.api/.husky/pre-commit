@@ -1,0 +1,3 @@
+cd Frontend
+npx lint-staged
+npm run typecheck

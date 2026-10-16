@@ -1,4 +1,4 @@
-import { Configuration, LogLevel } from '@azure/msal-browser'
+import { LogLevel, type Configuration } from '@azure/msal-browser';
 
 export const msalConfig: Configuration = {
   auth: {
@@ -9,34 +9,32 @@ export const msalConfig: Configuration = {
 
   cache: {
     cacheLocation: 'sessionStorage',
-    storeAuthStateInCookie: false,
   },
 
   system: {
     loggerOptions: {
       loggerCallback: (level, message, containsPii) => {
         if (containsPii) {
-          return
+          return;
         }
 
         switch (level) {
           case LogLevel.Error:
-            console.error(message)
-            break
+            console.error(message);
+            break;
 
           case LogLevel.Warning:
-            console.warn(message)
-            break
+            console.warn(message);
+            break;
 
           case LogLevel.Info:
-            console.info(message)
-            break
+            break;
         }
       },
     },
   },
-}
+};
 
 export const loginRequest = {
   scopes: ['api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'],
-}
+};

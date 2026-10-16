@@ -1,16 +1,45 @@
-# React + Vite
+# WinEvents Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React, TypeScript, Vite, and Tailwind CSS frontend for the WinEvents event management application.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 22 (see `.nvmrc`)
+- npm
 
-## React Compiler
+## Setup and commands
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Run these commands from the `Frontend` directory:
 
-## Expanding the ESLint configuration
+```powershell
+npm install
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Project checks:
+
+```powershell
+npm test
+npm run test:coverage
+npm run lint
+npm run typecheck
+npm run format:check
+npm run build
+```
+
+Vitest and V8 collect coverage. The minimum is 80% for both line and branch coverage.
+
+## Configuration
+
+The development server proxies `/api` to `http://localhost:5244`. Set `VITE_API_BASE_URL` in a local `.env` file only when the frontend should call a different API origin. `.env.example` documents the optional setting. Do not commit secrets.
+
+## Source layout
+
+- `src/Pages`: route-level screens
+- `src/Components`: reusable UI components
+- `src/auth`: Microsoft authentication setup
+- `src/config`: validated environment configuration
+- `src/shared/api`: shared API request helper
+- `tests`: Vitest and React Testing Library unit tests, MSW setup, and test utilities
+
+TypeScript is strict. Use the shared API client, reusable components, semantic HTML, and Tailwind utility classes. Keep tests in `tests` rather than beside production components.
