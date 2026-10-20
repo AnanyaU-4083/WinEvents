@@ -1,3 +1,4 @@
+// Explain when no results exist.
 interface EmptyTableRowProps {
   colSpan: number;
   title: string;

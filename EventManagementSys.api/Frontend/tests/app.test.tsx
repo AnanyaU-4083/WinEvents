@@ -10,7 +10,9 @@ vi.mock('../src/features/dashboard', () => ({ default: () => <p>Dashboard page</
 vi.mock('../src/features/events', () => ({ default: () => <p>Events page</p> }));
 vi.mock('../src/features/participants', () => ({ default: () => <p>Participants page</p> }));
 vi.mock('../src/features/administration', () => ({ default: () => <p>Administration page</p> }));
-vi.mock('../src/features/tasks', () => ({ default: () => <p>Employee tasks page</p> }));
+vi.mock('../src/features/tasks/pages/MyTaskPageAngular', () => ({
+  default: () => <p>Angular My Tasks page</p>,
+}));
 
 const account = (roles: string[]) => ({ idTokenClaims: { roles } });
 const instance = { getActiveAccount: vi.fn((): object | null => null) };
@@ -56,7 +58,7 @@ describe('App role routes', () => {
     expect(await screen.findByText('Participants page')).toBeInTheDocument();
     unmount();
     open('/my-tasks', ['Employee']);
-    expect(await screen.findByText('Employee tasks page')).toBeInTheDocument();
+    expect(await screen.findByText('Angular My Tasks page')).toBeInTheDocument();
   });
 
   it('uses the first account when no active account is set and denies access without roles', async () => {

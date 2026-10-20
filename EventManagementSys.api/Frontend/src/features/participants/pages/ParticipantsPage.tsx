@@ -1,7 +1,7 @@
+// Manage attendees and event registrations.
 import { apiRequest } from '../../../shared/api/apiClient';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 import { useEffect, useState } from 'react';
-import { useMsal } from '@azure/msal-react';
-import type { AccountInfo } from '@azure/msal-browser';
 
 import SearchBar from '@/shared/components/SearchBar';
 import EventFilter from '@/shared/components/EventFilter';
@@ -42,7 +42,7 @@ interface AttendeeForm {
 const API_URL = '/api';
 
 function ParticipantsPage() {
-  const { instance, accounts } = useMsal();
+  const { account, getAccessToken } = useAccessToken();
 
   const [selectedEvent, setSelectedEvent] = useState('all');
 
@@ -66,31 +66,9 @@ function ParticipantsPage() {
     eventId: '',
   });
 
-  /*
-   * Get the currently logged-in
-   * Microsoft account.
-   */
-  const account: AccountInfo | undefined = instance.getActiveAccount() ?? accounts[0];
 
-  /*
-   * Get Microsoft access token.
-   */
-  const getAccessToken = async () => {
-    if (!account) {
-      throw new Error('No Microsoft account is logged in.');
-    }
 
-    const response = await instance.acquireTokenSilent({
-      scopes: ['api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'],
-      account,
-    });
-
-    return response.accessToken;
-  };
-
-  /*
-   * Load events and participants.
-   */
+  //Load events and participants.
   useEffect(() => {
     let cancelled = false;
 
@@ -99,16 +77,12 @@ function ParticipantsPage() {
         setLoading(true);
         setError('');
 
-        /*
-         * Check Microsoft account.
-         */
+        //Check Microsoft account.
         if (!account) {
           throw new Error('Please log in with Microsoft first.');
         }
 
-        /*
-         * Get Microsoft access token.
-         */
+        //Get Microsoft access token.
         const token = await getAccessToken();
 
         if (cancelled) {
@@ -119,13 +93,8 @@ function ParticipantsPage() {
           Authorization: `Bearer ${token}`,
         };
 
-        /*
-         * STEP 1
-         *
-         * Get all events.
-         *
-         * GET /api/events
-         */
+        //STEP 1: Load events
+        //GET /api/events
 
         const eventsResponse = await apiRequest(`${API_URL}/events`, {
           method: 'GET',
@@ -144,13 +113,8 @@ function ParticipantsPage() {
 
         setEvents(eventData);
 
-        /*
-         * STEP 2
-         *
-         * Get all attendees.
-         *
-         * GET /api/attendees
-         */
+        //STEP 2: Load attendees
+        //GET /api/attendees
 
         const attendeesResponse = await apiRequest(`${API_URL}/attendees`, {
           method: 'GET',
@@ -168,13 +132,7 @@ function ParticipantsPage() {
           return;
         }
 
-        /*
-         * STEP 3
-         *
-         * Get attendees for every event.
-         *
-         * We load them one event at a time.
-         */
+        //STEP 3: Load event attendees
 
         const allParticipants: Participant[] = [];
 
@@ -188,11 +146,7 @@ function ParticipantsPage() {
             headers,
           });
 
-          /*
-           * If this particular event
-           * fails, continue with the
-           * remaining events.
-           */
+          //Continue after event failures.
           if (!response.ok) {
             console.error(
               `Failed to load attendees for event ${event.eventId}. Status: ${response.status}`,
@@ -203,10 +157,7 @@ function ParticipantsPage() {
 
           const eventAttendeeData: Attendee[] = await response.json();
 
-          /*
-           * Convert attendee data
-           * into Participant data.
-           */
+          //Convert attendee response data.
           eventAttendeeData.forEach((attendee) => {
             allParticipants.push({
               attendeeId: attendee.attendeeId,
@@ -228,10 +179,7 @@ function ParticipantsPage() {
           return;
         }
 
-        /*
-         * Put all participants
-         * into React state.
-         */
+        //Save participants in React state.
         setParticipants(allParticipants);
       } catch (error) {
         if (cancelled) {
@@ -250,20 +198,16 @@ function ParticipantsPage() {
 
     loadData();
 
-    /*
-     * Cleanup.
-     */
+    //Cancel active request on unmount.
     return () => {
       cancelled = true;
     };
 
-    // The page reloads when the signed-in account changes.
+    //Reload when account changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account?.homeAccountId]);
 
-  /*
-   * Search + event filtering.
-   */
+  //Filter participants by search.
   const filteredParticipants = participants.filter((participant) => {
     const matchesSearch =
       participant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -275,9 +219,7 @@ function ParticipantsPage() {
     return matchesSearch && matchesEvent;
   });
 
-  /*
-   * Open Add Participant form.
-   */
+  //Open participant form.
   const openAddParticipant = () => {
     setAttendeeForm({
       name: '',
@@ -292,9 +234,7 @@ function ParticipantsPage() {
     setShowAddForm(true);
   };
 
-  /*
-   * Handle Add Participant form changes.
-   */
+  //Handle participant form changes.
   const handleAttendeeChange = (
     event: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLSelectElement>,
   ) => {
@@ -306,10 +246,7 @@ function ParticipantsPage() {
     }));
   };
 
-  /*
-   * Add a new attendee and
-   * register them for an event.
-   */
+  //Register attendee for selected event.
   const addParticipant = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -321,9 +258,7 @@ function ParticipantsPage() {
         throw new Error('Please select an event.');
       }
 
-      /*
-       * Get Microsoft access token.
-       */
+      //Get Microsoft access token.
       const token = await getAccessToken();
 
       const headers = {
@@ -332,13 +267,8 @@ function ParticipantsPage() {
         Authorization: `Bearer ${token}`,
       };
 
-      /*
-       * STEP 1
-       *
-       * Create the new attendee.
-       *
-       * POST /api/attendees
-       */
+      //STEP 1: Create attendee
+      //POST /api/attendees
       const attendeeResponse = await apiRequest(`${API_URL}/attendees`, {
         method: 'POST',
         headers,
@@ -359,14 +289,8 @@ function ParticipantsPage() {
 
       const newAttendee: Attendee = await attendeeResponse.json();
 
-      /*
-       * STEP 2
-       *
-       * Register the new attendee
-       * for the selected event.
-       *
-       * POST /api/events/{eventId}/attendees/{attendeeId}
-       */
+      //STEP 2: Register attendee
+      //POST /api/events/{eventId}/attendees/{attendeeId}
       const registrationResponse = await apiRequest(
         `${API_URL}/events/${attendeeForm.eventId}/attendees/${newAttendee.attendeeId}`,
         {
@@ -386,17 +310,12 @@ function ParticipantsPage() {
         );
       }
 
-      /*
-       * Find the selected event.
-       */
+      //Find selected event.
       const selectedEventData = events.find(
         (item) => item.eventId.toString() === attendeeForm.eventId,
       );
 
-      /*
-       * Add the new participant
-       * directly to React state.
-       */
+      //Add participant to state.
       if (selectedEventData) {
         setParticipants((previous) => [
           ...previous,
@@ -416,9 +335,7 @@ function ParticipantsPage() {
         ]);
       }
 
-      /*
-       * Close form.
-       */
+      //Close participant form.
       setShowAddForm(false);
 
       setAttendeeForm({
@@ -437,12 +354,7 @@ function ParticipantsPage() {
     }
   };
 
-  /*
-   * Remove participant from an event.
-   *
-   * This deletes the registration
-   * between the attendee and event.
-   */
+  //Remove event registration.
   const removeParticipant = async (eventId: number, attendeeId: number) => {
     const confirmed = window.confirm(
       'Are you sure you want to remove this participant from the event?',
@@ -455,16 +367,11 @@ function ParticipantsPage() {
     try {
       setError('');
 
-      /*
-       * Get a fresh Microsoft access token.
-       */
+      //Get Microsoft access token.
       const token = await getAccessToken();
 
-      /*
-       * DELETE registration.
-       *
-       * DELETE /api/events/{eventId}/attendees/{attendeeId}
-       */
+      //DELETE event registration
+      //DELETE /api/events/{eventId}/attendees/{attendeeId}
       const response = await apiRequest(`${API_URL}/events/${eventId}/attendees/${attendeeId}`, {
         method: 'DELETE',
 
@@ -479,10 +386,7 @@ function ParticipantsPage() {
         throw new Error(message || `Failed to remove participant. Status: ${response.status}`);
       }
 
-      /*
-       * Remove the participant
-       * from the current React state.
-       */
+      //Remove participant from state.
       setParticipants((previous) =>
         previous.filter(
           (participant) =>
@@ -496,25 +400,7 @@ function ParticipantsPage() {
     }
   };
 
-  /*
-   * Tailwind CSS classes.
-   *
-   
-   * classes such as:
-   *
-   * page
-   * page-header
-   * content-card
-   * card-header
-   * form-grid
-   * form-actions
-   * primary-button
-   * secondary-button
-   * participant-filters
-   * table-container
-   * data-table
-   * empty-state
-   */
+  //Tailwind style classes.
 
   const inputClass =
     'w-full rounded-lg border border-border-default bg-white px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20';
@@ -529,70 +415,29 @@ function ParticipantsPage() {
     <div
       className="
         min-h-full
-        bg-surface-subtle
+        page-canvas
         p-6
         md:p-8
       "
     >
       {/* PAGE HEADER */}
-      <PageHeader title="Participants" description="Manage attendees and event registrations." />
+      <PageHeader
+        title="Participants"
+        description="Manage attendees and event registrations."
+        action={
+          <button
+            type="button"
+            className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover"
+            onClick={openAddParticipant}
+          >
+            + Add Participant
+          </button>
+        }
+      />
 
       {/* MAIN CONTENT CARD */}
 
-      <div
-        className="
-          overflow-hidden
-          rounded-xl
-          border
-          border-border-accent/35
-          bg-white
-          shadow-card
-        "
-      >
-        {/* CARD HEADER */}
-
-        <div
-          className="
-            flex
-            flex-col
-            items-start
-            justify-between
-            gap-4
-            border-b
-            border-border-subtle
-            px-6
-            py-5
-            md:flex-row
-            md:items-center
-          "
-        >
-          <div>
-            <h2
-              className="
-                text-lg
-                font-semibold
-                text-text-primary
-              "
-            >
-              Participants
-            </h2>
-
-            <p
-              className="
-                mt-1
-                text-sm
-                text-text-muted
-              "
-            >
-              View attendees and their event registrations.
-            </p>
-          </div>
-
-          <button type="button" className={primaryButtonClass} onClick={openAddParticipant}>
-            + Add Participant
-          </button>
-        </div>
-
+      <div className="glass-panel w-full overflow-hidden">
         {/* ERROR MESSAGE */}
 
         {error && !showAddForm && (
@@ -619,6 +464,7 @@ function ParticipantsPage() {
         <Modal
           open={showAddForm}
           ariaLabel="Add participant"
+          onClose={() => setShowAddForm(false)}
           className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
         >
           <form onSubmit={addParticipant}>
@@ -731,13 +577,6 @@ function ParticipantsPage() {
                 gap-3
               "
             >
-              <button
-                type="button"
-                className={secondaryButtonClass}
-                onClick={() => setShowAddForm(false)}
-              >
-                Cancel
-              </button>
 
               <button type="submit" className={primaryButtonClass} disabled={loading}>
                 {loading ? 'Adding...' : 'Add Participant'}
@@ -748,22 +587,10 @@ function ParticipantsPage() {
 
         {/* FILTERS */}
 
-        <div
-          className="
-            flex
-            flex-col
-            gap-3
-            border-b
-            border-border-subtle
-            p-6
-            md:flex-row
-          "
-        >
-          <SearchBar value={searchTerm} onChange={setSearchTerm} />
-
+        <div className="grid grid-cols-1 gap-3 border-b border-border-subtle p-6 md:grid-cols-2">
+          <SearchBar value={searchTerm} onChange={setSearchTerm} fullWidth />
           <EventFilter value={selectedEvent} events={events} onChange={setSelectedEvent} />
         </div>
-
         {/* TABLE */}
 
         <div
@@ -774,6 +601,7 @@ function ParticipantsPage() {
         >
           <table
             className="
+              table-grid
               min-w-full
               border-collapse
               text-left
@@ -1061,12 +889,25 @@ function ParticipantsPage() {
                     >
                       <button
                         type="button"
-                        className={secondaryButtonClass}
+                        aria-label="Remove participant"
+                        title="Remove participant"
+                        className="grid h-8 w-8 place-items-center rounded-lg border border-surface-error bg-white p-0 text-state-error transition hover:bg-surface-error"
                         onClick={() =>
                           removeParticipant(participant.eventId, participant.attendeeId)
                         }
                       >
-                        Remove
+                        <svg
+                          aria-hidden="true"
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.8"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M3 6h18M8 6V4h8v2m2 0-1 14H7L6 6m4 4v6m4-6v6" />
+                        </svg>
                       </button>
                     </td>
                   </tr>

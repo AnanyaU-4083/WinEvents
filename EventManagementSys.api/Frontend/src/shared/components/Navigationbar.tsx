@@ -1,3 +1,4 @@
+// Navigate between application feature pages.
 import { useMsal } from '@azure/msal-react';
 import { Link, NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -48,8 +49,10 @@ function Navigationbar() {
         to={to}
         onClick={() => setIsMenuOpen(false)}
         className={({ isActive }) =>
-          `text-sm font-medium transition-colors ${
-            isActive ? 'text-blue-600' : 'text-gray-600 hover:text-blue-600'
+          `rounded-full px-3 py-2 text-sm font-semibold transition-colors ${
+            isActive
+              ? 'bg-surface-blue text-brand-primary shadow-sm'
+              : 'text-text-secondary hover:bg-surface-subtle hover:text-brand-primary'
           }`
         }
       >
@@ -58,19 +61,19 @@ function Navigationbar() {
     ));
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border-accent/40 bg-white px-4 py-3 shadow-md shadow-slate-900/10 sm:px-8 sm:py-4">
-      <div className="flex items-center justify-between gap-3">
+    <nav className="sticky top-0 z-50 border-b border-blue-200/80 bg-white/82 px-4 py-3 shadow-[0_4px_18px_rgba(15,35,55,0.06)] backdrop-blur-xl sm:px-8 sm:py-3">
+      <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3 lg:gap-10">
           <Link
             to="/dashboard"
             aria-label={t('navigation.goToDashboard')}
-            className="shrink-0 text-2xl font-black tracking-tight"
+            className="shrink-0 text-[1.7rem] font-extrabold tracking-[-0.06em]"
           >
             <span className="text-blue-500">Win</span>
             <span className="text-orange-500">Events</span>
           </Link>
 
-          <div className="hidden items-center gap-5 lg:flex xl:gap-6">{renderLinks()}</div>
+          <div className="hidden items-center gap-1.5 lg:flex xl:gap-2">{renderLinks()}</div>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -78,7 +81,7 @@ function Navigationbar() {
           <ProfileMenu />
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center rounded-lg border border-border-default text-xl text-text-secondary hover:bg-surface-subtle lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-border-default bg-surface-subtle/70 text-xl text-text-secondary transition hover:border-blue-200 hover:bg-surface-blue lg:hidden"
             aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
             aria-expanded={isMenuOpen}
             aria-controls="mobile-navigation"

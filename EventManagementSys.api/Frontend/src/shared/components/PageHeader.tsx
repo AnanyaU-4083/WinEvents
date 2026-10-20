@@ -1,3 +1,4 @@
+// Show consistent titles across pages.
 import type { ReactNode } from 'react';
 
 interface PageHeaderProps {
@@ -15,10 +16,11 @@ function PageHeader({ title, description, action, layout = 'between' }: PageHead
   }[layout];
 
   return (
-    <header className={`mb-6 flex gap-4 ${layoutClass}`}>
+    <header className={`page-title-panel mb-6 flex gap-4 ${layoutClass}`}>
       <div>
         <h1 className="text-2xl font-bold text-text-primary">{title}</h1>
         <p className="mt-1 text-sm text-text-muted">{description}</p>
+        <span className="page-accent" aria-hidden="true" />
       </div>
       {action}
     </header>

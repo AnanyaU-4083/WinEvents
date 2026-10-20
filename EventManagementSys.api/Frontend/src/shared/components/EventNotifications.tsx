@@ -1,7 +1,8 @@
+// Display reminders and event notifications.
 import { apiRequest } from '../api/apiClient';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 
 import { useEffect, useRef, useState } from 'react';
-import { useMsal } from '@azure/msal-react';
 
 type EventStatus = 'Scheduled' | 'Cancelled' | 'Completed';
 
@@ -33,8 +34,6 @@ interface NotificationItem {
   read: boolean;
 }
 
-const API_SCOPE = 'api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user';
-
 const REMINDER_WINDOW_MS = 15 * 60 * 1000;
 
 function getEventStatus(status: EventStatus | number): EventStatus {
@@ -57,13 +56,8 @@ function formatEventTime(date: string) {
 }
 
 function EventNotifications() {
-  const { instance, accounts } = useMsal();
-  const account = instance.getActiveAccount() ?? accounts[0];
-  const accountRef = useRef(account);
+  const { account, getAccessToken } = useAccessToken();
   const accountId = account?.homeAccountId;
-  useEffect(() => {
-    accountRef.current = account;
-  }, [account]);
   const roles = (account?.idTokenClaims?.roles as string[]) ?? [];
   const isAttendee = roles.includes('Attendee');
   const isAdmin = roles.includes('Admin');
@@ -86,7 +80,7 @@ function EventNotifications() {
 
   // Fetch the events visible to the current user.
   useEffect(() => {
-    const activeAccount = accountRef.current;
+    const activeAccount = account;
     if (!activeAccount) {
       setEvents([]);
       return;
@@ -99,14 +93,11 @@ function EventNotifications() {
         let response: Response;
 
         if (isAttendee) {
-          const tokenResponse = await instance.acquireTokenSilent({
-            scopes: [API_SCOPE],
-            account: activeAccount,
-          });
+          const accessToken = await getAccessToken();
 
           response = await apiRequest('/api/events/my-registrations', {
             headers: {
-              Authorization: `Bearer ${tokenResponse.accessToken}`,
+              Authorization: `Bearer ${accessToken}`,
             },
           });
         } else {
@@ -143,10 +134,10 @@ function EventNotifications() {
       isMounted = false;
       window.clearInterval(refreshId);
     };
-  }, [accountId, instance, isAttendee]);
+  }, [accountId, getAccessToken, isAttendee]);
 
   useEffect(() => {
-    const activeAccount = accountRef.current;
+    const activeAccount = account;
     if (!activeAccount || !isEmployee) {
       setTasks([]);
       return;
@@ -156,12 +147,9 @@ function EventNotifications() {
 
     const loadTasks = async () => {
       try {
-        const tokenResponse = await instance.acquireTokenSilent({
-          scopes: [API_SCOPE],
-          account: activeAccount,
-        });
+        const accessToken = await getAccessToken();
         const response = await apiRequest('/api/employees/my-tasks', {
-          headers: { Authorization: `Bearer ${tokenResponse.accessToken}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         });
 
         if (!response.ok) {
@@ -182,12 +170,12 @@ function EventNotifications() {
       isMounted = false;
       window.clearInterval(refreshId);
     };
-  }, [accountId, instance, isEmployee]);
+  }, [accountId, getAccessToken, isEmployee]);
 
-  // Admins monitor task assignments across every event. Employees continue
-  // to receive reminders only for their own assigned tasks above.
+  // Admins monitor task assignments across every event. 
+  // Employees continue to receive reminders only for their own assigned tasks above.
   useEffect(() => {
-    const activeAccount = accountRef.current;
+    const activeAccount = account;
     if (!activeAccount || !isAdmin) {
       setAdminTasks([]);
       setAdminTasksLoaded(false);
@@ -208,12 +196,9 @@ function EventNotifications() {
       isLoading = true;
 
       try {
-        const tokenResponse = await instance.acquireTokenSilent({
-          scopes: [API_SCOPE],
-          account: activeAccount,
-        });
+        const accessToken = await getAccessToken();
         const headers = {
-          Authorization: `Bearer ${tokenResponse.accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         };
         const eventAssignments = await Promise.all(
           eventIds.map(async (eventId) => {
@@ -247,7 +232,7 @@ function EventNotifications() {
       isMounted = false;
       window.clearInterval(refreshId);
     };
-  }, [accountId, eventIdsKey, instance, isAdmin]);
+  }, [accountId, eventIdsKey, getAccessToken, isAdmin]);
 
   // Notify admins when an assignment changes from incomplete to completed.
   useEffect(() => {
@@ -505,15 +490,25 @@ function EventNotifications() {
               <p className="mt-0.5 text-xs text-gray-500">Event and task reminders</p>
             </div>
 
-            {notifications.length > 0 && (
+            <div className="flex items-center gap-2">
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearNotifications}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                >
+                  Clear all
+                </button>
+              )}
               <button
                 type="button"
-                onClick={clearNotifications}
-                className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                aria-label="Close notifications"
+                onClick={() => setIsOpen(false)}
+                className="grid h-8 w-8 place-items-center rounded-full text-xl leading-none text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
               >
-                Clear all
+                &times;
               </button>
-            )}
+            </div>
           </div>
 
           {error && (

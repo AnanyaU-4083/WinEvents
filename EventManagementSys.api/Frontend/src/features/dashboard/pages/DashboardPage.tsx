@@ -1,7 +1,8 @@
+// Coordinate dashboard data and interactions.
 import { apiRequest } from '../../../shared/api/apiClient';
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useMsal } from '@azure/msal-react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 import DashboardSummaryCards from '@/features/dashboard/components/DashboardSummaryCards';
 import UpcomingEventsPanel from '@/features/dashboard/components/UpcomingEventsPanel';
 import DashboardCalendarPanel from '@/features/dashboard/components/DashboardCalendarPanel';
@@ -36,7 +37,7 @@ const emptyForm: EventFormData = {
   endDate: '',
   venueId: '',
   orgId: '',
-  budget: '',
+  budget: '0',
 };
 function toDateTimeLocal(value: string | Date): string {
   const date = new Date(value);
@@ -66,17 +67,11 @@ function getObjectString(obj: Record<string, unknown>, ...keys: string[]): strin
 }
 function DashboardPage() {
   const { t } = useTranslation();
-  const { instance, accounts } = useMsal();
-  const account = instance.getActiveAccount() ?? accounts[0];
-  const accountRef = useRef(account);
+  const { account, getAccessToken } = useAccessToken('Please sign in before performing this action.');
   const accountId = account?.homeAccountId;
-  useEffect(() => {
-    accountRef.current = account;
-  }, [account]);
   const roles = (account?.idTokenClaims?.roles as string[]) ?? [];
   const canManageEvents = roles.includes('Admin') || roles.includes('Employee');
   const isAttendee = roles.includes('Attendee');
-  const API_SCOPE = 'api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user';
   const [events, setEvents] = useState<EventDto[]>([]);
   const [venues, setVenues] = useState<VenueOption[]>([]);
   const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
@@ -98,17 +93,6 @@ function DashboardPage() {
   const [reregisteringEventId, setReregisteringEventId] = useState<number | null>(null);
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
-  const getAccessToken = useCallback(async () => {
-    const activeAccount = instance.getActiveAccount() ?? accountRef.current;
-    if (!activeAccount) {
-      throw new Error('Please sign in before performing this action.');
-    }
-    const result = await instance.acquireTokenSilent({
-      scopes: [API_SCOPE],
-      account: activeAccount,
-    });
-    return result.accessToken;
-  }, [instance]);
   const loadEvents = useCallback(async () => {
     try {
       setLoading(true);
@@ -430,7 +414,7 @@ function DashboardPage() {
       setError(err instanceof Error ? err.message : 'Failed to cancel event.');
     }
   };
-  // Use explicit popup actions rather than Syncfusion's delete behavior.
+  // Use explicit popup actions rather than using Syncfusion's delete behavior.
   const handlePopupOpen = (args: {
     type: string;
     data?: Record<string, unknown>;
@@ -479,6 +463,7 @@ function DashboardPage() {
     window.setTimeout(() => {
       const popup = document.querySelector<HTMLElement>('.e-quick-popup-wrapper');
       if (!popup) return;
+      popup.classList.add('glass-popup');
       const event = events.find((item) => item.eventId === eventId);
       const removePopupActions = () => {
         popup
@@ -655,13 +640,14 @@ function DashboardPage() {
     });
   const userName = account?.name || account?.username || 'User';
   return (
-    <div className="min-h-[calc(100vh-68px)] w-full bg-surface-blue-muted px-[46px] pt-9 pb-[60px] max-[1150px]:px-[25px] max-[700px]:px-[15px]">
-      <header className="mx-auto mb-[34px] w-full max-w-[1400px] text-center">
-        <p className="mt-3 text-[17px] text-text-muted">{t('dashboard.welcomeBack')}</p>
+    <div className="page-canvas min-h-[calc(100vh-68px)] w-full px-[46px] pt-9 pb-[60px] max-[1150px]:px-[25px] max-[700px]:px-[15px]">
+      <header className="relative mx-auto mb-8 w-full max-w-[1400px] overflow-hidden rounded-3xl border border-white/70 bg-white/30 px-6 py-6 text-center shadow-panel backdrop-blur-xl">
+        <p className="mt-1 text-sm font-medium tracking-wide text-text-muted sm:text-base">{t('dashboard.welcomeBack')}</p>
 
-        <p className="mt-[14px] text-text-secondary">
+        <p className="mt-2 text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
           {t('dashboard.welcome', { name: userName })}
         </p>
+        <span className="page-accent page-accent-centered mt-4 w-16" aria-hidden="true" />
       </header>
 
       <main className="mx-auto w-full max-w-[1400px]">

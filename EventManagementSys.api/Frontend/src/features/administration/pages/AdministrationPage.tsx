@@ -1,7 +1,7 @@
+// Manage organizations, employees, and venues.
 import { apiRequest } from '../../../shared/api/apiClient';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 import { useEffect, useState } from 'react';
-import { useMsal } from '@azure/msal-react';
-import type { AccountInfo } from '@azure/msal-browser';
 
 import PageHeader from '@/shared/components/PageHeader';
 import {
@@ -54,9 +54,7 @@ interface VenueForm {
 }
 
 function AdministrationPage() {
-  const { instance, accounts } = useMsal();
-
-  const account: AccountInfo | undefined = instance.getActiveAccount() ?? accounts[0];
+  const { getAccessToken } = useAccessToken();
 
   const [activeSection, setActiveSection] = useState<AdminSection>('organizations');
 
@@ -108,6 +106,8 @@ function AdministrationPage() {
 
   const [showVenueForm, setShowVenueForm] = useState(false);
 
+  const [editingVenueId, setEditingVenueId] = useState<number | null>(null);
+
   const [venueForm, setVenueForm] = useState<VenueForm>({
     address: '',
     capacity: '',
@@ -116,18 +116,8 @@ function AdministrationPage() {
   // AUTH HEADERS
 
   const getAuthHeaders = async (): Promise<HeadersInit> => {
-    if (!account) {
-      throw new Error('No Microsoft account is logged in.');
-    }
-
-    const response = await instance.acquireTokenSilent({
-      scopes: ['api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'],
-      account,
-    });
-
-    return {
-      Authorization: `Bearer ${response.accessToken}`,
-    };
+    const token = await getAccessToken();
+    return { Authorization: 'Bearer ' + token };
   };
 
   // LOAD ORGANIZATIONS
@@ -496,6 +486,7 @@ function AdministrationPage() {
   // VENUE FORM
 
   const openAddVenue = () => {
+    setEditingVenueId(null);
     setVenueForm({
       address: '',
       capacity: '',
@@ -503,6 +494,22 @@ function AdministrationPage() {
 
     setShowVenueForm(true);
     setError('');
+  };
+
+  const openEditVenue = (venue: Venue) => {
+    setEditingVenueId(venue.venueId);
+    setVenueForm({
+      address: venue.address,
+      capacity: String(venue.capacity),
+    });
+
+    setShowVenueForm(true);
+    setError('');
+  };
+
+  const closeVenueForm = () => {
+    setShowVenueForm(false);
+    setEditingVenueId(null);
   };
 
   const handleVenueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -517,43 +524,70 @@ function AdministrationPage() {
   const saveVenue = async (event: React.FormEvent) => {
     event.preventDefault();
 
+    const isEditing = editingVenueId !== null;
+    const url = isEditing ? `/api/venues/${editingVenueId}` : '/api/venues';
+
     try {
       setLoading(true);
       setError('');
 
-      const response = await apiRequest('/api/venues', {
-        method: 'POST',
-
+      const response = await apiRequest(url, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(await getAuthHeaders()),
         },
-
         body: JSON.stringify({
           address: venueForm.address,
-
           capacity: Number(venueForm.capacity),
         }),
       });
 
       if (!response.ok) {
         const message = await response.text();
-
-        throw new Error(message || `Failed to create venue (${response.status})`);
+        throw new Error(message || `Failed to ${isEditing ? 'update' : 'create'} venue (${response.status})`);
       }
 
-      setShowVenueForm(false);
-
+      closeVenueForm();
       await loadVenues();
     } catch (error) {
       console.error(error);
-
-      setError(error instanceof Error ? error.message : 'Failed to create venue.');
+      setError(error instanceof Error ? error.message : 'Failed to save venue.');
     } finally {
       setLoading(false);
     }
   };
 
+  const deleteVenue = async (venueId: number) => {
+    const confirmed = window.confirm('Are you sure you want to delete this venue?');
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const response = await apiRequest(`/api/venues/${venueId}`, {
+        method: 'DELETE',
+        headers: {
+          ...(await getAuthHeaders()),
+        },
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || `Failed to delete venue (${response.status})`);
+      }
+
+      await loadVenues();
+    } catch (error) {
+      console.error(error);
+      setError(error instanceof Error ? error.message : 'Failed to delete venue.');
+    } finally {
+      setLoading(false);
+    }
+  };
   // ORGANIZATION NAME
 
   const getOrganizationName = (orgId: number) => {
@@ -611,7 +645,7 @@ function AdministrationPage() {
   // UI
 
   return (
-    <div className="min-h-full bg-surface-subtle p-6 md:p-8">
+    <div className="page-canvas min-h-full p-6 md:p-8">
       <PageHeader
         title="Administration"
         description="Manage organizations, employees, and venues."
@@ -628,7 +662,7 @@ function AdministrationPage() {
 
       {/* TABS */}
 
-      <div className="mb-6 flex flex-wrap gap-1 rounded-xl border border-border-accent/35 bg-white p-1 shadow-raised">
+      <div className="glass-panel mb-6 flex flex-wrap gap-1 p-1">
         <button
           type="button"
           className={`rounded-lg px-4 py-2.5 text-sm font-medium transition ${
@@ -713,12 +747,15 @@ function AdministrationPage() {
           searchValue={venueSearch}
           form={venueForm}
           formOpen={showVenueForm}
+          editingId={editingVenueId}
           loading={loading}
           onSearchChange={setVenueSearch}
           onOpenAdd={openAddVenue}
           onSubmit={saveVenue}
           onChange={handleVenueChange}
-          onCancel={() => setShowVenueForm(false)}
+          onCancel={closeVenueForm}
+          onEdit={openEditVenue}
+          onDelete={deleteVenue}
         />
       )}
     </div>

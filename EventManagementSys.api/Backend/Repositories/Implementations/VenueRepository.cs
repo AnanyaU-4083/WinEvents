@@ -5,35 +5,49 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EventManagementSys.api.Repository.Implementations;
 
-public class VenueRepository(
-    AppDbContext dbContext) : IVenueRepository
+public class VenueRepository(AppDbContext dbContext) : IVenueRepository
 {
     public async Task<List<Venue>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return await dbContext.Venues
-            .ToListAsync(cancellationToken);
+        return await dbContext.Venues.ToListAsync(cancellationToken);
     }
 
-    public async Task<Venue?> GetByIdAsync(int venueId,CancellationToken cancellationToken)
+    public async Task<Venue?> GetByIdAsync(int venueId, CancellationToken cancellationToken)
     {
         return await dbContext.Venues
-            .FirstOrDefaultAsync(
-                venue => venue.VenueId == venueId,
-                cancellationToken);
+            .FirstOrDefaultAsync(venue => venue.VenueId == venueId, cancellationToken);
     }
 
-    public async Task<Venue> AddAsync(Venue venue,CancellationToken cancellationToken)
+    public async Task<Venue> AddAsync(Venue venue, CancellationToken cancellationToken)
     {
-        await dbContext.Venues.AddAsync(
-            venue,
-            cancellationToken);
-
+        await dbContext.Venues.AddAsync(venue, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
-
         return venue;
     }
 
-    public async Task<int> GetCurrentRegistrationsAsync(int venueId,int eventId,CancellationToken cancellationToken)
+    public async Task UpdateAsync(Venue venue, CancellationToken cancellationToken)
+    {
+        dbContext.Venues.Update(venue);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(Venue venue, CancellationToken cancellationToken)
+    {
+        List<Event> linkedEvents = await dbContext.Events
+            .Where(eventItem => eventItem.VenueId == venue.VenueId)
+            .ToListAsync(cancellationToken);
+
+        foreach (Event linkedEvent in linkedEvents)
+        {
+            linkedEvent.VenueId = null;
+            linkedEvent.VenueNavigation = null;
+        }
+
+        dbContext.Venues.Remove(venue);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<int> GetCurrentRegistrationsAsync(int venueId, int eventId, CancellationToken cancellationToken)
     {
         return await dbContext.EventAttendees
             .CountAsync(

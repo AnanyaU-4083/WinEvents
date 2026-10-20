@@ -1,3 +1,4 @@
+// Show attendee details for events.
 interface AttendeeEvent {
   eventName: string;
   startDate: string;
@@ -32,12 +33,10 @@ function AttendeeEventPopup({
 }: AttendeeEventPopupProps) {
   return (
     <div
-      className="fixed z-[1100] w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-orange-border-soft bg-surface-orange-popup p-4 text-text-orange-rich shadow-panel"
+      className="glass-popup glass-popup-orange fixed z-[1100] w-[min(20rem,calc(100vw-2rem))] p-4 text-text-orange-rich"
       style={{
         top,
         left,
-        backgroundColor: 'rgba(255, 241, 230, 0.62)',
-        backdropFilter: 'blur(14px)',
       }}
       role="dialog"
       aria-labelledby="attendee-event-title"
@@ -50,9 +49,9 @@ function AttendeeEventPopup({
           type="button"
           aria-label="Close event details"
           onClick={onClose}
-          className="text-xl leading-none text-text-orange-deep hover:text-text-orange-rich"
+          className="grid h-8 w-8 place-items-center rounded-full text-2xl leading-none text-text-orange-deep transition hover:bg-white/60 hover:text-text-orange-rich"
         >
-          X
+          &times;
         </button>
       </div>
       <p className="mb-2 text-sm">

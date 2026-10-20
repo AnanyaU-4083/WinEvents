@@ -1,3 +1,4 @@
+// Filter events by selected status.
 interface EventItem {
   eventId: number;
   eventName: string;

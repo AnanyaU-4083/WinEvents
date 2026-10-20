@@ -1,3 +1,4 @@
+// Send authenticated backend API requests.
 import { env } from '../../config/env';
 
 export async function apiRequest(input: string | URL, init?: RequestInit): Promise<Response> {

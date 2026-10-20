@@ -13,41 +13,39 @@ public class VenueController(IVenueService venueService) : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<List<VenueResponseDto>>> GetAll(CancellationToken cancellationToken)
     {
-        List<VenueResponseDto> venues =
-            await venueService.GetAllAsync(cancellationToken);
-
+        List<VenueResponseDto> venues = await venueService.GetAllAsync(cancellationToken);
         return Ok(venues);
     }
 
-    [HttpGet("{venueId:int}")] 
+    [HttpGet("{venueId:int}")]
     [AllowAnonymous]
-    public async Task<ActionResult<VenueResponseDto>> GetById(int venueId,CancellationToken cancellationToken)
+    public async Task<ActionResult<VenueResponseDto>> GetById(int venueId, CancellationToken cancellationToken)
     {
-        VenueResponseDto? venue =
-            await venueService.GetByIdAsync(
-                venueId,
-                cancellationToken);
-
-        if (venue is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(venue);
+        VenueResponseDto? venue = await venueService.GetByIdAsync(venueId, cancellationToken);
+        return venue is null ? NotFound() : Ok(venue);
     }
 
-    [HttpPost] 
+    [HttpPost]
     [Authorize(Roles = "Admin,Employee")]
-    public async Task<ActionResult<VenueResponseDto>> Create(CreateVenueDto request,CancellationToken cancellationToken)
+    public async Task<ActionResult<VenueResponseDto>> Create(CreateVenueDto request, CancellationToken cancellationToken)
     {
-        VenueResponseDto venue =
-            await venueService.CreateAsync(
-                request,
-                cancellationToken);
+        VenueResponseDto venue = await venueService.CreateAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { venueId = venue.VenueId }, venue);
+    }
 
-        return CreatedAtAction(
-            nameof(GetById),
-            new { venueId = venue.VenueId },
-            venue);
+    [HttpPut("{venueId:int}")]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> Update(int venueId, UpdateVenueDto request, CancellationToken cancellationToken)
+    {
+        bool updated = await venueService.UpdateAsync(venueId, request, cancellationToken);
+        return updated ? NoContent() : NotFound();
+    }
+
+    [HttpDelete("{venueId:int}")]
+    [Authorize(Roles = "Admin,Employee")]
+    public async Task<IActionResult> Delete(int venueId, CancellationToken cancellationToken)
+    {
+        bool deleted = await venueService.DeleteAsync(venueId, cancellationToken);
+        return deleted ? NoContent() : NotFound();
     }
 }

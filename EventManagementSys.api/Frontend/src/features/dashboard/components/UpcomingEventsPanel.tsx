@@ -1,3 +1,4 @@
+// Display the next scheduled events.
 interface UpcomingEvent {
   eventId: number;
   eventName: string;
@@ -18,7 +19,7 @@ function UpcomingEventsPanel({
   formatTime,
 }: UpcomingEventsPanelProps) {
   return (
-    <section className="w-full rounded-panel border border-border-accent/45 bg-surface-blue-sheer/25 p-6 text-text-blue-deep shadow-panel backdrop-blur-md">
+    <section className="glass-panel glass-panel-blue w-full p-6 text-text-blue-deep">
       <header className="mb-5">
         <h2 className="m-0 text-[21px] font-[750] text-text-blue-deep">Upcoming Events</h2>
         <p className="mt-[5px] text-[13px] text-text-blue-muted">Your next scheduled events</p>

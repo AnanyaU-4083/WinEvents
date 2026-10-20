@@ -1,16 +1,28 @@
+// Manage task actions and status.
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, Input, signal } from '@angular/core';
+import type { OnDestroy, OnInit } from '@angular/core';
+import {
+  formatTaskDeadline,
+  isEventOccurredIncomplete as checkEventOccurredIncomplete,
+  isFinalTaskStatus,
+  isTaskOverdue,
+  normalizedTaskStatus,
+  taskOverdueLevel,
+} from './task-helpers';
 
+// Describe the employee task record.
 interface EmployeeTask {
   assignmentId: number;
   eventId: number;
   eventName: string;
+  eventEndDate: string | null;
   employeeId: number;
   name: string;
   jobTitle: string;
   task: string;
   deadline: string | null;
-  status: string;
+  status: string | number;
 }
 
 @Component({
@@ -45,17 +57,28 @@ export class MyTasksComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Load task data with dates.
   async loadTasks(): Promise<void> {
     this.loading.set(true);
     this.error.set('');
 
     try {
-      const response = await this.request('/api/employees/my-tasks');
-      if (!response.ok) {
-        throw new Error(`Failed to load tasks. Status: ${response.status}`);
+      const [taskResponse, eventResponse] = await Promise.all([
+        this.request('/api/employees/my-tasks'),
+        this.request('/api/events'),
+      ]);
+      if (!taskResponse.ok || !eventResponse.ok) {
+        throw new Error(`Failed to load tasks or event dates. Status: ${taskResponse.status}/${eventResponse.status}`);
       }
 
-      this.tasks.set((await response.json()) as EmployeeTask[]);
+      const [tasks, events] = await Promise.all([
+        taskResponse.json() as Promise<EmployeeTask[]>,
+        eventResponse.json() as Promise<Array<{ eventId: number; endDate: string }>>,
+      ]);
+      const eventEndDates = new Map(events.map((event) => [event.eventId, event.endDate]));
+      this.tasks.set(
+        tasks.map((task) => ({ ...task, eventEndDate: eventEndDates.get(task.eventId) ?? null })),
+      );
     } catch (error) {
       console.error('Failed to load employee tasks:', error);
       this.error.set('Unable to load your assigned tasks. Please try again.');
@@ -64,7 +87,9 @@ export class MyTasksComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Mark an assignment as complete.
   async markAsCompleted(task: EmployeeTask): Promise<void> {
+    if (this.isEventOccurredIncomplete(task)) return;
     this.savingAssignmentId.set(task.assignmentId);
     this.error.set('');
     this.notice.set('');
@@ -79,7 +104,7 @@ export class MyTasksComponent implements OnInit, OnDestroy {
       }
 
       this.replaceTask(task.assignmentId, { ...task, status: 'Completed' });
-      this.notice.set(`“${task.task}” is marked complete.`);
+      this.notice.set(`Task "${task.task}" is marked complete.`);
     } catch (error) {
       console.error('Failed to mark task as completed:', error);
       this.error.set('Unable to mark the task as completed. Please try again.');
@@ -88,7 +113,9 @@ export class MyTasksComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Confirm before declining assigned tasks.
   confirmDecline(task: EmployeeTask): void {
+    if (this.isEventOccurredIncomplete(task)) return;
     this.taskToDecline.set(task);
     this.error.set('');
     this.notice.set('');
@@ -101,59 +128,72 @@ export class MyTasksComponent implements OnInit, OnDestroy {
   async declineTask(): Promise<void> {
     const task = this.taskToDecline();
     if (!task) return;
+    if (this.isEventOccurredIncomplete(task)) {
+      this.taskToDecline.set(null);
+      return;
+    }
 
     this.savingAssignmentId.set(task.assignmentId);
     this.error.set('');
     this.notice.set('');
 
     try {
-      const response = await this.request(`/api/staff/${task.assignmentId}/decline`, {
-        method: 'POST',
+      const response = await this.request(`/api/staff/${task.assignmentId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ task: task.task, deadline: task.deadline, status: 3 }),
       });
       if (!response.ok) {
-        throw new Error(`Failed to decline task. Status: ${response.status}`);
+        const message = await response.text();
+        throw new Error(message || `Failed to opt out. Status: ${response.status}`);
       }
 
       this.replaceTask(task.assignmentId, { ...task, status: 'Declined' });
       this.taskToDecline.set(null);
-      this.notice.set(`“${task.task}” has been declined.`);
+      this.notice.set(`Task "${task.task}" has been declined.`);
     } catch (error) {
       console.error('Failed to decline employee task:', error);
-      this.error.set('Unable to decline this task. Please try again.');
+      this.error.set(error instanceof Error ? error.message : 'Unable to opt out of this task.');
     } finally {
       this.savingAssignmentId.set(null);
     }
   }
 
   isOverdue(task: EmployeeTask): boolean {
-    if (!task.deadline || this.isFinalStatus(task.status)) return false;
-    const deadline = new Date(task.deadline).getTime();
-    return Number.isFinite(deadline) && this.currentTime() > deadline;
+    return isTaskOverdue(task.deadline, task.status, this.currentTime());
   }
 
   overdueLevel(task: EmployeeTask): number {
-    if (!this.isOverdue(task) || !task.deadline) return 0;
-    const elapsed = this.currentTime() - new Date(task.deadline).getTime();
-    return Math.min(4, Math.floor(elapsed / (90 * 60 * 1000)) + 1);
+    return taskOverdueLevel(task, this.currentTime());
   }
 
   formatDeadline(deadline: string | null): string {
-    if (!deadline) return 'No deadline';
-    const date = new Date(deadline);
-    if (!Number.isFinite(date.getTime())) return 'Invalid deadline';
-    return date.toLocaleString([], {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
+    return formatTaskDeadline(deadline);
   }
 
-  isFinalStatus(status: string): boolean {
-    return ['completed', 'declined'].includes(status.toLowerCase());
+  isEventOccurredIncomplete(task: EmployeeTask): boolean {
+    return checkEventOccurredIncomplete(task, this.currentTime());
   }
 
+  normalizedStatus(status: string | number): string {
+    return normalizedTaskStatus(status);
+  }
+
+  displayStatus(task: EmployeeTask): string {
+    return this.isEventOccurredIncomplete(task)
+      ? 'Event Occurred, Task Incomplete'
+      : this.normalizedStatus(task.status);
+  }
+
+  statusClass(task: EmployeeTask): string {
+    return this.isEventOccurredIncomplete(task)
+      ? 'status event-incomplete'
+      : `status ${this.normalizedStatus(task.status).toLowerCase().replaceAll(' ', '-')}`;
+  }
+
+  isFinalStatus(status: string | number): boolean {
+    return isFinalTaskStatus(status);
+  }
+  // Attach authentication to API requests.
   private async request(path: string, init: RequestInit = {}): Promise<Response> {
     if (!this.tokenProvider) {
       throw new Error('Authentication is not ready. Please refresh the page.');

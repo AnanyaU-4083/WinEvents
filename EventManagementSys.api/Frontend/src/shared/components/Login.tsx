@@ -1,3 +1,4 @@
+// Start the Microsoft sign-in flow.
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
@@ -30,8 +31,8 @@ function Login() {
   }, [accounts, inProgress, instance, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-subtle px-4">
-      <div className="w-full max-w-md rounded-2xl border border-border-accent/35 bg-white p-8 text-center shadow-card">
+    <div className="page-canvas flex min-h-screen items-center justify-center px-4">
+      <div className="glass-panel w-full max-w-md p-8 text-center">
         <h1 className="text-3xl font-bold">
           <span className="text-brand-primary">Win</span>
           <span className="text-accent-orange">Events</span>

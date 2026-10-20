@@ -1,8 +1,8 @@
+// Manage event records and registrations.
 import { apiRequest } from '../../../shared/api/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useMsal } from '@azure/msal-react';
-import type { AccountInfo } from '@azure/msal-browser';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import PageHeader from '@/shared/components/PageHeader';
 import EventTaskAssignmentPanel from '@/features/events/components/EventTaskAssignmentPanel';
@@ -71,21 +71,17 @@ interface StaffAssignment {
   jobTitle: string;
   task: string;
   deadline: string | null;
-  status: string;
+  status: string | number;
 }
 
 function EventsPage() {
-  const { instance, accounts } = useMsal();
   const navigate = useNavigate();
   const { eventId: routeEventId } = useParams<{ eventId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const account: AccountInfo | undefined = instance.getActiveAccount() ?? accounts[0];
+  const { account, getAccessToken } = useAccessToken();
 
-  /*
-   * Use a stable account ID instead of the entire
-   * MSAL account object in useEffect dependencies.
-   */
+  // Stabilize account ID dependencies
   const accountId = account?.homeAccountId;
 
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -107,18 +103,10 @@ function EventsPage() {
   const [deadline, setDeadline] = useState('');
 
   const [assigning, setAssigning] = useState(false);
-
-  // ---------------------------------------------------------
   // ATTENDEE REGISTRATION STATE
-  // ---------------------------------------------------------
-
   const [registeredEventIds, setRegisteredEventIds] = useState<number[]>([]);
   const [cancelledRegistrationEventIds, setCancelledRegistrationEventIds] = useState<number[]>([]);
-
-  // ---------------------------------------------------------
   // ROLE
-  // ---------------------------------------------------------
-
   const roles = (account?.idTokenClaims?.roles as string[]) ?? [];
 
   const isAdmin = roles.includes('Admin');
@@ -132,13 +120,8 @@ function EventsPage() {
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
 
   const [searchText, setSearchText] = useState('');
-
-  // ---------------------------------------------------------
   // STATUS FILTER
-  //
   // Default is Scheduled.
-  // ---------------------------------------------------------
-
   const [statusFilter, setStatusFilter] = useState('upcoming');
 
   const eventsQuery = useQuery({
@@ -169,49 +152,23 @@ function EventsPage() {
     startDate: '',
     endDate: '',
     venueId: '',
-    budget: '',
+    budget: '0',
     eventType: '',
     orgId: '',
   });
-
-  // ---------------------------------------------------------
   // API URL
-  // ---------------------------------------------------------
-
-  // ---------------------------------------------------------
   // AUTHORIZATION HEADER
-  // ---------------------------------------------------------
-
   const getAuthHeaders = async (): Promise<HeadersInit> => {
-    if (!account) {
-      throw new Error('No Microsoft account is logged in.');
-    }
-
-    const response = await instance.acquireTokenSilent({
-      scopes: ['api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'],
-      account,
-    });
-
-    return {
-      Authorization: `Bearer ${response.accessToken}`,
-    };
+    const token = await getAccessToken();
+    return { Authorization: 'Bearer ' + token };
   };
-
-  // ---------------------------------------------------------
   // LOAD ALL DATA
-  // ---------------------------------------------------------
-
   async function loadData() {
     setLoading(true);
     setError('');
-
-    // -------------------------------------------------------
     // LOAD EVENTS FIRST
-    //
-    // Events are the main data for this page.
-    // Other requests should not prevent events from loading.
-    // -------------------------------------------------------
-
+    // Events drive this page
+    // Keep event loading independent
     try {
       await loadEvents();
     } catch (error) {
@@ -219,31 +176,19 @@ function EventsPage() {
 
       setError(error instanceof Error ? error.message : 'Failed to load events.');
     }
-
-    // -------------------------------------------------------
     // LOAD VENUES
-    // -------------------------------------------------------
-
     try {
       await loadVenues();
     } catch (error) {
       console.error('Failed to load venues:', error);
     }
-
-    // -------------------------------------------------------
     // LOAD ORGANIZATIONS
-    // -------------------------------------------------------
-
     try {
       await loadOrganizations();
     } catch (error) {
       console.error('Failed to load organizations:', error);
     }
-
-    // -------------------------------------------------------
     // LOAD EMPLOYEES
-    // -------------------------------------------------------
-
     if (canManageEvents) {
       try {
         await loadEmployees();
@@ -251,11 +196,7 @@ function EventsPage() {
         console.error('Failed to load employees:', error);
       }
     }
-
-    // -------------------------------------------------------
     // LOAD ATTENDEE REGISTRATIONS
-    // -------------------------------------------------------
-
     if (isAttendee) {
       try {
         await loadMyRegistrations();
@@ -269,39 +210,27 @@ function EventsPage() {
 
   useEffect(() => {
     void loadData();
-    // loadData reads the account and role/filter values listed here.
+    // These values trigger data loading
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountId, isAttendee, canManageEvents, statusFilter]);
-
-  // ---------------------------------------------------------
   // GET EVENTS
-  //
   // Scheduled:
   // GET /api/events?upcomingOnly=true
-  //
   // Past:
   // GET /api/events?upcomingOnly=false
-  //
   // All:
   // GET /api/events
-  //
   // Cancelled:
   // GET /api/events
   // Then frontend filters cancelled events.
-  // ---------------------------------------------------------
-
   async function loadEvents() {
     const result = await eventsQuery.refetch();
     if (result.error) {
       throw result.error;
     }
   }
-
-  // ---------------------------------------------------------
   // GET MY REGISTERED EVENTS
   // GET /api/events/my-registrations
-  // ---------------------------------------------------------
-
   async function loadMyRegistrations() {
     const authHeaders = await getAuthHeaders();
 
@@ -324,12 +253,8 @@ function EventsPage() {
       data.filter((event) => event.isRegistrationCancelled).map((event) => event.eventId),
     );
   }
-
-  // ---------------------------------------------------------
   // GET VENUES
   // GET /api/venues
-  // ---------------------------------------------------------
-
   async function loadVenues() {
     const response = await apiRequest(`${API_URL}/venues`);
 
@@ -341,19 +266,10 @@ function EventsPage() {
 
     setVenues(data);
   }
-
-  // ---------------------------------------------------------
   // GET ORGANIZATIONS
   // GET /api/organizations
-  // ---------------------------------------------------------
-
   async function loadOrganizations() {
-    /*
-     * Organizations require authentication.
-     *
-     * Only Admin/Employee need this data because
-     * only they can create/edit events.
-     */
+    // Managers need organization data
 
     if (!canManageEvents) {
       setOrganizations([]);
@@ -374,12 +290,8 @@ function EventsPage() {
 
     setOrganizations(data);
   }
-
-  // ---------------------------------------------------------
   // GET EMPLOYEES
   // GET /api/employees
-  // ---------------------------------------------------------
-
   async function loadEmployees() {
     if (!canManageEvents) {
       setEmployees([]);
@@ -400,12 +312,8 @@ function EventsPage() {
 
     setEmployees(data);
   }
-
-  // ---------------------------------------------------------
   // REGISTER FOR EVENT
   // POST /api/events/{eventId}/register
-  // ---------------------------------------------------------
-
   const registerForEvent = async (eventId: number) => {
     setError('');
     setSuccessMessage('');
@@ -464,33 +372,22 @@ function EventsPage() {
       setRegisteringEventId(null);
     }
   };
-
-  // ---------------------------------------------------------
   // CHECK WHETHER EVENT IS REGISTERED
-  // ---------------------------------------------------------
-
   const isEventRegistered = (eventId: number) => {
     return registeredEventIds.includes(eventId);
   };
 
   const isRegistrationCancelled = (eventId: number) =>
     cancelledRegistrationEventIds.includes(eventId);
-
-  // ---------------------------------------------------------
   // FORM INPUT CHANGE
-  // ---------------------------------------------------------
-
-  // ---------------------------------------------------------
   // RESET FORM
-  // ---------------------------------------------------------
-
   const resetForm = () => {
     setFormData({
       eventName: '',
       startDate: '',
       endDate: '',
       venueId: '',
-      budget: '',
+      budget: '0',
       eventType: '',
       orgId: '',
     });
@@ -502,11 +399,7 @@ function EventsPage() {
       navigate('/events', { replace: true });
     }
   };
-
-  // ---------------------------------------------------------
   // OPEN CREATE FORM
-  // ---------------------------------------------------------
-
   const openCreateForm = () => {
     setError('');
     setSuccessMessage('');
@@ -526,7 +419,7 @@ function EventsPage() {
       startDate: toLocalInput(start),
       endDate: toLocalInput(end),
       venueId: '',
-      budget: '',
+      budget: '0',
       eventType: '0',
       orgId: '',
     });
@@ -534,19 +427,19 @@ function EventsPage() {
     setShowCreateForm(true);
   };
 
-  // OPEN CREATE FORM WHEN NAVIGATING FROM DASHBOARD
+  // OPEN FORM FROM DASHBOARD
 
   useEffect(() => {
     if (searchParams.get('create') !== 'true') {
       return;
     }
 
-    // Wait until the logged-in account is available.
+    // Wait for account readiness
     if (!account) {
       return;
     }
 
-    // Only Admin and Employee can create events.
+    // Restrict creation to managers
     if (!canManageEvents) {
       setSearchParams({}, { replace: true });
       return;
@@ -554,7 +447,7 @@ function EventsPage() {
 
     const selectedDate = searchParams.get('date');
 
-    // Use the selected Dashboard date, if provided.
+    // Use selected Dashboard date
     const validDate = selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate) ? selectedDate : '';
 
     setError('');
@@ -581,14 +474,14 @@ function EventsPage() {
       startDate: toLocalInput(startDate),
       endDate: toLocalInput(endDate),
       venueId: '',
-      budget: '',
+      budget: '0',
       eventType: '',
       orgId: '',
     });
 
     setShowCreateForm(true);
 
-    // Remove the query parameters so refreshing won't reopen the form.
+    // Clear query after opening
     setSearchParams({}, { replace: true });
 
     window.scrollTo({
@@ -596,11 +489,7 @@ function EventsPage() {
       behavior: 'smooth',
     });
   }, [searchParams, setSearchParams, account, accountId, canManageEvents]);
-
-  // ---------------------------------------------------------
   // CONVERT API DATE TO DATETIME-LOCAL
-  // ---------------------------------------------------------
-
   const convertToLocalDateTime = (date: string) => {
     const parsedDate = new Date(date);
 
@@ -616,11 +505,7 @@ function EventsPage() {
 
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
-
-  // ---------------------------------------------------------
   // OPEN EDIT FORM
-  // ---------------------------------------------------------
-
   const openEditForm = (event: EventResponse) => {
     setError('');
     setSuccessMessage('');
@@ -650,12 +535,8 @@ function EventsPage() {
       behavior: 'smooth',
     });
   };
-
-  // ---------------------------------------------------------
   // OPEN AN EVENT FROM /events/:eventId
-  // Fetch the selected event and open it in the existing edit form.
-  // ---------------------------------------------------------
-
+  // Load event into edit form
   useEffect(() => {
     if (!routeEventId || !account || !canManageEvents) {
       return;
@@ -703,15 +584,11 @@ function EventsPage() {
     return () => {
       cancelled = true;
     };
-    // The route and account identity determine when the event should reload.
+    // Reload when route identity changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeEventId, accountId, canManageEvents, instance]);
-
-  // ---------------------------------------------------------
+  }, [routeEventId, accountId, canManageEvents, getAccessToken]);
   // CREATE EVENT
   // POST /api/events
-  // ---------------------------------------------------------
-
   const createEvent = async (values: EventFormData) => {
     const request = {
       eventName: values.eventName,
@@ -752,12 +629,8 @@ function EventsPage() {
 
     resetForm();
   };
-
-  // ---------------------------------------------------------
   // UPDATE EVENT
   // PUT /api/events/{eventId}
-  // ---------------------------------------------------------
-
   const updateEvent = async (values: EventFormData) => {
     if (editingEventId === null) {
       return;
@@ -802,11 +675,7 @@ function EventsPage() {
 
     resetForm();
   };
-
-  // ---------------------------------------------------------
   // FORM SUBMIT
-  // ---------------------------------------------------------
-
   const handleSubmit = async (values: EventFormData) => {
     if (saving) {
       return;
@@ -831,12 +700,8 @@ function EventsPage() {
       setSaving(false);
     }
   };
-
-  // ---------------------------------------------------------
   // CANCEL EVENT
   // PATCH /api/events/{eventId}/cancel
-  // ---------------------------------------------------------
-
   const cancelEvent = async (eventId: number) => {
     const confirmed = window.confirm('Are you sure you want to cancel this event?');
 
@@ -868,12 +733,8 @@ function EventsPage() {
       setError(error instanceof Error ? error.message : 'Failed to cancel event.');
     }
   };
-
-  // ---------------------------------------------------------
   // LOAD ASSIGNED EMPLOYEES FOR EVENT
   // GET /api/events/{eventId}/staff
-  // ---------------------------------------------------------
-
   const loadAssignedStaff = async (eventId: number) => {
     const authHeaders = await getAuthHeaders();
 
@@ -891,11 +752,7 @@ function EventsPage() {
 
     setAssignedStaff(data);
   };
-
-  // ---------------------------------------------------------
   // OPEN ASSIGN TASK FORM
-  // ---------------------------------------------------------
-
   const openAssignForm = async (event: EventResponse) => {
     setError('');
     setSuccessMessage('');
@@ -915,11 +772,7 @@ function EventsPage() {
       setError(error instanceof Error ? error.message : 'Failed to load assigned employees.');
     }
   };
-
-  // ---------------------------------------------------------
   // CLOSE ASSIGN TASK FORM
-  // ---------------------------------------------------------
-
   const closeAssignForm = () => {
     setShowAssignForm(false);
     setAssigningEvent(null);
@@ -928,12 +781,8 @@ function EventsPage() {
     setTask('');
     setDeadline('');
   };
-
-  // ---------------------------------------------------------
   // ASSIGN EMPLOYEE TASK
   // POST /api/events/{eventId}/staff
-  // ---------------------------------------------------------
-
   const assignEmployeeTask = async () => {
     if (!assigningEvent) {
       return;
@@ -997,10 +846,42 @@ function EventsPage() {
     }
   };
 
-  // ---------------------------------------------------------
-  // EVENT TYPE TEXT
-  // ---------------------------------------------------------
+  const reassignDeclinedTask = async (
+    assignment: Pick<StaffAssignment, 'task' | 'deadline'>,
+    employeeId: number,
+  ) => {
+    if (!assigningEvent) return;
 
+    setAssigning(true);
+    setError('');
+    setSuccessMessage('');
+    try {
+      const authHeaders = await getAuthHeaders();
+      const response = await apiRequest(`${API_URL}/events/${assigningEvent.eventId}/staff`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({
+          employeeId,
+          task: assignment.task,
+          deadline: assignment.deadline,
+        }),
+      });
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || 'Failed to reassign the task.');
+      }
+
+      const employeeName = employees.find((employee) => employee.employeeId === employeeId)?.name;
+      setSuccessMessage(`Task reassigned${employeeName ? ` to ${employeeName}` : ''}.`);
+      await loadAssignedStaff(assigningEvent.eventId);
+    } catch (error) {
+      console.error('Failed to reassign employee task:', error);
+      setError(error instanceof Error ? error.message : 'Failed to reassign the task.');
+    } finally {
+      setAssigning(false);
+    }
+  };
+  // EVENT TYPE TEXT
   const getEventTypeText = (eventType: EventType) => {
     switch (eventType) {
       case 0:
@@ -1025,21 +906,13 @@ function EventsPage() {
         return 'Unknown';
     }
   };
-
-  // ---------------------------------------------------------
   // DATE DISPLAY
-  // ---------------------------------------------------------
-
   const formatDate = (date: string) => {
     const parsedDate = new Date(date);
 
     return parsedDate.toLocaleString();
   };
-
-  // ---------------------------------------------------------
   // STATUS SORT ORDER
-  // ---------------------------------------------------------
-
   const getStatusSortOrder = (status: EventStatus) => {
     switch (status) {
       case 0:
@@ -1055,11 +928,7 @@ function EventsPage() {
         return 3;
     }
   };
-
-  // ---------------------------------------------------------
   // FILTER EVENTS
-  // ---------------------------------------------------------
-
   const filteredEvents = events
     .filter((event) => {
       const matchesSearch = event.eventName.toLowerCase().includes(searchText.toLowerCase());
@@ -1089,12 +958,12 @@ function EventsPage() {
       return new Date(firstEvent.startDate).getTime() - new Date(secondEvent.startDate).getTime();
     });
 
-  // ---------------------------------------------------------
+
   // RENDER
-  // ---------------------------------------------------------
+
 
   return (
-    <div className="min-h-full bg-surface-subtle p-6 md:p-8">
+    <div className="page-canvas min-h-full p-6 md:p-8">
       {/* PAGE HEADER */}
       <PageHeader
         title="Events"
@@ -1133,6 +1002,7 @@ function EventsPage() {
         <Modal
           open={showCreateForm}
           ariaLabel={editingEventId === null ? 'Create event' : 'Edit event'}
+          onClose={resetForm}
           className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-2xl"
         >
           <EventEditorForm
@@ -1152,6 +1022,7 @@ function EventsPage() {
         <Modal
           open={showAssignForm}
           ariaLabel="Assign employee task"
+          onClose={closeAssignForm}
           className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-2xl"
         >
           <EventTaskAssignmentPanel
@@ -1166,7 +1037,7 @@ function EventsPage() {
             setDeadline={setDeadline}
             assigning={assigning}
             onAssign={assignEmployeeTask}
-            onClose={closeAssignForm}
+            onReassign={reassignDeclinedTask}
           />
         </Modal>
       )}

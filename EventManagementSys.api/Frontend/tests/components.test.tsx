@@ -16,11 +16,12 @@ import UpcomingEventsPanel from '../src/features/dashboard/components/UpcomingEv
 describe('shared form and layout components', () => {
   it('renders a labeled field and supports optional label attributes', () => {
     const { rerender } = render(
-      <FormField label="Event name" htmlFor="event-name" className="gap-3">
+      <FormField label="Event name" htmlFor="event-name" className="gap-3" required>
         <input id="event-name" />
       </FormField>,
     );
     expect(screen.getByLabelText('Event name')).toBeInTheDocument();
+    expect(screen.getByText('*')).toHaveClass('text-red-600');
     expect(screen.getByText('Event name').parentElement).toHaveClass('gap-3');
 
     rerender(

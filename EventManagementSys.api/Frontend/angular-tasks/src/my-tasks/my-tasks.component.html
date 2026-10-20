@@ -1,3 +1,4 @@
+<!-- Display assigned tasks and actions. -->
 <main class="tasks-page">
   <header class="page-header">
     <div>
@@ -6,6 +7,7 @@
     </div>
   </header>
 
+  <!-- Show task status feedback clearly. -->
   @if (error()) {
     <div class="feedback error" role="alert">{{ error() }}</div>
   }
@@ -23,7 +25,7 @@
   } @else {
     <section class="table-card" aria-label="Assigned tasks">
       <div class="table-scroll">
-        <table>
+        <table class="table-grid">
           <thead>
             <tr>
               <th scope="col">Event</th>
@@ -34,39 +36,42 @@
             </tr>
           </thead>
           <tbody>
+            <!-- Render every assigned task row. -->
             @for (task of tasks(); track task.assignmentId) {
               <tr [class]="'task-row overdue-' + overdueLevel(task)">
                 <td class="event-name">{{ task.eventName }}</td>
                 <td>{{ task.task }}</td>
                 <td>{{ formatDeadline(task.deadline) }}</td>
                 <td>
-                  <span class="status" [class]="'status ' + task.status.toLowerCase()">
-                    {{ task.status }}
+                  <span [class]="statusClass(task)">
+                    {{ displayStatus(task) }}
                   </span>
                 </td>
                 <td class="actions">
-                  @if (task.status.toLowerCase() === 'completed') {
-                    <span class="completed-label">Completed</span>
-                  } @else if (task.status.toLowerCase() === 'declined') {
-                    <span class="declined-label">Declined</span>
-                  } @else {
-                    <button
-                      type="button"
-                      class="complete-button"
-                      [disabled]="savingAssignmentId() === task.assignmentId"
-                      (click)="markAsCompleted(task)"
-                    >
-                      {{ savingAssignmentId() === task.assignmentId ? 'Saving...' : 'Mark Complete' }}
-                    </button>
-                    @if (task.status.toLowerCase() === 'pending') {
+                  @if (!isEventOccurredIncomplete(task)) {
+                    @if (normalizedStatus(task.status).toLowerCase() === 'completed') {
+                      <span class="completed-label">Completed</span>
+                    } @else if (normalizedStatus(task.status).toLowerCase() === 'declined') {
+                      <span class="declined-label">Declined</span>
+                    } @else {
                       <button
                         type="button"
-                        class="decline-button"
+                        class="complete-button"
                         [disabled]="savingAssignmentId() === task.assignmentId"
-                        (click)="confirmDecline(task)"
+                        (click)="markAsCompleted(task)"
                       >
-                        Opt Out
+                        {{ savingAssignmentId() === task.assignmentId ? 'Saving...' : 'Mark Complete' }}
                       </button>
+                      @if (normalizedStatus(task.status).toLowerCase() === 'pending') {
+                        <button
+                          type="button"
+                          class="decline-button"
+                          [disabled]="savingAssignmentId() === task.assignmentId"
+                          (click)="confirmDecline(task)"
+                        >
+                          Opt Out
+                        </button>
+                      }
                     }
                   }
                 </td>
@@ -78,9 +83,11 @@
     </section>
   }
 
+  <!-- Confirm before declining a task. -->
   @if (taskToDecline(); as selectedTask) {
     <div class="modal-backdrop">
       <section class="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="decline-title">
+        <button type="button" class="modal-close-button" aria-label="Close opt out confirmation" (click)="cancelDecline()">&times;</button>
         <h2 id="decline-title">Opt out of this task?</h2>
         <p>
           You’ll be removed from <strong>{{ selectedTask.task }}</strong> for

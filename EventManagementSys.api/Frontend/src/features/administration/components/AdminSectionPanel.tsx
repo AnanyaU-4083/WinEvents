@@ -1,3 +1,4 @@
+// Render the selected administration section.
 import type { ReactNode } from 'react';
 import SearchBar from '@/shared/components/SearchBar';
 
@@ -23,7 +24,7 @@ function AdminSectionPanel({
   children,
 }: AdminSectionPanelProps) {
   return (
-    <section className="rounded-xl border border-border-accent/35 bg-white p-6 shadow-lg shadow-slate-900/15">
+    <section className="glass-panel p-6">
       <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
@@ -38,7 +39,7 @@ function AdminSectionPanel({
           />
           <button
             type="button"
-            className="whitespace-nowrap rounded-lg bg-brand-primary px-3 py-2 text-xs font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="whitespace-nowrap rounded-lg bg-brand-primary px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onAdd}
           >
             {addLabel}

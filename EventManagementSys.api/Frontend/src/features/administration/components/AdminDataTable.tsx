@@ -1,3 +1,4 @@
+// Display searchable administrative records clearly.
 import type { ReactNode } from 'react';
 
 interface AdminDataTableProps {
@@ -9,7 +10,7 @@ interface AdminDataTableProps {
 function AdminDataTable({ headers, minWidth, children }: AdminDataTableProps) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border-subtle">
-      <table className="w-full border-collapse text-left" style={{ minWidth }}>
+      <table className="table-grid w-full border-collapse text-left" style={{ minWidth }}>
         <thead>
           <tr className="border-b border-border-subtle bg-surface-muted">
             {headers.map((header) => (

@@ -1,3 +1,4 @@
+// Configure Microsoft identity authentication scopes.
 import { LogLevel, type Configuration } from '@azure/msal-browser';
 
 export const msalConfig: Configuration = {

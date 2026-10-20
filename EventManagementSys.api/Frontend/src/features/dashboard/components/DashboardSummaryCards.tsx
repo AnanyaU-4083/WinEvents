@@ -1,3 +1,4 @@
+// Summarize key event counts here.
 interface DashboardSummaryCardsProps {
   total: number;
   scheduled: number;
@@ -25,7 +26,7 @@ function DashboardSummaryCards({
       {cards.map((card) => (
         <div
           key={card.label}
-          className="rounded-xl border border-border-accent/35 border-t-4 bg-white/40 p-[22px] shadow-panel backdrop-blur-md"
+          className="glass-panel summary-accent-card p-6"
           style={{ borderTopColor: card.color }}
         >
           <span className="text-[14px] font-medium text-text-muted">{card.label}</span>

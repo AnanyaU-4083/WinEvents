@@ -1,3 +1,4 @@
+// Edit event details with validation.
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -54,19 +55,20 @@ function EventEditorForm({
   }, [formData, reset]);
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border-accent/35 bg-white/60 shadow-card backdrop-blur-md">
-      <header className="border-b border-border-subtle px-6 py-5">
+    <section className="overflow-hidden rounded-2xl border border-white/35 bg-transparent shadow-none">
+      <header className="flex items-center justify-between border-b border-border-subtle px-6 py-5">
         <h2 className="text-lg font-semibold text-text-primary">
           {isEditing ? 'Edit Event' : 'Create Event'}
         </h2>
       </header>
 
-      <form className="space-y-5 p-6" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form className="space-y-5 p-6" onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <FormField label="Event Name" htmlFor="eventName" className="gap-2" required>
             <input
               className={inputClass}
               id="eventName"
+              required
               type="text"
               placeholder="Enter event name"
               aria-invalid={Boolean(errors.eventName)}
@@ -84,6 +86,7 @@ function EventEditorForm({
             <select
               className={inputClass}
               id="eventType"
+              required
               aria-invalid={Boolean(errors.eventType)}
               aria-describedby={errors.eventType ? 'eventType-error' : undefined}
               {...register('eventType')}
@@ -109,6 +112,7 @@ function EventEditorForm({
             <input
               className={inputClass}
               id="startDate"
+              required
               type="datetime-local"
               aria-invalid={Boolean(errors.startDate)}
               aria-describedby={errors.startDate ? 'startDate-error' : undefined}
@@ -124,6 +128,7 @@ function EventEditorForm({
             <input
               className={inputClass}
               id="endDate"
+              required
               type="datetime-local"
               aria-invalid={Boolean(errors.endDate)}
               aria-describedby={errors.endDate ? 'endDate-error' : undefined}
@@ -142,6 +147,7 @@ function EventEditorForm({
             <select
               className={inputClass}
               id="venue"
+              required
               aria-invalid={Boolean(errors.venueId)}
               aria-describedby={errors.venueId ? 'venue-error' : undefined}
               {...register('venueId')}
@@ -175,6 +181,7 @@ function EventEditorForm({
           <input
             className={inputClass}
             id="budget"
+              required
             type="number"
             min="0"
             placeholder="Enter budget"
@@ -201,13 +208,6 @@ function EventEditorForm({
             </button>
           )}
           <div className="ml-auto flex gap-3">
-            <button
-              type="button"
-              className="rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
             <button
               type="submit"
               className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"

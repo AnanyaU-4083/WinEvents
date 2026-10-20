@@ -1,3 +1,4 @@
+// Create shared Microsoft authentication client.
 import { PublicClientApplication, type Configuration } from '@azure/msal-browser';
 
 const msalConfig: Configuration = {

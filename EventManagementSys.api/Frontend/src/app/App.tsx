@@ -1,3 +1,4 @@
+// Protect routes with application roles.
 import { Suspense, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -55,7 +56,7 @@ function NotFound() {
 
 function MainLayout() {
   return (
-    <div className="min-h-screen bg-surface-page">
+    <div className="page-canvas min-h-screen">
       <Navigationbar />
 
       <main className="min-h-[calc(100vh-73px)]">
@@ -67,10 +68,7 @@ function MainLayout() {
   );
 }
 
-/*
- * Protect a page based on Microsoft
- * Entra roles.
- */
+//Protect pages by Entra roles.
 function RoleRoute({ allowedRoles, children }: { allowedRoles: string[]; children: ReactNode }) {
   const { instance, accounts } = useMsal();
 

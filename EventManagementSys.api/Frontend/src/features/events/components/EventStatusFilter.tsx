@@ -1,3 +1,4 @@
+// Filter events by lifecycle status.
 interface EventStatusFilterProps {
   value: string;
   onChange: (value: string) => void;

@@ -6,6 +6,12 @@ public class CreateVenueDto
     public int Capacity { get; set; }
 }
 
+public class UpdateVenueDto
+{
+    public string? Address { get; set; }
+    public int? Capacity { get; set; }
+}
+
 public class VenueResponseDto
 {
     public int VenueId { get; set; }

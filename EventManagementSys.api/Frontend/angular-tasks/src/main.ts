@@ -1,3 +1,4 @@
+// Bootstrap the Angular task application.
 import { createCustomElement } from '@angular/elements';
 import { createApplication } from '@angular/platform-browser';
 import { MyTasksComponent } from './my-tasks/my-tasks.component';

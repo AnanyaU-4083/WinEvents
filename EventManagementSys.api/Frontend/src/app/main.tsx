@@ -1,3 +1,4 @@
+// Start the React application safely.
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MsalProvider } from '@azure/msal-react';
@@ -15,6 +16,7 @@ if (!rootElement) {
   throw new Error('Root element not found');
 }
 
+// Create the React application root
 const root = createRoot(rootElement);
 
 async function startApp() {

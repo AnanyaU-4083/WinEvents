@@ -144,11 +144,10 @@ describe('Navigation bar', () => {
         <Navigationbar />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('link', { name: 'Participants' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'My Tasks' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Administration' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Go to dashboard' }));
-    expect(auth.navigate).toHaveBeenCalledWith('/dashboard');
+    expect(screen.getAllByRole('link', { name: 'Participants' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'My Tasks' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Administration' }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: 'Go to dashboard' })).toHaveAttribute('href', '/dashboard');
   });
 
   it('shows employee navigation but hides administration', () => {
@@ -158,8 +157,8 @@ describe('Navigation bar', () => {
         <Navigationbar />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('link', { name: 'Participants' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'My Tasks' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Participants' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'My Tasks' }).length).toBeGreaterThan(0);
     expect(screen.queryByRole('link', { name: 'Administration' })).not.toBeInTheDocument();
   });
 
@@ -171,8 +170,8 @@ describe('Navigation bar', () => {
           <Navigationbar />
         </MemoryRouter>,
       );
-      expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Events' })).toBeInTheDocument();
+      expect(screen.getAllByRole('link', { name: 'Dashboard' }).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('link', { name: 'Events' }).length).toBeGreaterThan(0);
       expect(screen.queryByRole('link', { name: 'Participants' })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'My Tasks' })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'Administration' })).not.toBeInTheDocument();
@@ -194,7 +193,7 @@ describe('Navigation bar', () => {
           <Navigationbar />
         </MemoryRouter>,
       );
-      expect(screen.getByRole('link', { name: label })).toHaveClass('text-blue-600');
+      expect(screen.getAllByRole('link', { name: label })[0]).toHaveClass('bg-surface-blue');
       unmount();
     }
   });

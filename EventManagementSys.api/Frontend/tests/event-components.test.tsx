@@ -45,10 +45,10 @@ describe('event editor form', () => {
     expect(screen.getByRole('option', { name: 'WinWire' })).toHaveValue('2');
     fireEvent.change(screen.getByLabelText('Event Name'), { target: { value: 'Staff meeting' } });
     fireEvent.change(screen.getByLabelText('Event Type'), { target: { value: '1' } });
-    fireEvent.change(screen.getByLabelText('Start Date'), {
+    fireEvent.change(screen.getByLabelText('Start Date and Time'), {
       target: { value: '2026-10-21T09:00' },
     });
-    fireEvent.change(screen.getByLabelText('End Date'), { target: { value: '2026-10-21T10:00' } });
+    fireEvent.change(screen.getByLabelText('End Date and Time'), { target: { value: '2026-10-21T10:00' } });
     fireEvent.change(screen.getByLabelText('Venue'), { target: { value: '1' } });
     fireEvent.change(screen.getByLabelText('Organization'), { target: { value: '2' } });
     fireEvent.change(screen.getByLabelText('Budget'), { target: { value: '200' } });
@@ -71,9 +71,8 @@ describe('event editor form', () => {
         expect.anything(),
       ),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onSubmit).toHaveBeenCalledOnce();
-    expect(onCancel).toHaveBeenCalledOnce();
+    expect(onCancel).not.toHaveBeenCalled();
   });
 
   it('uses create labels and disables save while saving', () => {
@@ -101,7 +100,6 @@ describe('event task assignment panel', () => {
     const setTask = vi.fn();
     const setDeadline = vi.fn();
     const onAssign = vi.fn();
-    const onClose = vi.fn();
     render(
       <EventTaskAssignmentPanel
         eventName="Town Hall"
@@ -118,7 +116,6 @@ describe('event task assignment panel', () => {
         setDeadline={setDeadline}
         assigning={false}
         onAssign={onAssign}
-        onClose={onClose}
       />,
     );
     expect(screen.getByText('Event: Town Hall')).toBeInTheDocument();
@@ -131,12 +128,10 @@ describe('event task assignment panel', () => {
     fireEvent.change(screen.getByLabelText('Deadline'), { target: { value: '2026-10-21T09:00' } });
     fireEvent.change(screen.getByLabelText('Task'), { target: { value: 'Prepare the room' } });
     fireEvent.click(screen.getByRole('button', { name: 'Assign Task' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(setSelectedEmployeeId).toHaveBeenCalledWith('4');
     expect(setDeadline).toHaveBeenCalledWith('2026-10-21T09:00');
     expect(setTask).toHaveBeenCalledWith('Prepare the room');
     expect(onAssign).toHaveBeenCalledOnce();
-    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it('shows assigned rows, deadline fallback, status badge, and busy state', () => {
@@ -162,7 +157,6 @@ describe('event task assignment panel', () => {
         setDeadline={vi.fn()}
         assigning
         onAssign={vi.fn()}
-        onClose={vi.fn()}
       />,
     );
     expect(screen.getByText('Assigned Employees')).toBeInTheDocument();
@@ -195,7 +189,7 @@ describe('event list panel', () => {
     const props = {
       events: [],
       searchValue: '',
-      statusFilter: 'scheduled',
+      statusFilter: 'upcoming',
       canManageEvents: true,
       isAttendee: false,
       registeringEventId: null,
@@ -204,9 +198,9 @@ describe('event list panel', () => {
     const { rerender } = render(<EventListPanel {...props} loading />);
     expect(screen.getByText('Loading events...')).toBeInTheDocument();
     rerender(<EventListPanel {...props} loading={false} />);
-    expect(screen.getByText('There are no scheduled events.')).toBeInTheDocument();
+    expect(screen.getByText('There are no upcoming events.')).toBeInTheDocument();
     rerender(<EventListPanel {...props} loading={false} statusFilter="completed" />);
-    expect(screen.getByText('There are no past events.')).toBeInTheDocument();
+    expect(screen.getByText('There are no past or completed events.')).toBeInTheDocument();
     rerender(<EventListPanel {...props} loading={false} statusFilter="cancelled" />);
     expect(screen.getByText('There are no cancelled events.')).toBeInTheDocument();
     rerender(<EventListPanel {...props} loading={false} statusFilter="all" />);

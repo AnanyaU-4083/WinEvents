@@ -1,9 +1,10 @@
+// Host Angular tasks inside React.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useMsal } from '@azure/msal-react';
-import type { AccountInfo } from '@azure/msal-browser';
 import { env } from '@/config/env';
+import { useAccessToken } from '@/shared/hooks/useAccessToken';
 
 const angularAssetBase = '/angular/my-tasks/browser';
+const angularAssetVersion = 'task-actions-aligned-v4';
 const elementName = 'my-tasks-angular';
 let angularElementLoad: Promise<void> | undefined;
 
@@ -13,7 +14,7 @@ interface MyTasksAngularElement extends HTMLElement {
 }
 
 function loadStylesheet(): void {
-  const href = `${angularAssetBase}/styles.css`;
+  const href = `${angularAssetBase}/styles.css?v=${angularAssetVersion}`;
   if (document.querySelector(`link[href="${href}"]`)) return;
 
   const stylesheet = document.createElement('link');
@@ -38,8 +39,8 @@ function ensureAngularElement(): Promise<void> {
   if (angularElementLoad) return angularElementLoad;
 
   loadStylesheet();
-  angularElementLoad = loadModule(`${angularAssetBase}/polyfills.js`)
-    .then(() => loadModule(`${angularAssetBase}/main.js`))
+  angularElementLoad = loadModule(`${angularAssetBase}/polyfills.js?v=${angularAssetVersion}`)
+    .then(() => loadModule(`${angularAssetBase}/main.js?v=${angularAssetVersion}`))
     .then(() => customElements.whenDefined(elementName))
     .then(() => undefined)
     .catch((error: unknown) => {
@@ -51,7 +52,7 @@ function ensureAngularElement(): Promise<void> {
 }
 
 function MyTaskPageAngular() {
-  const { instance, accounts } = useMsal();
+  const { getAccessToken } = useAccessToken('Please sign in before loading your tasks.');
   const hostRef = useRef<HTMLDivElement>(null);
   const tokenProviderRef = useRef<() => Promise<string>>(async () => {
     throw new Error('Authentication is not ready.');
@@ -59,16 +60,6 @@ function MyTaskPageAngular() {
   const [elementReady, setElementReady] = useState(false);
   const [loadError, setLoadError] = useState('');
 
-  const getAccessToken = useCallback(async () => {
-    const account: AccountInfo | undefined = instance.getActiveAccount() ?? accounts[0];
-    if (!account) throw new Error('Please sign in before loading your tasks.');
-
-    const response = await instance.acquireTokenSilent({
-      scopes: ['api://0332cc25-1dc3-4542-b1cd-a1ad23d0f620/access_as_user'],
-      account,
-    });
-    return response.accessToken;
-  }, [accounts, instance]);
 
   useEffect(() => {
     tokenProviderRef.current = getAccessToken;
@@ -106,7 +97,7 @@ function MyTaskPageAngular() {
   }, [elementReady, provideAccessToken]);
 
   return (
-    <div className="min-h-[calc(100vh-73px)] bg-surface-blue-muted">
+    <div className="page-canvas min-h-[calc(100vh-73px)]">
       {loadError ? (
         <p className="mx-auto max-w-3xl px-6 py-10 text-sm text-state-error" role="alert">
           {loadError}

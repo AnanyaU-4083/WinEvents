@@ -1,3 +1,4 @@
+// Coordinate administration data and dialogs.
 import type { ChangeEvent, FormEvent } from 'react';
 import AdminDataTable from './AdminDataTable';
 import AdminSectionPanel from './AdminSectionPanel';
@@ -91,6 +92,7 @@ export function OrganizationSection({
         <Modal
           open={formOpen}
           ariaLabel={editingId === null ? 'Add organization' : 'Edit organization'}
+          onClose={onCancel}
           className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
         >
         <form onSubmit={onSubmit}>
@@ -141,7 +143,6 @@ export function OrganizationSection({
           <FormActions
             loading={loading}
             editing={editingId !== null}
-            onCancel={onCancel}
             addLabel="Add Organization"
             updateLabel="Update Organization"
           />
@@ -228,6 +229,7 @@ export function EmployeeSection({
         <Modal
           open={formOpen}
           ariaLabel={editingId === null ? 'Add employee' : 'Edit employee'}
+          onClose={onCancel}
           className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
         >
         <form onSubmit={onSubmit}>
@@ -285,7 +287,6 @@ export function EmployeeSection({
           <FormActions
             loading={loading}
             editing={editingId !== null}
-            onCancel={onCancel}
             addLabel="Add Employee"
             updateLabel="Update Employee"
           />
@@ -329,12 +330,15 @@ interface VenueSectionProps {
   searchValue: string;
   form: VenueFormData;
   formOpen: boolean;
+  editingId: number | null;
   loading: boolean;
   onSearchChange: (value: string) => void;
   onOpenAdd: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onCancel: () => void;
+  onEdit: (item: Venue) => void;
+  onDelete: (id: number) => void;
 }
 
 export function VenueSection({
@@ -342,13 +346,18 @@ export function VenueSection({
   searchValue,
   form,
   formOpen,
+  editingId,
   loading,
   onSearchChange,
   onOpenAdd,
   onSubmit,
   onChange,
   onCancel,
+  onEdit,
+  onDelete,
 }: VenueSectionProps) {
+  const isEditing = editingId !== null;
+
   return (
     <AdminSectionPanel
       title="Venues"
@@ -362,49 +371,51 @@ export function VenueSection({
       {formOpen && (
         <Modal
           open={formOpen}
-          ariaLabel="Add venue"
+          ariaLabel={isEditing ? 'Edit venue' : 'Add venue'}
+          onClose={onCancel}
           className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
         >
-        <form onSubmit={onSubmit}>
-          <h3 className="mb-5 text-base font-semibold text-text-primary">Add Venue</h3>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField label="Address" required>
-              <input
-                type="text"
-                name="address"
-                value={form.address}
-                onChange={onChange}
-                required
-                className={inputClass}
-              />
-            </FormField>
-            <FormField label="Capacity" required>
-              <input
-                type="number"
-                name="capacity"
-                value={form.capacity}
-                onChange={onChange}
-                min="1"
-                required
-                className={inputClass}
-              />
-            </FormField>
-          </div>
-          <FormActions
-            loading={loading}
-            editing={false}
-            onCancel={onCancel}
-            addLabel="Add Venue"
-            updateLabel="Add Venue"
-          />
-        </form>
+          <form onSubmit={onSubmit}>
+            <h3 className="mb-5 text-base font-semibold text-text-primary">
+              {isEditing ? 'Edit Venue' : 'Add Venue'}
+            </h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField label="Address" required>
+                <input
+                  type="text"
+                  name="address"
+                  value={form.address}
+                  onChange={onChange}
+                  required
+                  className={inputClass}
+                />
+              </FormField>
+              <FormField label="Capacity" required>
+                <input
+                  type="number"
+                  name="capacity"
+                  value={form.capacity}
+                  onChange={onChange}
+                  min="1"
+                  required
+                  className={inputClass}
+                />
+              </FormField>
+            </div>
+            <FormActions
+              loading={loading}
+              editing={isEditing}
+              addLabel="Add Venue"
+              updateLabel="Update Venue"
+            />
+          </form>
         </Modal>
       )}
 
-      <AdminDataTable minWidth="600px" headers={['Venue', 'Location', 'Capacity']}>
+      <AdminDataTable minWidth="760px" headers={['Venue', 'Location', 'Capacity', 'Actions']}>
         {items.length === 0 ? (
           <EmptyTableRow
-            colSpan={3}
+            colSpan={4}
             title={searchValue ? 'No matching venues' : 'No venues found'}
             description={searchValue ? 'Try a different search.' : 'Venues will appear here.'}
           />
@@ -414,6 +425,9 @@ export function VenueSection({
               <td className={cellClass}>{item.address}</td>
               <td className={cellClass}>{item.address}</td>
               <td className={cellClass}>{item.capacity}</td>
+              <td className="px-4 py-3">
+                <RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item.venueId)} />
+              </td>
             </tr>
           ))
         )}
@@ -421,7 +435,6 @@ export function VenueSection({
     </AdminSectionPanel>
   );
 }
-
 const inputClass =
   'w-full rounded-lg border border-border-default bg-white px-3 py-2.5 text-sm text-text-primary outline-none transition placeholder:text-text-placeholder focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20';
 const rowClass = 'border-b border-border-subtle last:border-b-0 hover:bg-surface-muted';
@@ -430,21 +443,13 @@ const cellClass = 'px-4 py-3 text-sm text-text-secondary';
 interface FormActionsProps {
   loading: boolean;
   editing: boolean;
-  onCancel: () => void;
   addLabel: string;
   updateLabel: string;
 }
 
-function FormActions({ loading, editing, onCancel, addLabel, updateLabel }: FormActionsProps) {
+function FormActions({ loading, editing, addLabel, updateLabel }: FormActionsProps) {
   return (
     <div className="mt-5 flex flex-wrap justify-end gap-3">
-      <button
-        type="button"
-        className="rounded-lg border border-border-default bg-white px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:border-brand-primary hover:bg-surface-blue hover:text-brand-primary-hover"
-        onClick={onCancel}
-      >
-        Cancel
-      </button>
       <button
         type="submit"
         className="rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
@@ -473,10 +478,23 @@ function RowActions({ onEdit, onDelete }: RowActionsProps) {
       </button>
       <button
         type="button"
-        className="rounded-lg border border-surface-error bg-white px-4 py-2.5 text-sm font-medium text-state-error transition hover:bg-surface-error"
+        aria-label="Delete"
+        title="Delete"
+        className="grid h-8 w-8 place-items-center rounded-lg border border-surface-error bg-white p-0 text-state-error transition hover:bg-surface-error"
         onClick={onDelete}
       >
-        Delete
+        <svg
+          aria-hidden="true"
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 6h18M8 6V4h8v2m2 0-1 14H7L6 6m4 4v6m4-6v6" />
+        </svg>
       </button>
     </div>
   );

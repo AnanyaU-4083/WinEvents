@@ -1,3 +1,4 @@
+// Validate required event form values.
 import { z } from 'zod';
 
 export const eventFormSchema = z

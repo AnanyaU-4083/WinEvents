@@ -1,6 +1,4 @@
-/* =========================================================
-   WINEVENTS - GLOBAL STYLES
-   ========================================================= */
+/* Set global styles for pages. */
 @import 'tailwindcss';
 
 @theme {
@@ -73,9 +71,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* =========================================================
-   RESET
-   ========================================================= */
+/* RESET */
 
 * {
   box-sizing: border-box;
@@ -90,9 +86,7 @@ body,
   padding: 0;
 }
 
-/* =========================================================
-   BODY
-   ========================================================= */
+/* BODY */
 
 body {
   min-width: 320px;
@@ -103,17 +97,13 @@ body {
   color: var(--color-text-default);
 }
 
-/* =========================================================
-   LINKS
-   ========================================================= */
+/* LINKS */
 
 a {
   color: inherit;
 }
 
-/* =========================================================
-   BUTTONS
-   ========================================================= */
+/* BUTTONS */
 
 button,
 input,
@@ -122,17 +112,13 @@ textarea {
   font: inherit;
 }
 
-/* =========================================================
-   BUTTON RESET
-   ========================================================= */
+/* BUTTON RESET */
 
 button {
   cursor: pointer;
 }
 
-/* =========================================================
-   HEADINGS
-   ========================================================= */
+/* HEADINGS */
 
 h1,
 h2,
@@ -143,10 +129,119 @@ h6 {
   margin: 0;
 }
 
-/* =========================================================
-   PARAGRAPHS
-   ========================================================= */
+/* PARAGRAPHS */
 
 p {
   margin: 0;
 }
+
+@layer components {
+  .page-canvas {
+    background:
+      radial-gradient(ellipse at 10% 0%, rgb(0 102 255 / 11%), transparent 38%),
+      radial-gradient(ellipse at 96% 22%, rgb(255 122 0 / 20%), transparent 40%),
+      linear-gradient(145deg, #eaf1fb 0%, #f5f8fc 52%, #eaf2ff 100%);
+    background-attachment: fixed;
+  }
+
+  .page-title-panel {
+    border: 1px solid rgb(255 255 255 / 76%);
+    border-radius: 1.5rem;
+    background-color: rgb(255 255 255 / 32%);
+    padding: 1.35rem 1.6rem;
+    box-shadow: 0 14px 34px rgb(18 48 72 / 10%);
+    backdrop-filter: blur(18px) saturate(130%);
+  }
+  .page-accent {
+    display: block;
+    width: 3rem;
+    height: 3px;
+    margin-top: 0.8rem;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--color-brand-primary) 0 62%, var(--color-accent-orange) 62% 100%);
+  }
+
+  .page-accent-centered {
+    margin-right: auto;
+    margin-left: auto;
+  }
+  .summary-accent-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .summary-accent-card::before {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 3px;
+    background: linear-gradient(90deg, var(--color-brand-primary), var(--color-accent-orange));
+    content: '';
+  }
+  .table-grid {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .table-grid thead {
+    background-color: rgb(218 237 250 / 78%);
+  }
+
+  .table-grid th {
+    border-bottom: 1px solid rgb(122 187 226 / 65%);
+  }
+
+  .table-grid tbody td {
+    border-bottom: 1px solid rgb(140 193 226 / 48%);
+  }
+
+  .table-grid tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .table-grid tbody tr:hover {
+    background-color: rgb(220 239 252 / 38%);
+  }
+
+  .glass-panel {
+    border: 1px solid rgb(30 91 121 / 20%) !important;
+    border-radius: 1.5rem !important;
+    background-color: rgb(255 255 255 / 64%) !important;
+    box-shadow: 0 14px 34px rgb(18 48 72 / 12%) !important;
+    backdrop-filter: blur(18px) saturate(125%);
+  }
+
+  .glass-panel-blue {
+    background-color: rgb(155 215 232 / 24%) !important;
+  }
+
+  .glass-popup {
+    border: 1px solid rgb(255 255 255 / 78%) !important;
+    border-radius: 1.5rem !important;
+    background-color: rgb(255 255 255 / 66%) !important;
+    box-shadow: 0 24px 64px rgb(15 35 55 / 24%) !important;
+    backdrop-filter: blur(28px) saturate(145%);
+  }
+
+  .glass-popup-orange {
+    border-color: rgb(255 220 190 / 88%) !important;
+    background-color: rgb(255 241 230 / 64%) !important;
+  }
+}
+
+/* Compact button styles */
+button[class]:not([class*='text-']) {
+  font-size: 0.95em;
+}
+
+button[class~='px-6'] { padding-inline: 1.15rem; }
+button[class~='px-5'] { padding-inline: 0.95rem; }
+button[class~='px-4'] { padding-inline: 0.75rem; }
+button[class~='px-3'] { padding-inline: 0.6rem; }
+button[class~='px-2'] { padding-inline: 0.45rem; }
+button[class~='py-4'] { padding-block: 0.75rem; }
+button[class~='py-3'] { padding-block: 0.6rem; }
+button[class~='py-2.5'] { padding-block: 0.45rem; }
+button[class~='py-2'] { padding-block: 0.4rem; }
+button[class~='py-1.5'] { padding-block: 0.3rem; }
+button[class~='py-1'] { padding-block: 0.2rem; }

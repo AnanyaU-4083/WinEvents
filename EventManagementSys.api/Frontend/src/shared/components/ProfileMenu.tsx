@@ -1,3 +1,4 @@
+// Manage signed-in user options here.
 import { useEffect, useRef, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
 
@@ -87,7 +88,7 @@ function ProfileMenu() {
       {isOpen && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-3 w-64 overflow-hidden rounded-xl border border-border-accent/35 bg-white shadow-popover"
+          className="glass-popup absolute right-0 z-50 mt-3 w-64 overflow-hidden"
         >
           <div className="border-b border-gray-100 px-4 py-4">
             <div className="flex items-center gap-3">

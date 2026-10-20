@@ -1,3 +1,4 @@
+// Display event and task statuses.
 interface StatusBadgeProps {
   status: string;
   context?: 'event' | 'task';

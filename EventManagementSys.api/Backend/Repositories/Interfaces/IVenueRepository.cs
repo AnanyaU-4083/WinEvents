@@ -6,9 +6,13 @@ public interface IVenueRepository
 {
     Task<List<Venue>> GetAllAsync(CancellationToken cancellationToken);
 
-    Task<Venue?> GetByIdAsync(int venueId,CancellationToken cancellationToken);
+    Task<Venue?> GetByIdAsync(int venueId, CancellationToken cancellationToken);
 
-    Task<Venue> AddAsync(Venue venue,CancellationToken cancellationToken);
+    Task<Venue> AddAsync(Venue venue, CancellationToken cancellationToken);
 
-    Task<int> GetCurrentRegistrationsAsync(int venueId,int eventId,CancellationToken cancellationToken);
+    Task UpdateAsync(Venue venue, CancellationToken cancellationToken);
+
+    Task DeleteAsync(Venue venue, CancellationToken cancellationToken);
+
+    Task<int> GetCurrentRegistrationsAsync(int venueId, int eventId, CancellationToken cancellationToken);
 }

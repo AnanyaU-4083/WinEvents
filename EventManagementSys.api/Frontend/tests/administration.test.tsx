@@ -119,7 +119,7 @@ describe('organization section', () => {
     expect(onChange).toHaveBeenCalledOnce();
     fireEvent.submit(screen.getByRole('heading', { name: 'Edit Organization' }).closest('form')!);
     expect(onSubmit).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close edit organization dialog' }));
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onCancel).toHaveBeenCalledOnce();
@@ -214,8 +214,10 @@ describe('employee section', () => {
 });
 
 describe('venue section', () => {
-  it('renders form, capacity and venue rows, and cancellation', () => {
+  it('renders add form and venue row actions', () => {
     const onCancel = vi.fn();
+    const onEdit = vi.fn();
+    const onDelete = vi.fn();
     const onChange = vi.fn();
     const onSubmit = vi.fn((event) => event.preventDefault());
     render(
@@ -224,12 +226,15 @@ describe('venue section', () => {
         searchValue=""
         form={{ address: 'Main Hall', capacity: '250' }}
         formOpen
+        editingId={null}
         loading={false}
         onSearchChange={vi.fn()}
         onOpenAdd={vi.fn()}
         onSubmit={onSubmit}
         onChange={onChange}
         onCancel={onCancel}
+        onEdit={onEdit}
+        onDelete={onDelete}
       />,
     );
     expect(screen.getAllByText('Main Hall')).toHaveLength(2);
@@ -237,8 +242,12 @@ describe('venue section', () => {
     expect(onChange).toHaveBeenCalledOnce();
     fireEvent.submit(screen.getByRole('heading', { name: 'Add Venue' }).closest('form')!);
     expect(onSubmit).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close add venue dialog' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onCancel).toHaveBeenCalledOnce();
+    expect(onEdit).toHaveBeenCalledWith(venue);
+    expect(onDelete).toHaveBeenCalledWith(venue.venueId);
   });
 
   it('renders venue empty guidance and filtered guidance', () => {
@@ -246,12 +255,15 @@ describe('venue section', () => {
       items: [],
       form: { address: '', capacity: '' },
       formOpen: false,
+      editingId: null,
       loading: false,
       onSearchChange: vi.fn(),
       onOpenAdd: vi.fn(),
       onSubmit: vi.fn(),
       onChange: vi.fn(),
       onCancel: vi.fn(),
+      onEdit: vi.fn(),
+      onDelete: vi.fn(),
     };
     const { rerender } = render(<VenueSection {...props} searchValue="" />);
     expect(screen.getByText('No venues found')).toBeInTheDocument();

@@ -1,3 +1,4 @@
+// Display events in calendar views.
 import {
   ScheduleComponent,
   ViewsDirective,
@@ -120,7 +121,7 @@ function DashboardCalendarPanel({
   onSaveEvent,
 }: DashboardCalendarPanelProps) {
   return (
-    <div className="w-full rounded-panel border border-border-accent/45 bg-surface-blue-sheer/25 p-6 shadow-panel backdrop-blur-md">
+    <div className="glass-panel glass-panel-blue w-full p-6">
       <div className="mb-5 flex items-center justify-between gap-4 max-[700px]:flex-col max-[700px]:items-start">
         <div>
           <h2 className="m-0 text-xl font-bold text-text-primary">Event Calendar</h2>
@@ -208,6 +209,7 @@ function DashboardCalendarPanel({
         <Modal
           open={showEventForm}
           ariaLabel={editingEventId === null ? 'Create event' : 'Edit event'}
+          onClose={onCloseEventForm}
           className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-2xl"
         >
           <EventEditorForm

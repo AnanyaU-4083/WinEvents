@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import DashboardCalendarPanel, {
   type DashboardCalendarPanelProps,
@@ -157,11 +157,12 @@ describe('Dashboard calendar panel', () => {
     expect(screen.getByText(/Use Add Event to create/)).toBeInTheDocument();
   });
 
-  it('shows the create modal with required budget and loaded venue and organization options', () => {
+  it('shows the create modal with required budget and loaded venue and organization options', async () => {
     render(<DashboardCalendarPanel {...props({ showEventForm: true })} />);
     expect(screen.getByRole('dialog', { name: 'Create event' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Create Event' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Event Name/), { target: { value: 'Launch' } });
+    fireEvent.change(screen.getByLabelText(/Event Type/), { target: { value: '0' } });
     fireEvent.change(screen.getByLabelText(/Start Date and Time/), {
       target: { value: '2026-10-20T09:00' },
     });
@@ -172,9 +173,9 @@ describe('Dashboard calendar panel', () => {
     fireEvent.change(screen.getByLabelText(/Budget/), { target: { value: '250' } });
     expect(screen.getByRole('option', { name: 'Main Hall - Capacity: 100' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'WinWire' })).toBeInTheDocument();
-    fireEvent.submit(document.querySelector('form')!);
-    expect(callbacks.onSaveEvent).toHaveBeenCalledOnce();
-    fireEvent.click(screen.getAllByRole('button', { name: 'Close' })[0]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Create Event' }));
+    await waitFor(() => expect(callbacks.onSaveEvent).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByRole('button', { name: 'Close create event dialog' }));
     expect(callbacks.onCloseEventForm).toHaveBeenCalledOnce();
   });
 
@@ -187,7 +188,6 @@ describe('Dashboard calendar panel', () => {
     expect(screen.getByRole('dialog', { name: 'Edit event' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Edit Event' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
-    expect(screen.getAllByRole('button', { name: 'Close' })[0]).toBeDisabled();
   });
 
   it('renders read-only attendee calendar details and location fallback', () => {

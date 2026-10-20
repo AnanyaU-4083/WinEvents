@@ -1,3 +1,4 @@
+// Render labeled fields with errors.
 import { cloneElement, isValidElement, useId, type ReactElement, type ReactNode } from 'react';
 
 interface FormFieldProps {
@@ -21,11 +22,7 @@ function FormField({ label, htmlFor, className = '', required = false, children 
     <div className={`grid gap-1 text-sm font-medium ${className}`}>
       <label htmlFor={controlId}>
         {label}
-        {required && (
-          <span className="ml-1 text-red-600" aria-label="required">
-            *
-          </span>
-        )}
+        {required && <span aria-hidden="true" className="ml-1 text-red-600">*</span>}
       </label>
       {control}
     </div>

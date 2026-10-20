@@ -1,3 +1,4 @@
+// Display filterable event records clearly.
 import { useEffect, useState } from 'react';
 import StatusBadge from '@/shared/components/StatusBadge';
 
@@ -81,7 +82,7 @@ function EventListPanel({
               : 'There are no events matching your search.';
 
   return (
-    <section className="mb-6 w-full overflow-hidden rounded-xl border border-border-accent/35 bg-white shadow-card">
+    <section className="glass-panel mb-6 w-full overflow-hidden">
       <header className="border-b border-border-subtle px-6 py-5">
         <h2 className="text-lg font-semibold text-text-primary">Events</h2>
         <p className="mt-1 text-sm text-text-muted">
@@ -113,7 +114,7 @@ function EventListPanel({
       </div>
 
       <div className="w-full overflow-x-auto">
-        <table className="min-w-full border-collapse text-left text-sm">
+        <table className="table-grid min-w-full border-collapse text-left text-sm">
           <thead>
             <tr>
               {['Event Name', 'Type', 'Start Date', 'End Date', 'Status', 'Actions'].map(

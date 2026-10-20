@@ -18,8 +18,8 @@ export default defineConfig({
     include: ['tests/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/main.tsx', 'src/auth/**'],
+      include: ['src/**/*.{ts,tsx}', 'angular-tasks/src/my-tasks/task-helpers.ts'],
+      exclude: ['angular-tasks/src/main.ts', 'src/main.tsx', 'src/auth/**'],
       reporter: ['text', 'html', 'lcov'],
       thresholds: {
         lines: 80,
