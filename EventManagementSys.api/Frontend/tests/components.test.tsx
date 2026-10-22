@@ -20,9 +20,9 @@ describe('shared form and layout components', () => {
         <input id="event-name" />
       </FormField>,
     );
-    expect(screen.getByLabelText('Event name')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Event name/)).toBeInTheDocument();
     expect(screen.getByText('*')).toHaveClass('text-red-600');
-    expect(screen.getByText('Event name').parentElement).toHaveClass('gap-3');
+    expect(screen.getByLabelText(/Event name/).parentElement).toHaveClass('gap-3');
 
     rerender(
       <FormField label="No id">

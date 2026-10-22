@@ -4,6 +4,9 @@ import EventEditorForm from '../src/features/events/components/EventEditorForm';
 import EventListPanel from '../src/features/events/components/EventListPanel';
 import EventTaskAssignmentPanel from '../src/features/events/components/EventTaskAssignmentPanel';
 
+const futureEventDate = (hoursAhead: number): string =>
+  new Date(Date.now() + hoursAhead * 60 * 60 * 1000).toISOString();
+
 const editorForm = {
   eventName: 'Town Hall',
   startDate: '2026-10-20T17:30',
@@ -16,8 +19,8 @@ const editorForm = {
 const event = {
   eventId: 11,
   eventName: 'Town Hall',
-  startDate: '2026-10-20T17:30:00',
-  endDate: '2026-10-20T18:30:00',
+  startDate: futureEventDate(1),
+  endDate: futureEventDate(2),
   budget: 100,
   eventType: 0 as const,
   status: 0 as const,
@@ -43,15 +46,15 @@ describe('event editor form', () => {
     expect(screen.getByRole('heading', { name: 'Edit Event' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Main Hall - Capacity: 250' })).toHaveValue('1');
     expect(screen.getByRole('option', { name: 'WinWire' })).toHaveValue('2');
-    fireEvent.change(screen.getByLabelText('Event Name'), { target: { value: 'Staff meeting' } });
-    fireEvent.change(screen.getByLabelText('Event Type'), { target: { value: '1' } });
-    fireEvent.change(screen.getByLabelText('Start Date and Time'), {
+    fireEvent.change(screen.getByLabelText(/Event Name/), { target: { value: 'Staff meeting' } });
+    fireEvent.change(screen.getByLabelText(/Event Type/), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText(/Start Date and Time/), {
       target: { value: '2026-10-21T09:00' },
     });
-    fireEvent.change(screen.getByLabelText('End Date and Time'), { target: { value: '2026-10-21T10:00' } });
-    fireEvent.change(screen.getByLabelText('Venue'), { target: { value: '1' } });
-    fireEvent.change(screen.getByLabelText('Organization'), { target: { value: '2' } });
-    fireEvent.change(screen.getByLabelText('Budget'), { target: { value: '200' } });
+    fireEvent.change(screen.getByLabelText(/End Date and Time/), { target: { value: '2026-10-21T10:00' } });
+    fireEvent.change(screen.getByLabelText(/Venue/), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText(/Organization/), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText(/Budget/), { target: { value: '200' } });
     fireEvent.submit(
       screen
         .getByRole('heading', { name: 'Edit Event' })
@@ -124,9 +127,9 @@ describe('event task assignment panel', () => {
     expect(
       screen.getByText('No employees have been assigned to this event yet.'),
     ).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Employee'), { target: { value: '4' } });
-    fireEvent.change(screen.getByLabelText('Deadline'), { target: { value: '2026-10-21T09:00' } });
-    fireEvent.change(screen.getByLabelText('Task'), { target: { value: 'Prepare the room' } });
+    fireEvent.change(screen.getByLabelText(/Employee/), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText(/Deadline/), { target: { value: '2026-10-21T09:00' } });
+    fireEvent.change(screen.getByLabelText(/Task/), { target: { value: 'Prepare the room' } });
     fireEvent.click(screen.getByRole('button', { name: 'Assign Task' }));
     expect(setSelectedEmployeeId).toHaveBeenCalledWith('4');
     expect(setDeadline).toHaveBeenCalledWith('2026-10-21T09:00');

@@ -16,6 +16,9 @@ import Dashboard from '../src/features/dashboard';
 import Events from '../src/features/events';
 import Participants from '../src/features/participants';
 
+const futureEventDate = (hoursAhead: number): string =>
+  new Date(Date.now() + hoursAhead * 60 * 60 * 1000).toISOString();
+
 function render(ui: ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
@@ -366,8 +369,8 @@ describe('Dashboard page', () => {
     const event = {
       eventId: 1,
       eventName: 'Attendee Gala',
-      startDate: '2026-10-20T17:30:00',
-      endDate: '2026-10-20T18:30:00',
+      startDate: futureEventDate(1),
+      endDate: futureEventDate(2),
       status: 0,
       eventType: 0,
       venueId: 3,
@@ -400,8 +403,8 @@ describe('Dashboard page', () => {
     const event = {
       eventId: 1,
       eventName: 'Attendee Gala',
-      startDate: '2026-10-20T17:30:00',
-      endDate: '2026-10-20T18:30:00',
+      startDate: futureEventDate(1),
+      endDate: futureEventDate(2),
       status: 0,
       eventType: 0,
       venueId: 3,
@@ -434,8 +437,8 @@ describe('Dashboard page', () => {
     const event = {
       eventId: 1,
       eventName: 'Cancel from Calendar',
-      startDate: '2026-10-20T17:30:00',
-      endDate: '2026-10-20T18:30:00',
+      startDate: futureEventDate(1),
+      endDate: futureEventDate(2),
       status: 0,
       eventType: 0,
       venueId: 3,
@@ -490,8 +493,8 @@ describe('Dashboard page', () => {
     const scheduled = {
       eventId: 1,
       eventName: 'Scheduled One',
-      startDate: '2026-10-20T17:30:00',
-      endDate: '2026-10-20T18:30:00',
+      startDate: futureEventDate(1),
+      endDate: futureEventDate(2),
       status: 0,
       eventType: 0,
       venueId: 3,
@@ -514,7 +517,7 @@ describe('Dashboard page', () => {
       'data-cancelled',
       'true',
     );
-    expect(screen.getByLabelText('Harness event name')).toHaveValue('Scheduled One');
+    expect(screen.getByLabelText(/Harness event name/)).toHaveValue('Scheduled One');
     fireEvent.click(screen.getByRole('button', { name: 'Harness close form' }));
     fireEvent.click(screen.getByRole('button', { name: 'Harness edit completed event' }));
     expect(screen.getByRole('button', { name: 'Harness edit completed event' })).toHaveAttribute(
@@ -553,22 +556,22 @@ describe('Dashboard page', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Harness double-click empty day' }));
     fireEvent.click(screen.getByRole('button', { name: 'Harness create event' }));
-    fireEvent.change(screen.getByLabelText('Harness event name'), {
+    fireEvent.change(screen.getByLabelText(/Harness event name/), {
       target: { value: 'New Showcase' },
     });
-    fireEvent.change(screen.getByLabelText('Harness event start'), {
+    fireEvent.change(screen.getByLabelText(/Harness event start/), {
       target: { value: '2026-11-01T10:00' },
     });
-    fireEvent.change(screen.getByLabelText('Harness event end'), {
+    fireEvent.change(screen.getByLabelText(/Harness event end/), {
       target: { value: '2026-11-01T11:00' },
     });
-    fireEvent.change(screen.getByLabelText('Harness venue'), { target: { value: '3' } });
-    fireEvent.change(screen.getByLabelText('Harness event type'), { target: { value: '2' } });
-    fireEvent.change(screen.getByLabelText('Harness event end'), {
+    fireEvent.change(screen.getByLabelText(/Harness venue/), { target: { value: '3' } });
+    fireEvent.change(screen.getByLabelText(/Harness event type/), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText(/Harness event end/), {
       target: { value: '2026-11-01T11:00' },
     });
-    fireEvent.change(screen.getByLabelText('Harness organization'), { target: { value: '4' } });
-    fireEvent.change(screen.getByLabelText('Harness budget'), { target: { value: '10' } });
+    fireEvent.change(screen.getByLabelText(/Harness organization/), { target: { value: '4' } });
+    fireEvent.change(screen.getByLabelText(/Harness budget/), { target: { value: '10' } });
     fireEvent.submit(screen.getByRole('button', { name: 'Harness save event' }).closest('form')!);
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -593,7 +596,7 @@ describe('Dashboard page', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Harness edit scheduled event' }));
-    expect(screen.getByLabelText('Harness event name')).toHaveValue('Scheduled One');
+    expect(screen.getByLabelText(/Harness event name/)).toHaveValue('Scheduled One');
     fireEvent.click(screen.getByRole('button', { name: 'Harness close form' }));
   });
 });
@@ -670,9 +673,9 @@ describe('Administration page', () => {
     render(<Administration />);
     await screen.findByText('WinWire');
     fireEvent.click(screen.getByRole('button', { name: '+ Add Organization' }));
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Org' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '456' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'New Org' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'new@example.com' } });
+    fireEvent.change(screen.getByLabelText(/Phone/), { target: { value: '456' } });
     fireEvent.submit(screen.getByRole('heading', { name: 'Add Organization' }).closest('form')!);
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -683,7 +686,7 @@ describe('Administration page', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.getByRole('heading', { name: 'Edit Organization' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Updated Org' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Updated Org' } });
     fireEvent.submit(screen.getByRole('heading', { name: 'Edit Organization' }).closest('form')!);
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -733,10 +736,10 @@ describe('Administration page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Employees' }));
     await screen.findByText('Jordan');
     fireEvent.click(screen.getByRole('button', { name: '+ Add Employee' }));
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Taylor' } });
-    fireEvent.change(screen.getByLabelText('Job Title'), { target: { value: 'Planner' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'taylor@example.com' } });
-    fireEvent.change(screen.getByLabelText('Organization'), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Taylor' } });
+    fireEvent.change(screen.getByLabelText(/Job Title/), { target: { value: 'Planner' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'taylor@example.com' } });
+    fireEvent.change(screen.getByLabelText(/Organization/), { target: { value: '1' } });
     fireEvent.submit(screen.getByRole('heading', { name: 'Add Employee' }).closest('form')!);
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -746,7 +749,7 @@ describe('Administration page', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.getByRole('heading', { name: 'Edit Employee' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Jordan Updated' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Jordan Updated' } });
     fireEvent.submit(screen.getByRole('heading', { name: 'Edit Employee' }).closest('form')!);
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -769,8 +772,8 @@ describe('Administration page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Venues' }));
     await screen.findAllByText('Main Hall');
     fireEvent.click(screen.getByRole('button', { name: '+ Add Venue' }));
-    fireEvent.change(screen.getByLabelText('Address'), { target: { value: 'West Hall' } });
-    fireEvent.change(screen.getByLabelText('Capacity'), { target: { value: '250' } });
+    fireEvent.change(screen.getByLabelText(/Address/), { target: { value: 'West Hall' } });
+    fireEvent.change(screen.getByLabelText(/Capacity/), { target: { value: '250' } });
     fireEvent.submit(screen.getByRole('heading', { name: 'Add Venue' }).closest('form')!);
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
@@ -830,9 +833,9 @@ describe('Administration page', () => {
     render(<Administration />);
     await screen.findByText('WinWire');
     fireEvent.click(screen.getByRole('button', { name: '+ Add Organization' }));
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'New Org' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'new@example.com' } });
-    fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '456' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'New Org' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'new@example.com' } });
+    fireEvent.change(screen.getByLabelText(/Phone/), { target: { value: '456' } });
     fireEvent.submit(screen.getByRole('heading', { name: 'Add Organization' }).closest('form')!);
     expect(await screen.findByText('organization save failed')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -873,9 +876,9 @@ describe('Administration page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Employees' }));
     await screen.findByText('Jordan');
     fireEvent.click(screen.getByRole('button', { name: '+ Add Employee' }));
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Taylor' } });
-    fireEvent.change(screen.getByLabelText('Job Title'), { target: { value: 'Planner' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'taylor@example.com' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Taylor' } });
+    fireEvent.change(screen.getByLabelText(/Job Title/), { target: { value: 'Planner' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'taylor@example.com' } });
     fireEvent.submit(screen.getByRole('heading', { name: 'Add Employee' }).closest('form')!);
     expect(await screen.findByText('Failed to create employee (500)')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
@@ -883,8 +886,8 @@ describe('Administration page', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Venues' }));
     fireEvent.click(screen.getByRole('button', { name: '+ Add Venue' }));
-    fireEvent.change(screen.getByLabelText('Address'), { target: { value: 'West Hall' } });
-    fireEvent.change(screen.getByLabelText('Capacity'), { target: { value: '250' } });
+    fireEvent.change(screen.getByLabelText(/Address/), { target: { value: 'West Hall' } });
+    fireEvent.change(screen.getByLabelText(/Capacity/), { target: { value: '250' } });
     fireEvent.submit(screen.getByRole('heading', { name: 'Add Venue' }).closest('form')!);
     expect(await screen.findByText('Failed to create venue (500)')).toBeInTheDocument();
   });
@@ -958,13 +961,13 @@ describe('Participants page', () => {
     await screen.findByText('Summer Festival');
     fireEvent.click(screen.getByRole('button', { name: '+ Add Participant' }));
     const form = () => screen.getByRole('heading', { name: 'Add Participant' }).closest('form')!;
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Taylor' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'taylor@example.com' } });
-    fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '555-0100' } });
-    fireEvent.change(screen.getByLabelText('Ticket'), { target: { value: 'VIP' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Taylor' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'taylor@example.com' } });
+    fireEvent.change(screen.getByLabelText(/Phone/), { target: { value: '555-0100' } });
+    fireEvent.change(screen.getByLabelText(/Ticket/), { target: { value: 'VIP' } });
     fireEvent.submit(form());
     expect((await screen.findAllByText('Please select an event.')).length).toBeGreaterThan(0);
-    fireEvent.change(screen.getByLabelText('Event'), { target: { value: '8' } });
+    fireEvent.change(screen.getByLabelText(/Event/), { target: { value: '8' } });
     fireEvent.submit(form());
     await screen.findByText('Taylor');
     expect(fetchMock).toHaveBeenCalledWith(
@@ -1001,11 +1004,11 @@ describe('Participants page', () => {
     render(<Participants />);
     await screen.findByText('Summer Festival');
     fireEvent.click(screen.getByRole('button', { name: '+ Add Participant' }));
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Taylor' } });
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'taylor@example.com' } });
-    fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '555-0100' } });
-    fireEvent.change(screen.getByLabelText('Ticket'), { target: { value: 'VIP' } });
-    fireEvent.change(screen.getByLabelText('Event'), { target: { value: '8' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'Taylor' } });
+    fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'taylor@example.com' } });
+    fireEvent.change(screen.getByLabelText(/Phone/), { target: { value: '555-0100' } });
+    fireEvent.change(screen.getByLabelText(/Ticket/), { target: { value: 'VIP' } });
+    fireEvent.change(screen.getByLabelText(/Event/), { target: { value: '8' } });
     fireEvent.submit(screen.getByRole('heading', { name: 'Add Participant' }).closest('form')!);
     expect((await screen.findAllByText('registration unavailable')).length).toBeGreaterThan(0);
   });
@@ -1080,22 +1083,22 @@ describe('Events page', () => {
     const form = () => document.querySelector('form')!;
     fireEvent.submit(form());
     expect(await screen.findByText('Event name is required.')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Event Name'), { target: { value: 'Created Meetup' } });
-    fireEvent.change(screen.getByLabelText('Start Date and Time'), {
+    fireEvent.change(screen.getByLabelText(/Event Name/), { target: { value: 'Created Meetup' } });
+    fireEvent.change(screen.getByLabelText(/Start Date and Time/), {
       target: { value: '2026-11-01T09:30' },
     });
-    fireEvent.change(screen.getByLabelText('End Date and Time'), {
+    fireEvent.change(screen.getByLabelText(/End Date and Time/), {
       target: { value: '2026-11-01T08:30' },
     });
     fireEvent.submit(form());
     expect(await screen.findByText('Please select a venue.')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Venue'), { target: { value: '1' } });
-    fireEvent.change(screen.getByLabelText('Event Type'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText(/Venue/), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText(/Event Type/), { target: { value: '2' } });
     fireEvent.submit(form());
     expect(await screen.findByText('End date must be after the start date.')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('End Date and Time'), { target: { value: '2026-11-01T11:30' } });
-    fireEvent.change(screen.getByLabelText('Budget'), { target: { value: '125.50' } });
-    fireEvent.change(screen.getByLabelText('Organization'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText(/End Date and Time/), { target: { value: '2026-11-01T11:30' } });
+    fireEvent.change(screen.getByLabelText(/Budget/), { target: { value: '125.50' } });
+    fireEvent.change(screen.getByLabelText(/Organization/), { target: { value: '2' } });
     fireEvent.submit(form());
     expect(await screen.findByText('Event created successfully.')).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(
@@ -1144,9 +1147,9 @@ describe('Events page', () => {
     ).toBeInTheDocument();
     const assignmentPanel = () =>
       screen.getByRole('heading', { name: 'Assign Employee Task' }).closest('section')!;
-    fireEvent.change(screen.getByLabelText('Employee'), { target: { value: '8' } });
-    fireEvent.change(screen.getByLabelText('Task'), { target: { value: 'Prepare room' } });
-    fireEvent.change(screen.getByLabelText('Deadline'), { target: { value: '2026-11-01T09:30' } });
+    fireEvent.change(screen.getByLabelText(/Employee/), { target: { value: '8' } });
+    fireEvent.change(screen.getByLabelText(/Task/), { target: { value: 'Prepare room' } });
+    fireEvent.change(screen.getByLabelText(/Deadline/), { target: { value: '2026-11-01T09:30' } });
     fireEvent.click(within(assignmentPanel()).getByRole('button', { name: 'Assign Task' }));
     expect((await screen.findAllByText('Employee task assigned successfully.')).length).toBeGreaterThan(0);
     expect(await screen.findByText('Prepare room')).toBeInTheDocument();
@@ -1297,8 +1300,8 @@ describe('Events page', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByRole('heading', { name: 'Create Event' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Start Date and Time')).toHaveValue('2026-11-03T09:00');
-    expect(screen.getByLabelText('End Date and Time')).toHaveValue('2026-11-03T10:00');
+    expect(screen.getByLabelText(/Start Date and Time/)).toHaveValue('2026-11-03T09:00');
+    expect(screen.getByLabelText(/End Date and Time/)).toHaveValue('2026-11-03T10:00');
     unmount();
 
     setAccount(['Attendee']);
@@ -1358,8 +1361,8 @@ describe('Events page', () => {
     expect((await screen.findAllByText('Failed to load assigned employees.')).length).toBeGreaterThan(0);
     const panel = () =>
       screen.getByRole('heading', { name: 'Assign Employee Task' }).closest('section')!;
-    fireEvent.change(screen.getByLabelText('Employee'), { target: { value: '8' } });
-    fireEvent.change(screen.getByLabelText('Task'), { target: { value: 'Check venue' } });
+    fireEvent.change(screen.getByLabelText(/Employee/), { target: { value: '8' } });
+    fireEvent.change(screen.getByLabelText(/Task/), { target: { value: 'Check venue' } });
     fireEvent.click(within(panel()).getByRole('button', { name: 'Assign Task' }));
     expect((await screen.findAllByText('Failed to assign employee task.')).length).toBeGreaterThan(0);
   });
@@ -1412,7 +1415,7 @@ describe('Events page', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByRole('heading', { name: 'Edit Event' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Event Name'), {
+    fireEvent.change(screen.getByLabelText(/Event Name/), {
       target: { value: 'Updated Route Event' },
     });
     fireEvent.submit(document.querySelector('form')!);
@@ -1433,8 +1436,8 @@ describe('Events page', () => {
 
 const eventRecord = {
   eventName: 'Seed Event',
-  startDate: '2026-10-20T17:30:00',
-  endDate: '2026-10-20T18:30:00',
+  startDate: futureEventDate(1),
+  endDate: futureEventDate(2),
   budget: 100,
   eventType: 0,
   status: 0,

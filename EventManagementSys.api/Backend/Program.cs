@@ -13,9 +13,9 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 
-// --------------------------------------------------
+
 // Database
-// --------------------------------------------------
+
 
 var connectionString =
     builder.Configuration.GetConnectionString(
@@ -26,16 +26,16 @@ builder.Services.AddDbContext<AppDbContext>(
         options.UseSqlServer(connectionString));
 
 
-// --------------------------------------------------
+
 // Controllers
-// --------------------------------------------------
+
 
 builder.Services.AddControllers();
 
 
-// --------------------------------------------------
+
 // Microsoft Authentication
-// --------------------------------------------------
+
 
 builder.Services
     .AddAuthentication(
@@ -58,9 +58,9 @@ builder.Services
                 .RoleClaimType = "roles";
 
 
-            // --------------------------------------------------
+            
             // Temporary authentication diagnostics
-            // --------------------------------------------------
+            
 
             jwtOptions.Events ??=
                 new JwtBearerEvents();

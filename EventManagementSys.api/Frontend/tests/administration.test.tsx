@@ -115,7 +115,7 @@ describe('organization section', () => {
       />,
     );
     expect(screen.getByRole('heading', { name: 'Edit Organization' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'WinWire Inc.' } });
+    fireEvent.change(screen.getByLabelText(/Name/), { target: { value: 'WinWire Inc.' } });
     expect(onChange).toHaveBeenCalledOnce();
     fireEvent.submit(screen.getByRole('heading', { name: 'Edit Organization' }).closest('form')!);
     expect(onSubmit).toHaveBeenCalledOnce();
@@ -179,7 +179,7 @@ describe('employee section', () => {
     );
     expect(screen.getByRole('heading', { name: 'Add Employee' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'WinWire' })).toHaveValue('1');
-    fireEvent.change(screen.getByLabelText('Organization'), { target: { value: '1' } });
+    fireEvent.change(screen.getByLabelText(/Organization/), { target: { value: '1' } });
     expect(onChange).toHaveBeenCalledOnce();
     expect(screen.getByText('Coordinator')).toBeInTheDocument();
     expect(screen.getAllByText('WinWire')).toHaveLength(2);
@@ -238,7 +238,7 @@ describe('venue section', () => {
       />,
     );
     expect(screen.getAllByText('Main Hall')).toHaveLength(2);
-    fireEvent.change(screen.getByLabelText('Capacity'), { target: { value: '300' } });
+    fireEvent.change(screen.getByLabelText(/Capacity/), { target: { value: '300' } });
     expect(onChange).toHaveBeenCalledOnce();
     fireEvent.submit(screen.getByRole('heading', { name: 'Add Venue' }).closest('form')!);
     expect(onSubmit).toHaveBeenCalledOnce();
