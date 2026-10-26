@@ -24,3 +24,4 @@ public/angular/my-tasks
 *.njsproj
 *.sln
 *.sw?
+.env

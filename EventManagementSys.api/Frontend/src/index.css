@@ -145,12 +145,17 @@ p {
   }
 
   .page-title-panel {
-    border: 1px solid rgb(255 255 255 / 76%);
+    border: 1px solid rgb(255 255 255 / 82%);
     border-radius: 1.5rem;
-    background-color: rgb(255 255 255 / 32%);
+    background: linear-gradient(
+      115deg,
+      rgb(219 234 254 / 62%) 0%,
+      rgb(255 255 255 / 78%) 52%,
+      rgb(255 237 213 / 52%) 100%
+    );
     padding: 1.35rem 1.6rem;
-    box-shadow: 0 14px 34px rgb(18 48 72 / 10%);
-    backdrop-filter: blur(18px) saturate(130%);
+    box-shadow: 0 16px 38px rgb(18 48 72 / 12%);
+    backdrop-filter: blur(20px) saturate(135%);
   }
   .page-accent {
     display: block;
@@ -204,11 +209,20 @@ p {
   }
 
   .glass-panel {
-    border: 1px solid rgb(30 91 121 / 20%) !important;
+    position: relative;
+    border: 1px solid rgb(125 181 218 / 42%) !important;
     border-radius: 1.5rem !important;
-    background-color: rgb(255 255 255 / 64%) !important;
-    box-shadow: 0 14px 34px rgb(18 48 72 / 12%) !important;
-    backdrop-filter: blur(18px) saturate(125%);
+    background: linear-gradient(
+      135deg,
+      rgb(255 255 255 / 84%) 0%,
+      rgb(255 255 255 / 78%) 70%,
+      rgb(255 237 213 / 34%) 100%
+    ) !important;
+    box-shadow: 0 16px 38px rgb(18 48 72 / 13%) !important;
+    backdrop-filter: blur(20px) saturate(132%);
+    transition:
+      border-color 180ms ease,
+      box-shadow 180ms ease;
   }
 
   .glass-panel-blue {
@@ -229,6 +243,35 @@ p {
   }
 }
 
+@media (hover: hover) {
+  .glass-panel:hover {
+    border-color: rgb(0 102 255 / 38%) !important;
+    box-shadow: 0 20px 44px rgb(18 48 72 / 17%) !important;
+  }
+
+  button[class]:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+}
+
+button[class]:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+button[class*='bg-brand-primary'] {
+  box-shadow: 0 7px 16px rgb(0 102 255 / 18%);
+}
+
+button[class*='bg-accent-orange'] {
+  box-shadow: 0 7px 16px rgb(255 122 0 / 18%);
+}
+
+input:not([type='checkbox']):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgb(0 102 255 / 26%);
+  outline-offset: 1px;
+}
 /* Compact button styles */
 button[class]:not([class*='text-']) {
   font-size: 0.95em;
@@ -245,3 +288,183 @@ button[class~='py-2.5'] { padding-block: 0.45rem; }
 button[class~='py-2'] { padding-block: 0.4rem; }
 button[class~='py-1.5'] { padding-block: 0.3rem; }
 button[class~='py-1'] { padding-block: 0.2rem; }
+
+/* Apply the reference palette across every page. */
+@layer components {
+  .page-canvas {
+    background:
+      radial-gradient(ellipse at 8% 4%, rgb(37 99 235 / 16%), transparent 34%),
+      radial-gradient(ellipse at 94% 18%, rgb(255 122 0 / 10%), transparent 34%),
+      linear-gradient(145deg, #eef2fb 0%, #f7f9fd 55%, #e8efff 100%);
+    background-attachment: fixed;
+  }
+
+  .page-title-panel {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border: 1px solid rgb(255 255 255 / 22%);
+    border-radius: 1.65rem;
+    background:
+      radial-gradient(ellipse at 88% 0%, rgb(56 189 248 / 36%), transparent 38%),
+      radial-gradient(ellipse at 8% 100%, rgb(255 122 0 / 20%), transparent 32%),
+      linear-gradient(118deg, #071638 0%, #102b63 58%, #1d4ed8 100%);
+    padding: 1.5rem 1.75rem;
+    box-shadow: 0 20px 48px rgb(8 25 66 / 20%);
+    backdrop-filter: blur(20px) saturate(135%);
+  }
+
+  .page-title-panel > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .page-title-panel h1 {
+    color: #f8fbff !important;
+  }
+
+  .page-title-panel p {
+    color: rgb(226 237 255 / 82%) !important;
+  }
+
+  .page-title-panel button[class*='bg-brand-primary'] {
+    border: 1px solid rgb(255 255 255 / 75%);
+    background: rgb(255 255 255 / 94%);
+    color: #12316f;
+    box-shadow: 0 8px 20px rgb(2 12 38 / 20%);
+  }
+
+  .page-title-panel button[class*='bg-brand-primary']:hover {
+    background: #fff;
+    color: #0066ff;
+  }
+
+  .dashboard-hero {
+    position: relative;
+    isolation: isolate;
+    background:
+      radial-gradient(ellipse at 88% 8%, rgb(56 189 248 / 40%), transparent 36%),
+      radial-gradient(ellipse at 10% 100%, rgb(255 122 0 / 22%), transparent 34%),
+      linear-gradient(118deg, #071638 0%, #102b63 58%, #1d4ed8 100%);
+    border-color: rgb(255 255 255 / 24%);
+    box-shadow: 0 22px 52px rgb(8 25 66 / 24%);
+  }
+
+  .dashboard-hero > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .dashboard-hero p {
+    color: rgb(226 237 255 / 84%) !important;
+  }
+
+  .dashboard-hero p.text-3xl {
+    color: #fff !important;
+  }
+
+  .glass-panel {
+    border: 1px solid rgb(153 190 231 / 50%) !important;
+    border-radius: 1.5rem !important;
+    background: linear-gradient(
+      145deg,
+      rgb(255 255 255 / 94%) 0%,
+      rgb(255 255 255 / 88%) 72%,
+      rgb(239 245 255 / 88%) 100%
+    ) !important;
+    box-shadow: 0 16px 40px rgb(20 45 94 / 10%) !important;
+    backdrop-filter: blur(22px) saturate(138%);
+  }
+
+  .glass-panel-blue {
+    background: linear-gradient(
+      135deg,
+      rgb(226 241 255 / 94%),
+      rgb(255 255 255 / 88%) 70%,
+      rgb(255 240 224 / 66%)
+    ) !important;
+  }
+
+  .summary-accent-card {
+    border-color: rgb(153 190 231 / 54%) !important;
+    background: linear-gradient(145deg, #fff 0%, #f9fbff 70%, #fff5eb 100%) !important;
+    box-shadow: 0 14px 34px rgb(20 45 94 / 10%) !important;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+
+  .table-grid thead {
+    background: linear-gradient(90deg, rgb(219 234 254 / 92%), rgb(239 246 255 / 94%));
+  }
+
+  .table-grid tbody tr {
+    transition: background-color 160ms ease;
+  }
+
+  .glass-popup {
+    border-color: rgb(255 255 255 / 86%) !important;
+    background: rgb(248 251 255 / 86%) !important;
+    box-shadow: 0 26px 64px rgb(8 25 66 / 24%) !important;
+    backdrop-filter: blur(28px) saturate(150%);
+  }
+
+  .app-nav {
+    border-bottom-color: rgb(166 195 235 / 54%);
+    background: rgb(250 252 255 / 86%);
+    box-shadow: 0 6px 22px rgb(20 45 94 / 8%);
+    backdrop-filter: blur(24px) saturate(145%);
+  }
+}
+
+@media (hover: hover) {
+  .summary-accent-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 22px 44px rgb(20 45 94 / 15%) !important;
+  }
+}
+
+button[class*='bg-brand-primary'] {
+  border-radius: 999px;
+  background-image: linear-gradient(120deg, #0969ff, #3548e8);
+  box-shadow: 0 8px 18px rgb(30 82 226 / 24%);
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+button[class*='bg-brand-primary']:hover:not(:disabled) {
+  background-image: linear-gradient(120deg, #0059e8, #2938cc);
+  box-shadow: 0 12px 24px rgb(30 82 226 / 32%);
+  filter: saturate(1.08);
+}
+
+button[class*='bg-accent-orange'] {
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgb(255 122 0 / 20%);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+input:not([type='checkbox']),
+select,
+textarea {
+  border-radius: 0.9rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+input:not([type='checkbox']):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgb(37 99 235 / 28%);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 8%);
+}
+
+.page-title-panel button[class*='bg-brand-primary'] {
+  border-color: rgb(255 255 255 / 82%);
+  background: #fff;
+  background-image: none;
+  color: #12316f;
+}
+
+.page-title-panel button[class*='bg-brand-primary']:hover:not(:disabled) {
+  background: #f4f8ff;
+  background-image: none;
+  color: #0066ff;
+}

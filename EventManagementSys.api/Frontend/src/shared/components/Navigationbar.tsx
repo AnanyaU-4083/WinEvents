@@ -61,7 +61,7 @@ function Navigationbar() {
     ));
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-blue-200/80 bg-white/82 px-4 py-3 shadow-[0_4px_18px_rgba(15,35,55,0.06)] backdrop-blur-xl sm:px-8 sm:py-3">
+    <nav className="app-nav sticky top-0 z-50 border-b border-blue-200/80 bg-white/82 px-4 py-3 shadow-[0_4px_18px_rgba(15,35,55,0.06)] backdrop-blur-xl sm:px-8 sm:py-3">
       <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3 lg:gap-10">
           <Link

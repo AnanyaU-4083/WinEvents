@@ -641,7 +641,7 @@ function DashboardPage() {
   const userName = account?.name || account?.username || 'User';
   return (
     <div className="page-canvas min-h-[calc(100vh-68px)] w-full px-[46px] pt-9 pb-[60px] max-[1150px]:px-[25px] max-[700px]:px-[15px]">
-      <header className="relative mx-auto mb-8 w-full max-w-[1400px] overflow-hidden rounded-3xl border border-white/70 bg-white/30 px-6 py-6 text-center shadow-panel backdrop-blur-xl">
+      <header className="dashboard-hero relative mx-auto mb-8 w-full max-w-[1400px] overflow-hidden rounded-3xl border px-6 py-6 text-center shadow-panel backdrop-blur-xl">
         <p className="mt-1 text-sm font-medium tracking-wide text-text-muted sm:text-base">{t('dashboard.welcomeBack')}</p>
 
         <p className="mt-2 text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
@@ -663,7 +663,7 @@ function DashboardPage() {
             <span>{error}</span>
 
             <button type="button" onClick={() => setError('')} aria-label="Dismiss error">
-              ×
+              &times;
             </button>
           </div>
         )}

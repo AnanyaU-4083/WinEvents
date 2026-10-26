@@ -31,12 +31,12 @@
 }
 .page-header {
   box-sizing: border-box;
-  border: 1px solid rgb(255 255 255 / 76%);
+  border: 1px solid rgb(255 255 255 / 82%);
   border-radius: 1.5rem;
-  background: rgb(255 255 255 / 32%);
+  background: linear-gradient(115deg, rgb(219 234 254 / 62%), rgb(255 255 255 / 78%) 52%, rgb(255 237 213 / 52%));
   padding: 1.35rem 1.6rem;
-  box-shadow: 0 14px 34px rgb(18 48 72 / 10%);
-  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: 0 16px 38px rgb(18 48 72 / 12%);
+  backdrop-filter: blur(20px) saturate(135%);
 }
 .page-header h1 {
   margin: 0;
@@ -54,11 +54,12 @@
 .empty-card,
 .table-card,
 .confirm-modal {
-  border: 1px solid #9ac5e2;
+  border: 1px solid rgb(125 181 218 / 42%);
   border-radius: 1.5rem;
-  background: rgb(255 255 255 / 68%);
-  box-shadow: 0 18px 44px rgb(15 35 60 / 18%);
-  backdrop-filter: blur(22px) saturate(135%);
+  background: linear-gradient(135deg, rgb(255 255 255 / 84%), rgb(255 255 255 / 78%) 70%, rgb(255 237 213 / 34%));
+  box-shadow: 0 16px 38px rgb(18 48 72 / 13%);
+  backdrop-filter: blur(20px) saturate(132%);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .empty-card {
@@ -116,7 +117,7 @@ th {
 .task-row.overdue-3 { background: #ffcaca; }
 .task-row.overdue-4 { background: #ffb2b2; }
 .task-row:not([class*="overdue-"]) { transition: background-color 140ms ease; }
-.task-row:not([class*="overdue-"]):hover { background: rgb(231 241 251 / 70%); }
+.task-row:not([class*="overdue-"]):hover { background: linear-gradient(90deg, rgb(219 234 254 / 58%), rgb(255 247 237 / 62%)); }
 
 .event-name {
   min-width: 12rem;
@@ -212,4 +213,66 @@ button:disabled { cursor: wait; opacity: 0.6; }
   .tasks-page { padding: 1.25rem 0.85rem; }
   th, td { padding: 0.8rem; }
   .modal-actions { flex-wrap: wrap; }
+}
+
+/* Match the shared reference theme. */
+.tasks-page {
+  background:
+    radial-gradient(ellipse at 8% 4%, rgb(37 99 235 / 16%), transparent 34%),
+    radial-gradient(ellipse at 94% 18%, rgb(255 122 0 / 10%), transparent 34%),
+    linear-gradient(145deg, #eef2fb 0%, #f7f9fd 55%, #e8efff 100%);
+}
+
+.page-header {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-color: rgb(255 255 255 / 22%);
+  background:
+    radial-gradient(ellipse at 88% 0%, rgb(56 189 248 / 36%), transparent 38%),
+    radial-gradient(ellipse at 8% 100%, rgb(255 122 0 / 20%), transparent 32%),
+    linear-gradient(118deg, #071638 0%, #102b63 58%, #1d4ed8 100%);
+  box-shadow: 0 20px 48px rgb(8 25 66 / 20%);
+}
+
+.page-header h1,
+.page-header p {
+  position: relative;
+  z-index: 1;
+  color: #f8fbff;
+}
+
+.page-header p {
+  color: rgb(226 237 255 / 82%);
+}
+
+.empty-card,
+.table-card,
+.confirm-modal {
+  border-color: rgb(153 190 231 / 50%);
+  background: linear-gradient(145deg, rgb(255 255 255 / 96%), rgb(255 255 255 / 90%) 72%, rgb(239 245 255 / 90%));
+  box-shadow: 0 16px 40px rgb(20 45 94 / 11%);
+}
+
+thead {
+  background: linear-gradient(90deg, rgb(219 234 254 / 92%), rgb(239 246 255 / 94%));
+}
+
+.task-row:not([class*="overdue-"]):hover {
+  background: linear-gradient(90deg, rgb(219 234 254 / 64%), rgb(255 247 237 / 66%));
+}
+
+button {
+  border-radius: 999px;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  box-shadow: 0 6px 14px rgb(20 45 94 / 12%);
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgb(20 45 94 / 18%);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
 }
