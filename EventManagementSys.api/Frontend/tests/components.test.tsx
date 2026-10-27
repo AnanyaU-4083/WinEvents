@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+﻿import { fireEvent, render, screen } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { describe, expect, it, vi } from 'vitest';
 import AttendeeEventPopup from '../src/features/dashboard/components/AttendeeEventPopup';
@@ -153,10 +153,10 @@ describe('status badges', () => {
 
 describe('dashboard display components', () => {
   it('shows all summary values', () => {
-    render(<DashboardSummaryCards total={5} scheduled={3} cancelled={1} upcoming={2} />);
+    render(<DashboardSummaryCards total={5} scheduled={3} completed={1} upcoming={2} />);
     expect(screen.getByText('Total Events').parentElement).toHaveTextContent('5');
     expect(screen.getByText('Scheduled').parentElement).toHaveTextContent('3');
-    expect(screen.getByText('Cancelled').parentElement).toHaveTextContent('1');
+    expect(screen.getByText('Completed').parentElement).toHaveTextContent('1');
     expect(screen.getByText('Upcoming').parentElement).toHaveTextContent('2');
   });
 
@@ -213,3 +213,4 @@ describe('dashboard display components', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 });
+

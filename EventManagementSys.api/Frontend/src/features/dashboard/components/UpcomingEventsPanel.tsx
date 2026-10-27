@@ -1,8 +1,10 @@
-// Display the next scheduled events.
+﻿// Display the next scheduled events.
 interface UpcomingEvent {
   eventId: number;
   eventName: string;
   startDate: string;
+  endDate?: string;
+  location?: string;
 }
 
 interface UpcomingEventsPanelProps {
@@ -12,56 +14,59 @@ interface UpcomingEventsPanelProps {
   formatTime: (date: string) => string;
 }
 
-function UpcomingEventsPanel({
-  events,
-  loading,
-  formatDate,
-  formatTime,
-}: UpcomingEventsPanelProps) {
+function UpcomingEventsPanel({ events, loading, formatDate, formatTime }: UpcomingEventsPanelProps) {
   return (
-    <section className="glass-panel glass-panel-blue w-full p-6 text-text-blue-deep">
-      <header className="mb-5">
-        <h2 className="m-0 text-[21px] font-[750] text-text-blue-deep">Upcoming Events</h2>
-        <p className="mt-[5px] text-[13px] text-text-blue-muted">Your next scheduled events</p>
+    <section className="dashboard-upcoming-panel" aria-labelledby="dashboard-upcoming-title">
+      <header className="dashboard-panel-heading">
+        <span className="dashboard-heading-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3.5" y="5" width="17" height="15" rx="3" />
+            <path d="M8 3v4M16 3v4M4 9h16" />
+          </svg>
+        </span>
+        <div>
+          <h2 id="dashboard-upcoming-title">Upcoming Events</h2>
+          <p>Your next scheduled events</p>
+        </div>
       </header>
 
-      {loading && (
-        <p className="py-6 text-center text-sm text-text-blue-muted">Loading events...</p>
-      )}
+      {loading && <p className="dashboard-panel-message" role="status">Loading events...</p>}
       {!loading && events.length === 0 && (
-        <p className="py-6 text-center text-sm text-text-blue-muted">No upcoming events.</p>
+        <p className="dashboard-panel-message">No upcoming events.</p>
       )}
-      {!loading &&
-        events.map((event) => {
-          const eventDate = new Date(event.startDate);
-
-          return (
-            <div
-              key={event.eventId}
-              className="flex items-center gap-[14px] border-b border-text-blue-deep/15 py-[14px] last:border-b-0"
-            >
-              <div className="flex h-[60px] w-[55px] shrink-0 flex-col items-center justify-center rounded-date-badge border border-blue-border bg-surface-blue">
-                <strong className="text-[21px] font-extrabold leading-none text-brand-primary">
-                  {eventDate.getDate()}
-                </strong>
-                <span className="mt-1 text-[10px] font-extrabold tracking-[0.7px] text-accent-orange">
-                  {eventDate.toLocaleString('en-US', { month: 'short' }).toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <h3 className="m-0 font-semibold text-text-blue-deep">{event.eventName}</h3>
-                <p className="m-0 mt-1 text-[12px] text-text-blue-muted">
-                  {formatDate(event.startDate)}
-                </p>
-                <p className="m-0 text-[12px] text-text-blue-muted">
-                  {formatTime(event.startDate)}
-                </p>
-              </div>
-            </div>
-          );
-        })}
+      {!loading && events.length > 0 && (
+        <ul className="dashboard-upcoming-list">
+          {events.map((event, index) => {
+            const eventDate = new Date(event.startDate);
+            const day = eventDate.toLocaleString('en-US', { weekday: 'short' });
+            const month = eventDate.toLocaleString('en-US', { month: 'short' });
+            return (
+              <li key={event.eventId} className={`dashboard-upcoming-card dashboard-upcoming-card-${index % 3}`}>
+                <div className="dashboard-date-tile" aria-label={formatDate(event.startDate)}>
+                  <span>{month}</span>
+                  <strong>{eventDate.getDate().toString().padStart(2, '0')}</strong>
+                  <span>{day}</span>
+                </div>
+                <div className="dashboard-upcoming-copy">
+                  <h3>{event.eventName}</h3>
+                  <p>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                    <span>{formatTime(event.startDate)} – {formatTime(event.endDate || event.startDate)}</span>
+                  </p>
+                  <p>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10" r="2" /></svg>
+                    <span>{event.location || 'Location unavailable'}</span>
+                  </p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }
 
 export default UpcomingEventsPanel;
+
+

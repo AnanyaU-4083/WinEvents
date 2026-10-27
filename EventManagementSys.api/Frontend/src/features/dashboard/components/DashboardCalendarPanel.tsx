@@ -1,4 +1,4 @@
-// Display events in calendar views.
+﻿// Display events in calendar views.
 import {
   ScheduleComponent,
   ViewsDirective,
@@ -121,7 +121,7 @@ function DashboardCalendarPanel({
   onSaveEvent,
 }: DashboardCalendarPanelProps) {
   return (
-    <div className="glass-panel glass-panel-blue w-full p-6">
+    <div className="dashboard-calendar-panel glass-panel glass-panel-blue w-full p-6">
       <div className="mb-5 flex items-center justify-between gap-4 max-[700px]:flex-col max-[700px]:items-start">
         <div>
           <h2 className="m-0 text-xl font-bold text-text-primary">Event Calendar</h2>
@@ -156,7 +156,7 @@ function DashboardCalendarPanel({
         ) : (
           <ScheduleComponent
             cssClass="dashboard-calendar"
-            height="650px"
+            height="700px"
             selectedDate={currentDate}
             currentView="Month"
             readonly={!canManageEvents}
@@ -234,3 +234,4 @@ function DashboardCalendarPanel({
   );
 }
 export default DashboardCalendarPanel;
+

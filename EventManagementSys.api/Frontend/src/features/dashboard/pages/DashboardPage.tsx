@@ -1,4 +1,4 @@
-// Coordinate dashboard data and interactions.
+﻿// Coordinate dashboard data and interactions.
 import { apiRequest } from '../../../shared/api/apiClient';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,7 @@ import DashboardSummaryCards from '@/features/dashboard/components/DashboardSumm
 import UpcomingEventsPanel from '@/features/dashboard/components/UpcomingEventsPanel';
 import DashboardCalendarPanel from '@/features/dashboard/components/DashboardCalendarPanel';
 import FeedbackModal from '@/shared/components/FeedbackModal';
+import './DashboardPage.css';
 import type { EventFormData } from '@/features/events/schemas/eventFormSchema';
 type EventStatus = 'Scheduled' | 'Cancelled' | 'Completed';
 interface EventDto {
@@ -509,7 +510,11 @@ function DashboardPage() {
   const scheduledEvents = events.filter(
     (event) => getEventStatus(event.status) === 'Scheduled' && !event.isRegistrationCancelled,
   );
-  const cancelledEvents = events.filter((event) => getEventStatus(event.status) === 'Cancelled');
+  const completedEvents = events.filter((event) => getEventStatus(event.status) === 'Completed');
+  const completedThisMonth = completedEvents.filter((event) => {
+    const date = new Date(event.startDate);
+    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+  });
   const upcomingEvents = events
     .filter(
       (event) =>
@@ -640,21 +645,24 @@ function DashboardPage() {
     });
   const userName = account?.name || account?.username || 'User';
   return (
-    <div className="page-canvas min-h-[calc(100vh-68px)] w-full px-[46px] pt-9 pb-[60px] max-[1150px]:px-[25px] max-[700px]:px-[15px]">
-      <header className="dashboard-hero relative mx-auto mb-8 w-full max-w-[1400px] overflow-hidden rounded-3xl border px-6 py-6 text-center shadow-panel backdrop-blur-xl">
-        <p className="mt-1 text-sm font-medium tracking-wide text-text-muted sm:text-base">{t('dashboard.welcomeBack')}</p>
-
-        <p className="mt-2 text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-          {t('dashboard.welcome', { name: userName })}
-        </p>
-        <span className="page-accent page-accent-centered mt-4 w-16" aria-hidden="true" />
+    <div className="dashboard-page page-canvas min-h-[calc(100vh-68px)] w-full px-[46px] pt-7 pb-[60px] max-[1150px]:px-[25px] max-[700px]:px-[15px]">
+      <header className="dashboard-welcome dashboard-hero">
+        <div className="dashboard-welcome-copy">
+          <p className="dashboard-eyebrow">{t('dashboard.welcomeBack')}</p>
+          <h1>{t('dashboard.welcome', { name: userName })}</h1>
+          <p className="dashboard-welcome-subtitle">Manage your company events, view upcoming events and keep the team connected.</p>
+        </div>
+        <div className="dashboard-welcome-art" aria-hidden="true">
+          <svg className="dashboard-art-camera" viewBox="0 0 100 78" fill="none"><rect x="8" y="17" width="76" height="49" rx="10" transform="rotate(14 8 17)" stroke="currentColor" strokeWidth="3"/><path d="m27 26 9 3 5-7 20 5-2 8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="51" cy="43" r="12" transform="rotate(14 51 43)" stroke="currentColor" strokeWidth="3"/></svg>
+          <svg className="dashboard-art-photo" viewBox="0 0 100 78" fill="none"><rect x="10" y="9" width="75" height="58" rx="6" transform="rotate(-11 10 9)" stroke="currentColor" strokeWidth="3"/><circle cx="39" cy="27" r="5" stroke="currentColor" strokeWidth="3"/><path d="m21 56 18-17 11 8 14-19 13 17" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-[1400px]">
         <DashboardSummaryCards
           total={events.length}
           scheduled={scheduledEvents.length}
-          cancelled={cancelledEvents.length}
+          completed={completedThisMonth.length}
           upcoming={upcomingEvents.length}
         />
 
@@ -668,7 +676,7 @@ function DashboardPage() {
           </div>
         )}
 
-        <section className="grid grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)] items-start gap-6 max-[1150px]:grid-cols-1">
+        <section className="dashboard-planning-grid">
           <DashboardCalendarPanel
             monthEventCount={monthEvents.length}
             selectedDate={selectedDate}
@@ -706,7 +714,10 @@ function DashboardPage() {
           />
 
           <UpcomingEventsPanel
-            events={upcomingEvents}
+            events={upcomingEvents.map((event) => ({
+              ...event,
+              location: venues.find((venue) => venue.venueId === event.venueId)?.address,
+            }))}
             loading={loading}
             formatDate={formatDisplayDate}
             formatTime={formatTime}
@@ -723,3 +734,6 @@ function DashboardPage() {
   );
 }
 export default DashboardPage;
+
+
+
