@@ -32,11 +32,29 @@ interface EventListPanelProps {
   isRegistrationCancelled: (eventId: number) => boolean;
   getEventTypeText: (eventType: EventType) => string;
   formatDate: (date: string) => string;
+  getVenueName?: (venueId: number | null) => string | null;
   onAssign: (event: EventListItem) => void;
   onEdit: (eventId: number) => void;
   onCancel: (eventId: number) => void;
   onRegister: (eventId: number) => void;
   onCancelRegistration: (eventId: number) => void;
+}
+
+function getDisplayStatus(event: EventListItem, now: number) {
+  const start = new Date(event.startDate).getTime();
+  const end = new Date(event.endDate).getTime();
+  if (event.status === 1) return 'Cancelled';
+  if (event.status === 2) return 'Completed';
+  if (end < now) return 'Past';
+  if (start <= now) return 'Ongoing';
+  return 'Upcoming';
+}
+
+function formatTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? 'Time unavailable'
+    : date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 function EventListPanel({
@@ -54,6 +72,7 @@ function EventListPanel({
   isRegistrationCancelled,
   getEventTypeText,
   formatDate,
+  getVenueName,
   onAssign,
   onEdit,
   onCancel,
@@ -225,7 +244,9 @@ function EventListPanel({
                         </div>
                         <div className="grid min-w-14 place-items-center rounded-xl border border-white/50 bg-white/95 px-3 py-2 text-center shadow-lg">
                           <span className="text-xl font-bold leading-none text-brand-primary">
-                            {Number.isNaN(startDate.getTime()) ? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â' : startDate.getDate()}
+                            {Number.isNaN(startDate.getTime())
+                              ? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â'
+                              : startDate.getDate()}
                           </span>
                           <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-accent-orange">
                             {Number.isNaN(startDate.getTime())
@@ -349,172 +370,140 @@ function EventListPanel({
         </div>
       )}
       {!isAttendee && (
-        <div className="w-full overflow-x-auto">
-          <table className="table-grid min-w-full border-collapse text-left text-sm">
-            <thead>
-              <tr>
-                {['Event Name', 'Type', 'Start Date', 'End Date', 'Status', 'Actions'].map(
-                  (heading) => (
-                    <th
-                      key={heading}
-                      className="bg-surface-subtle px-5 py-3 text-xs font-semibold uppercase tracking-wide text-text-muted"
-                    >
-                      {heading}
-                    </th>
-                  ),
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6}>
-                    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                      <h3>Loading events...</h3>
-                    </div>
-                  </td>
-                </tr>
-              ) : events.length === 0 ? (
-                <tr>
-                  <td colSpan={6}>
-                    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                      <h3>No events found</h3>
-                      <p className="mt-2 text-sm text-text-muted">{emptyMessage}</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                displayedEvents.map((event) => {
-                  const registered = isRegistered(event.eventId);
-                  const registrationCancelled = isRegistrationCancelled(event.eventId);
-                  const start = new Date(event.startDate).getTime();
-                  const end = new Date(event.endDate).getTime();
-                  const displayStatus =
-                    event.status === 1
-                      ? 'Cancelled'
-                      : event.status === 2
-                        ? 'Completed'
-                        : end < now
-                          ? 'Past'
-                          : start <= now
-                            ? 'Ongoing'
-                            : 'Upcoming';
-                  const eventIsPast = displayStatus === 'Past' || displayStatus === 'Completed';
-                  return (
-                    <tr key={event.eventId}>
-                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                        {event.eventName}
-                      </td>
-                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                        {getEventTypeText(event.eventType)}
-                      </td>
-                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                        {formatDate(event.startDate)}
-                      </td>
-                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                        {formatDate(event.endDate)}
-                      </td>
-                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                        <StatusBadge status={displayStatus} />
-                      </td>
-                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                        {canManageEvents && (
-                          <>
-                            {event.status !== 1 && event.status !== 2 && !eventIsPast && (
-                              <>
-                                <button
-                                  type="button"
-                                  className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover"
-                                  onClick={() => onAssign(event)}
-                                >
-                                  Assign Task
-                                </button>
-                                <button
-                                  type="button"
-                                  className="ml-2 rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
-                                  onClick={() => onEdit(event.eventId)}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  type="button"
-                                  className="ml-2 rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
-                                  onClick={() => onCancel(event.eventId)}
-                                >
-                                  Cancel
-                                </button>
-                              </>
-                            )}
-                            {event.status === 1 && (
-                              <span className="text-sm text-text-muted">Cancelled</span>
-                            )}
-                            {event.status === 2 && (
-                              <span className="text-sm text-text-muted">Completed</span>
-                            )}
-                          </>
-                        )}
+        <div className="space-y-2.5 px-5 pb-5">
+          {loading ? (
+            <div className="space-y-2" role="status">
+              {[0, 1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="h-20 animate-pulse rounded-xl border border-border-subtle bg-white/60"
+                />
+              ))}
+              <span className="sr-only">Loading events...</span>
+            </div>
+          ) : events.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-blue-200 bg-white/55 px-5 py-10 text-center">
+              <h3 className="text-base font-semibold text-text-primary">No events to show</h3>
+              <p className="mt-1 text-sm text-text-muted">{emptyMessage}</p>
+            </div>
+          ) : (
+            <ul className="space-y-2.5" aria-label="Events">
+              {displayedEvents.map((event) => {
+                const start = new Date(event.startDate);
+                const end = new Date(event.endDate);
+                const displayStatus = getDisplayStatus(event, now);
+                const eventIsPast = displayStatus === 'Past' || displayStatus === 'Completed';
+                const canManage =
+                  canManageEvents && event.status !== 1 && event.status !== 2 && !eventIsPast;
+                const venueName = event.venueId === null ? null : getVenueName?.(event.venueId);
+                const validStart = !Number.isNaN(start.getTime());
+                const dateLabel = validStart
+                  ? start
+                      .toLocaleDateString(undefined, { month: 'short', day: '2-digit' })
+                      .toUpperCase()
+                  : 'DATE';
+                const sameDay =
+                  validStart &&
+                  !Number.isNaN(end.getTime()) &&
+                  start.toDateString() === end.toDateString();
+                const schedule = sameDay
+                  ? formatTime(event.startDate) + ' - ' + formatTime(event.endDate)
+                  : formatDate(event.startDate) +
+                    ' | ' +
+                    formatTime(event.startDate) +
+                    ' - ' +
+                    formatDate(event.endDate) +
+                    ' | ' +
+                    formatTime(event.endDate);
 
-                        {isAttendee && (
-                          <>
-                            {registered ? (
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="inline-flex rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
-                                  Registered
-                                </span>
-                                {event.status === 0 && !eventIsPast && (
-                                  <button
-                                    type="button"
-                                    className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={cancellingRegistrationEventId === event.eventId}
-                                    onClick={() => onCancelRegistration(event.eventId)}
-                                  >
-                                    {cancellingRegistrationEventId === event.eventId
-                                      ? 'Cancelling...'
-                                      : 'Cancel Registration'}
-                                  </button>
-                                )}
-                              </div>
-                            ) : registrationCancelled ? (
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="inline-flex rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800">
-                                  Cancelled
-                                </span>
-                                {event.status === 0 && !eventIsPast && (
-                                  <button
-                                    type="button"
-                                    className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                                    disabled={registeringEventId === event.eventId}
-                                    onClick={() => onRegister(event.eventId)}
-                                  >
-                                    {registeringEventId === event.eventId
-                                      ? 'Registering...'
-                                      : 'Re-register'}
-                                  </button>
-                                )}
-                              </div>
-                            ) : event.status === 0 && displayStatus === 'Upcoming' ? (
-                              <button
-                                type="button"
-                                className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                                disabled={registeringEventId === event.eventId}
-                                onClick={() => onRegister(event.eventId)}
-                              >
-                                {registeringEventId === event.eventId
-                                  ? 'Registering...'
-                                  : 'Register'}
-                              </button>
-                            ) : (
-                              <span className="text-sm text-text-muted">Not available</span>
-                            )}
-                          </>
+                return (
+                  <li key={event.eventId}>
+                    <article className="flex min-w-0 flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-white/75 p-3 shadow-sm transition hover:border-brand-primary/35 hover:bg-white/90 hover:shadow-md sm:flex-nowrap sm:gap-4 sm:p-4">
+                      <div className="grid h-14 w-14 shrink-0 place-content-center rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-orange-50 text-center text-xs font-bold uppercase text-brand-primary sm:h-16 sm:w-16">
+                        {dateLabel}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                          <h3 className="truncate text-base font-semibold text-text-primary sm:text-lg">
+                            {event.eventName}
+                          </h3>
+                          <StatusBadge status={displayStatus} />
+                        </div>
+                        <p className="mt-1 truncate text-sm text-text-secondary">
+                          <span className="font-medium text-text-primary">
+                            {getEventTypeText(event.eventType)}
+                          </span>
+                          <span aria-hidden="true"> | </span>
+                          {schedule}
+                        </p>
+                        {venueName && (
+                          <p className="mt-1 truncate text-xs text-text-muted sm:text-sm">
+                            {venueName}
+                          </p>
                         )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                      </div>
+                      {canManage && (
+                        <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:w-auto">
+                          <button
+                            type="button"
+                            className="rounded-lg bg-brand-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2"
+                            onClick={() => onAssign(event)}
+                          >
+                            Assign Task
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={'Edit ' + event.eventName}
+                            title="Edit event"
+                            className="grid h-10 w-10 place-items-center rounded-lg border border-border-subtle bg-white text-text-secondary transition hover:border-brand-primary hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                            onClick={() => onEdit(event.eventId)}
+                          >
+                            <svg
+                              className="h-5 w-5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="m16.5 3.5 4 4M4 20l4.2-.8L19 8.4a2.1 2.1 0 0 0-3-3L5.2 16.2 4 20Z"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={'Cancel ' + event.eventName}
+                            title="Cancel event"
+                            className="grid h-10 w-10 place-items-center rounded-lg border border-red-200 bg-white text-red-700 transition hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                            onClick={() => onCancel(event.eventId)}
+                          >
+                            <svg
+                              className="h-5 w-5"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              aria-hidden="true"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                      {!canManage && event.status === 1 && <StatusBadge status="Cancelled" />}
+                    </article>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
           {paginationControls}
         </div>
       )}

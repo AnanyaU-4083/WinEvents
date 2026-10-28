@@ -1064,6 +1064,9 @@ function EventsPage() {
         isRegistrationCancelled={isRegistrationCancelled}
         getEventTypeText={getEventTypeText}
         formatDate={formatDate}
+        getVenueName={(venueId) =>
+          venues.find((venue) => venue.venueId === venueId)?.address ?? null
+        }
         onAssign={openAssignForm}
         onEdit={(id) => navigate(`/events/${id}`)}
         onCancel={cancelEvent}
