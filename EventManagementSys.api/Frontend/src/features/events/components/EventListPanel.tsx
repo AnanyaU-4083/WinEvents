@@ -61,12 +61,24 @@ function EventListPanel({
   onCancelRegistration,
 }: EventListPanelProps) {
   const [now, setNow] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchValue]);
+
+  const pageCount = Math.ceil(events.length / 9);
+  const displayedEvents = events.slice((currentPage - 1) * 9, currentPage * 9);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, Math.max(pageCount, 1)));
+  }, [pageCount]);
 
   const emptyMessage =
     statusFilter === 'upcoming'
@@ -81,6 +93,29 @@ function EventListPanel({
               ? 'Create your first event to see it here.'
               : 'There are no events matching your search.';
 
+  const paginationControls = pageCount > 1 && (
+    <nav className="mt-6 flex items-center justify-center gap-3" aria-label="Event pages">
+      <button
+        type="button"
+        className="rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-brand-primary hover:text-brand-primary disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+        disabled={currentPage === 1}
+      >
+        Previous
+      </button>
+      <span className="text-sm text-text-secondary" aria-live="polite">
+        Page {currentPage} of {pageCount}
+      </span>
+      <button
+        type="button"
+        className="rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-brand-primary hover:text-brand-primary disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => setCurrentPage((page) => Math.min(pageCount, page + 1))}
+        disabled={currentPage === pageCount}
+      >
+        Next
+      </button>
+    </nav>
+  );
   return (
     <section className="glass-panel mb-6 w-full overflow-hidden">
       <header className="border-b border-border-subtle px-6 py-5">
@@ -118,7 +153,10 @@ function EventListPanel({
           {loading ? (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3" role="status">
               {[0, 1, 2].map((item) => (
-                <div key={item} className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+                <div
+                  key={item}
+                  className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm"
+                >
                   <div className="h-36 animate-pulse bg-gradient-to-br from-blue-100 via-blue-50 to-orange-100" />
                   <div className="space-y-3 p-5">
                     <div className="h-5 w-2/3 animate-pulse rounded bg-slate-100" />
@@ -131,14 +169,19 @@ function EventListPanel({
             </div>
           ) : events.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-blue-200 bg-white/70 px-6 py-12 text-center">
-              <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-blue-50 text-xl text-brand-primary" aria-hidden="true">*</span>
+              <span
+                className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-blue-50 text-xl text-brand-primary"
+                aria-hidden="true"
+              >
+                *
+              </span>
               <h3 className="mt-4 text-lg font-semibold text-text-primary">No events to show</h3>
               <p className="mt-2 text-sm text-text-muted">{emptyMessage}</p>
               <p className="mt-1 text-sm text-text-muted">Try another filter or check back soon.</p>
             </div>
           ) : (
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {events.map((event) => {
+              {displayedEvents.map((event) => {
                 const start = new Date(event.startDate).getTime();
                 const end = new Date(event.endDate).getTime();
                 const displayStatus =
@@ -162,19 +205,27 @@ function EventListPanel({
                     aria-labelledby={'event-card-title-' + event.eventId}
                     className="group overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:border-brand-primary/40 hover:shadow-xl focus-within:ring-2 focus-within:ring-brand-primary/30"
                   >
-                    <div className="relative flex h-36 items-end overflow-hidden bg-gradient-to-br from-blue-950 via-blue-800 to-sky-500 p-5">
-                      <div aria-hidden="true" className="absolute -right-8 -top-12 h-40 w-40 rounded-full bg-white/15 blur-2xl transition-transform duration-300 group-hover:scale-125" />
-                      <div aria-hidden="true" className="absolute bottom-[-3rem] right-20 h-28 w-28 rounded-full bg-accent-orange/50 blur-2xl" />
+                    <div className="relative flex h-28 items-end overflow-hidden bg-gradient-to-br from-blue-950 via-blue-800 to-sky-500 p-4">
+                      <div
+                        aria-hidden="true"
+                        className="absolute -right-8 -top-12 h-40 w-40 rounded-full bg-white/15 blur-2xl transition-transform duration-300 group-hover:scale-125"
+                      />
+                      <div
+                        aria-hidden="true"
+                        className="absolute bottom-[-3rem] right-20 h-28 w-28 rounded-full bg-accent-orange/50 blur-2xl"
+                      />
                       <div className="relative flex w-full items-end justify-between gap-3">
                         <div>
                           <span className="inline-flex rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
                             {getEventTypeText(event.eventType)}
                           </span>
-                          <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-blue-100">Featured event</p>
+                          <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-blue-100">
+                            Featured event
+                          </p>
                         </div>
                         <div className="grid min-w-14 place-items-center rounded-xl border border-white/50 bg-white/95 px-3 py-2 text-center shadow-lg">
                           <span className="text-xl font-bold leading-none text-brand-primary">
-                            {Number.isNaN(startDate.getTime()) ? '—' : startDate.getDate()}
+                            {Number.isNaN(startDate.getTime()) ? 'ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â' : startDate.getDate()}
                           </span>
                           <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-accent-orange">
                             {Number.isNaN(startDate.getTime())
@@ -204,12 +255,20 @@ function EventListPanel({
 
                       <div className="mt-5 grid grid-cols-2 gap-3 rounded-xl bg-surface-blue-muted/70 p-3">
                         <div className="min-w-0">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Starts</p>
-                          <p className="mt-1 text-xs font-medium leading-5 text-text-secondary">{formatDate(event.startDate)}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                            Starts
+                          </p>
+                          <p className="mt-1 text-xs font-medium leading-5 text-text-secondary">
+                            {formatDate(event.startDate)}
+                          </p>
                         </div>
                         <div className="min-w-0 border-l border-blue-100 pl-3">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Ends</p>
-                          <p className="mt-1 text-xs font-medium leading-5 text-text-secondary">{formatDate(event.endDate)}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                            Ends
+                          </p>
+                          <p className="mt-1 text-xs font-medium leading-5 text-text-secondary">
+                            {formatDate(event.endDate)}
+                          </p>
                         </div>
                       </div>
 
@@ -217,7 +276,12 @@ function EventListPanel({
                         {registered ? (
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <span className="inline-flex items-center gap-2 text-sm font-semibold text-state-success">
-                              <span className="grid h-6 w-6 place-items-center rounded-full bg-green-100" aria-hidden="true">*</span>
+                              <span
+                                className="grid h-6 w-6 place-items-center rounded-full bg-green-100"
+                                aria-hidden="true"
+                              >
+                                *
+                              </span>
                               You are registered
                             </span>
                             {event.status === 0 && !eventIsPast && (
@@ -227,13 +291,17 @@ function EventListPanel({
                                 disabled={cancellingRegistrationEventId === event.eventId}
                                 onClick={() => onCancelRegistration(event.eventId)}
                               >
-                                {cancellingRegistrationEventId === event.eventId ? 'Cancelling...' : 'Cancel registration'}
+                                {cancellingRegistrationEventId === event.eventId
+                                  ? 'Cancelling...'
+                                  : 'Cancel registration'}
                               </button>
                             )}
                           </div>
                         ) : registrationCancelled ? (
                           <div className="flex flex-wrap items-center justify-between gap-3">
-                            <span className="text-sm font-semibold text-orange-800">Registration cancelled</span>
+                            <span className="text-sm font-semibold text-orange-800">
+                              Registration cancelled
+                            </span>
                             {event.status === 0 && !eventIsPast && (
                               <button
                                 type="button"
@@ -241,7 +309,9 @@ function EventListPanel({
                                 disabled={registeringEventId === event.eventId}
                                 onClick={() => onRegister(event.eventId)}
                               >
-                                {registeringEventId === event.eventId ? 'Registering...' : 'Register again'}
+                                {registeringEventId === event.eventId
+                                  ? 'Registering...'
+                                  : 'Register again'}
                               </button>
                             )}
                           </div>
@@ -252,12 +322,20 @@ function EventListPanel({
                             disabled={registeringEventId === event.eventId}
                             onClick={() => onRegister(event.eventId)}
                           >
-                            {registeringEventId === event.eventId ? 'Registering...' : 'Register for event'}
+                            {registeringEventId === event.eventId
+                              ? 'Registering...'
+                              : 'Register for event'}
                           </button>
                         ) : (
                           <div className="flex items-center justify-between text-sm text-text-muted">
-                            <span>{displayStatus === 'Cancelled' ? 'This event was cancelled' : 'Registration is closed'}</span>
-                            <span className="rounded-full bg-surface-subtle px-3 py-1 text-xs font-semibold">{displayStatus}</span>
+                            <span>
+                              {displayStatus === 'Cancelled'
+                                ? 'This event was cancelled'
+                                : 'Registration is closed'}
+                            </span>
+                            <span className="rounded-full bg-surface-subtle px-3 py-1 text-xs font-semibold">
+                              {displayStatus}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -267,174 +345,178 @@ function EventListPanel({
               })}
             </div>
           )}
+          {paginationControls}
         </div>
       )}
       {!isAttendee && (
         <div className="w-full overflow-x-auto">
-        <table className="table-grid min-w-full border-collapse text-left text-sm">
-          <thead>
-            <tr>
-              {['Event Name', 'Type', 'Start Date', 'End Date', 'Status', 'Actions'].map(
-                (heading) => (
-                  <th
-                    key={heading}
-                    className="bg-surface-subtle px-5 py-3 text-xs font-semibold uppercase tracking-wide text-text-muted"
-                  >
-                    {heading}
-                  </th>
-                ),
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+          <table className="table-grid min-w-full border-collapse text-left text-sm">
+            <thead>
               <tr>
-                <td colSpan={6}>
-                  <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                    <h3>Loading events...</h3>
-                  </div>
-                </td>
+                {['Event Name', 'Type', 'Start Date', 'End Date', 'Status', 'Actions'].map(
+                  (heading) => (
+                    <th
+                      key={heading}
+                      className="bg-surface-subtle px-5 py-3 text-xs font-semibold uppercase tracking-wide text-text-muted"
+                    >
+                      {heading}
+                    </th>
+                  ),
+                )}
               </tr>
-            ) : events.length === 0 ? (
-              <tr>
-                <td colSpan={6}>
-                  <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                    <h3>No events found</h3>
-                    <p className="mt-2 text-sm text-text-muted">{emptyMessage}</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              events.map((event) => {
-                const registered = isRegistered(event.eventId);
-                const registrationCancelled = isRegistrationCancelled(event.eventId);
-                const start = new Date(event.startDate).getTime();
-                const end = new Date(event.endDate).getTime();
-                const displayStatus =
-                  event.status === 1
-                    ? 'Cancelled'
-                    : event.status === 2
-                      ? 'Completed'
-                      : end < now
-                        ? 'Past'
-                        : start <= now
-                          ? 'Ongoing'
-                          : 'Upcoming';
-                const eventIsPast = displayStatus === 'Past' || displayStatus === 'Completed';
-                return (
-                  <tr key={event.eventId}>
-                    <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                      {event.eventName}
-                    </td>
-                    <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                      {getEventTypeText(event.eventType)}
-                    </td>
-                    <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                      {formatDate(event.startDate)}
-                    </td>
-                    <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                      {formatDate(event.endDate)}
-                    </td>
-                    <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                      <StatusBadge status={displayStatus} />
-                    </td>
-                    <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
-                      {canManageEvents && (
-                        <>
-                          {event.status !== 1 && event.status !== 2 && !eventIsPast && (
-                            <>
-                              <button
-                                type="button"
-                                className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover"
-                                onClick={() => onAssign(event)}
-                              >
-                                Assign Task
-                              </button>
-                              <button
-                                type="button"
-                                className="ml-2 rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
-                                onClick={() => onEdit(event.eventId)}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                className="ml-2 rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
-                                onClick={() => onCancel(event.eventId)}
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          )}
-                          {event.status === 1 && (
-                            <span className="text-sm text-text-muted">Cancelled</span>
-                          )}
-                          {event.status === 2 && (
-                            <span className="text-sm text-text-muted">Completed</span>
-                          )}
-                        </>
-                      )}
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                      <h3>Loading events...</h3>
+                    </div>
+                  </td>
+                </tr>
+              ) : events.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+                      <h3>No events found</h3>
+                      <p className="mt-2 text-sm text-text-muted">{emptyMessage}</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                displayedEvents.map((event) => {
+                  const registered = isRegistered(event.eventId);
+                  const registrationCancelled = isRegistrationCancelled(event.eventId);
+                  const start = new Date(event.startDate).getTime();
+                  const end = new Date(event.endDate).getTime();
+                  const displayStatus =
+                    event.status === 1
+                      ? 'Cancelled'
+                      : event.status === 2
+                        ? 'Completed'
+                        : end < now
+                          ? 'Past'
+                          : start <= now
+                            ? 'Ongoing'
+                            : 'Upcoming';
+                  const eventIsPast = displayStatus === 'Past' || displayStatus === 'Completed';
+                  return (
+                    <tr key={event.eventId}>
+                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
+                        {event.eventName}
+                      </td>
+                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
+                        {getEventTypeText(event.eventType)}
+                      </td>
+                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
+                        {formatDate(event.startDate)}
+                      </td>
+                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
+                        {formatDate(event.endDate)}
+                      </td>
+                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
+                        <StatusBadge status={displayStatus} />
+                      </td>
+                      <td className="border-t border-border-subtle px-5 py-4 text-sm text-text-secondary">
+                        {canManageEvents && (
+                          <>
+                            {event.status !== 1 && event.status !== 2 && !eventIsPast && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover"
+                                  onClick={() => onAssign(event)}
+                                >
+                                  Assign Task
+                                </button>
+                                <button
+                                  type="button"
+                                  className="ml-2 rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
+                                  onClick={() => onEdit(event.eventId)}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  className="ml-2 rounded-lg border border-border-default bg-white px-4 py-2 text-sm font-medium text-text-secondary transition hover:bg-surface-subtle"
+                                  onClick={() => onCancel(event.eventId)}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                            {event.status === 1 && (
+                              <span className="text-sm text-text-muted">Cancelled</span>
+                            )}
+                            {event.status === 2 && (
+                              <span className="text-sm text-text-muted">Completed</span>
+                            )}
+                          </>
+                        )}
 
-                      {isAttendee && (
-                        <>
-                          {registered ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="inline-flex rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
-                                Registered
-                              </span>
-                              {event.status === 0 && !eventIsPast && (
-                                <button
-                                  type="button"
-                                  className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                  disabled={cancellingRegistrationEventId === event.eventId}
-                                  onClick={() => onCancelRegistration(event.eventId)}
-                                >
-                                  {cancellingRegistrationEventId === event.eventId
-                                    ? 'Cancelling...'
-                                    : 'Cancel Registration'}
-                                </button>
-                              )}
-                            </div>
-                          ) : registrationCancelled ? (
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="inline-flex rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800">
-                                Cancelled
-                              </span>
-                              {event.status === 0 && !eventIsPast && (
-                                <button
-                                  type="button"
-                                  className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                                  disabled={registeringEventId === event.eventId}
-                                  onClick={() => onRegister(event.eventId)}
-                                >
-                                  {registeringEventId === event.eventId
-                                    ? 'Registering...'
-                                    : 'Re-register'}
-                                </button>
-                              )}
-                            </div>
-                          ) : event.status === 0 && displayStatus === 'Upcoming' ? (
-                            <button
-                              type="button"
-                              className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
-                              disabled={registeringEventId === event.eventId}
-                              onClick={() => onRegister(event.eventId)}
-                            >
-                              {registeringEventId === event.eventId ? 'Registering...' : 'Register'}
-                            </button>
-                          ) : (
-                            <span className="text-sm text-text-muted">Not available</span>
-                          )}
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                        {isAttendee && (
+                          <>
+                            {registered ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
+                                  Registered
+                                </span>
+                                {event.status === 0 && !eventIsPast && (
+                                  <button
+                                    type="button"
+                                    className="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                    disabled={cancellingRegistrationEventId === event.eventId}
+                                    onClick={() => onCancelRegistration(event.eventId)}
+                                  >
+                                    {cancellingRegistrationEventId === event.eventId
+                                      ? 'Cancelling...'
+                                      : 'Cancel Registration'}
+                                  </button>
+                                )}
+                              </div>
+                            ) : registrationCancelled ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-800">
+                                  Cancelled
+                                </span>
+                                {event.status === 0 && !eventIsPast && (
+                                  <button
+                                    type="button"
+                                    className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                                    disabled={registeringEventId === event.eventId}
+                                    onClick={() => onRegister(event.eventId)}
+                                  >
+                                    {registeringEventId === event.eventId
+                                      ? 'Registering...'
+                                      : 'Re-register'}
+                                  </button>
+                                )}
+                              </div>
+                            ) : event.status === 0 && displayStatus === 'Upcoming' ? (
+                              <button
+                                type="button"
+                                className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+                                disabled={registeringEventId === event.eventId}
+                                onClick={() => onRegister(event.eventId)}
+                              >
+                                {registeringEventId === event.eventId
+                                  ? 'Registering...'
+                                  : 'Register'}
+                              </button>
+                            ) : (
+                              <span className="text-sm text-text-muted">Not available</span>
+                            )}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+          {paginationControls}
+        </div>
       )}
     </section>
   );

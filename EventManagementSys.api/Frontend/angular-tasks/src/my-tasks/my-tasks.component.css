@@ -74,7 +74,13 @@
 }
 
 .table-card {
+  position: relative;
   overflow: hidden;
+}
+
+.table-card::before {
+  display: none !important;
+  content: none !important;
 }
 
 .table-scroll {
@@ -96,12 +102,13 @@ thead {
 th,
 td {
   padding: 0.95rem 1.25rem;
-  border-bottom: 1px solid rgb(154 197 226 / 45%);
+  border-bottom: 2px solid #8a9bb1;
+  color: #111827;
   font-size: 0.9rem;
 }
 
 th {
-  color: #596779;
+  color: #111827;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -122,6 +129,39 @@ th {
 .event-name {
   min-width: 12rem;
   font-weight: 600;
+}
+
+.task-filters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid #8a9bb1;
+  color: #111827;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.task-filters select {
+  min-width: 10rem;
+  border: 1px solid #8293a9;
+  border-radius: 0.7rem;
+  background: white;
+  padding: 0.55rem 0.75rem;
+  color: #111827;
+  font: inherit;
+}
+
+.task-filters select:focus-visible {
+  outline: 2px solid #0066ff;
+  outline-offset: 2px;
+}
+
+.no-filtered-tasks {
+  padding: 2rem;
+  color: #111827;
+  text-align: center;
 }
 
 /* Emphasize the task status labels. */
@@ -218,9 +258,13 @@ button:disabled { cursor: wait; opacity: 0.6; }
 /* Match the shared reference theme. */
 .tasks-page {
   background:
-    radial-gradient(ellipse at 8% 4%, rgb(37 99 235 / 16%), transparent 34%),
-    radial-gradient(ellipse at 94% 18%, rgb(255 122 0 / 10%), transparent 34%),
-    linear-gradient(145deg, #eef2fb 0%, #f7f9fd 55%, #e8efff 100%);
+    radial-gradient(ellipse at 8% 2%, rgb(37 99 235 / 18%), transparent 36%),
+    radial-gradient(ellipse at 94% 14%, rgb(255 122 0 / 27%), transparent 40%),
+    radial-gradient(ellipse at 78% 82%, rgb(251 146 60 / 18%), transparent 38%),
+    radial-gradient(ellipse at 42% 100%, rgb(56 189 248 / 10%), transparent 42%),
+    repeating-linear-gradient(0deg, rgb(29 78 216 / 2%) 0 1px, transparent 1px 42px),
+    repeating-linear-gradient(90deg, rgb(29 78 216 / 2%) 0 1px, transparent 1px 42px),
+    linear-gradient(145deg, #e8effb 0%, #f5f7fc 48%, #e5edfb 100%);
 }
 
 .page-header {
@@ -255,7 +299,7 @@ button:disabled { cursor: wait; opacity: 0.6; }
 }
 
 thead {
-  background: linear-gradient(90deg, rgb(219 234 254 / 92%), rgb(239 246 255 / 94%));
+  background: linear-gradient(90deg, #c9ddfb, #dceaff 58%, #e7edff);
 }
 
 .task-row:not([class*="overdue-"]):hover {

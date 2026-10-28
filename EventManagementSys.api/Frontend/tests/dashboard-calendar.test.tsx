@@ -163,12 +163,10 @@ describe('Dashboard calendar panel', () => {
     expect(screen.getByRole('heading', { name: 'Create Event' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Event Name/), { target: { value: 'Launch' } });
     fireEvent.change(screen.getByLabelText(/Event Type/), { target: { value: '0' } });
-    fireEvent.change(screen.getByLabelText(/Start Date and Time/), {
-      target: { value: '2026-10-20T09:00' },
-    });
-    fireEvent.change(screen.getByLabelText(/End Date and Time/), {
-      target: { value: '2026-10-20T10:00' },
-    });
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-10-20' } });
+    fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '09:00' } });
+    fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2026-10-20' } });
+    fireEvent.change(screen.getByLabelText('End time'), { target: { value: '10:00' } });
     fireEvent.change(screen.getByLabelText(/Venue/), { target: { value: '2' } });
     fireEvent.change(screen.getByLabelText(/Budget/), { target: { value: '250' } });
     expect(screen.getByRole('option', { name: 'Main Hall - Capacity: 100' })).toBeInTheDocument();
@@ -211,7 +209,7 @@ describe('Dashboard calendar panel', () => {
     );
     expect(screen.getByTestId('schedule')).toHaveAttribute('data-readonly', 'true');
     expect(screen.queryByRole('button', { name: '+ Add Event' })).not.toBeInTheDocument();
-    expect(screen.getByText('Location: Location unavailable')).toBeInTheDocument();
+    expect(screen.getByText('Location unavailable')).toBeInTheDocument();
     expect(screen.getByText(/Oct 20, 2026/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Close event details' }));
     expect(callbacks.onCloseAttendeePopup).toHaveBeenCalledOnce();
@@ -248,7 +246,7 @@ describe('Dashboard calendar panel', () => {
       />,
     );
 
-    expect(screen.getByText('Cancelled')).toBeInTheDocument();
+    expect(screen.getByText('Registration cancelled')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Re-register' }));
     expect(callbacks.onReregister).toHaveBeenCalledWith(14);
 

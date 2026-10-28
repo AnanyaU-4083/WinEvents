@@ -24,6 +24,20 @@
     </section>
   } @else {
     <section class="table-card" aria-label="Assigned tasks">
+      <div class="task-filters">
+        <label for="task-status-filter">Show tasks</label>
+        <select
+          id="task-status-filter"
+          [value]="taskFilter()"
+          (change)="setTaskFilter($any($event.target).value)"
+        >
+          <option value="all">All tasks</option>
+          <option value="assigned">Assigned</option>
+          <option value="incomplete">Incomplete (event occurred)</option>
+          <option value="completed">Completed</option>
+          <option value="declined">Opted out</option>
+        </select>
+      </div>
       <div class="table-scroll">
         <table class="table-grid">
           <thead>
@@ -37,7 +51,12 @@
           </thead>
           <tbody>
             <!-- Render every assigned task row. -->
-            @for (task of tasks(); track task.assignmentId) {
+            @if (visibleTasks().length === 0) {
+              <tr>
+                <td colspan="5" class="no-filtered-tasks">No tasks match this filter.</td>
+              </tr>
+            }
+            @for (task of visibleTasks(); track task.assignmentId) {
               <tr [class]="'task-row overdue-' + overdueLevel(task)">
                 <td class="event-name">{{ task.eventName }}</td>
                 <td>{{ task.task }}</td>
@@ -60,7 +79,9 @@
                         [disabled]="savingAssignmentId() === task.assignmentId"
                         (click)="markAsCompleted(task)"
                       >
-                        {{ savingAssignmentId() === task.assignmentId ? 'Saving...' : 'Mark Complete' }}
+                        {{
+                          savingAssignmentId() === task.assignmentId ? 'Saving...' : 'Mark Complete'
+                        }}
                       </button>
                       @if (normalizedStatus(task.status).toLowerCase() === 'pending') {
                         <button
@@ -86,12 +107,25 @@
   <!-- Confirm before declining a task. -->
   @if (taskToDecline(); as selectedTask) {
     <div class="modal-backdrop">
-      <section class="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="decline-title">
-        <button type="button" class="modal-close-button" aria-label="Close opt out confirmation" (click)="cancelDecline()">&times;</button>
+      <section
+        class="confirm-modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="decline-title"
+      >
+        <button
+          type="button"
+          class="modal-close-button"
+          aria-label="Close opt out confirmation"
+          (click)="cancelDecline()"
+        >
+          &times;
+        </button>
         <h2 id="decline-title">Opt out of this task?</h2>
         <p>
           You’ll be removed from <strong>{{ selectedTask.task }}</strong> for
-          <strong>{{ selectedTask.eventName }}</strong>.
+          <strong>{{ selectedTask.eventName }}</strong
+          >.
         </p>
         <div class="modal-actions">
           <button type="button" class="cancel-button" (click)="cancelDecline()">Keep Task</button>
@@ -101,7 +135,11 @@
             [disabled]="savingAssignmentId() === selectedTask.assignmentId"
             (click)="declineTask()"
           >
-            {{ savingAssignmentId() === selectedTask.assignmentId ? 'Opting out...' : 'Confirm Opt Out' }}
+            {{
+              savingAssignmentId() === selectedTask.assignmentId
+                ? 'Opting out...'
+                : 'Confirm Opt Out'
+            }}
           </button>
         </div>
       </section>

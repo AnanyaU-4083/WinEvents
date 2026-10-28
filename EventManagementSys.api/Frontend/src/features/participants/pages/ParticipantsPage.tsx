@@ -50,6 +50,8 @@ function ParticipantsPage() {
 
   const [participants, setParticipants] = useState<Participant[]>([]);
 
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+
   const [events, setEvents] = useState<EventItem[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -65,8 +67,6 @@ function ParticipantsPage() {
     ticket: '',
     eventId: '',
   });
-
-
 
   //Load events and participants.
   useEffect(() => {
@@ -126,11 +126,12 @@ function ParticipantsPage() {
         }
 
         const attendeeData: Attendee[] = await attendeesResponse.json();
-        void attendeeData;
 
         if (cancelled) {
           return;
         }
+
+        setAttendees(attendeeData);
 
         //STEP 3: Load event attendees
 
@@ -317,6 +318,7 @@ function ParticipantsPage() {
 
       //Add participant to state.
       if (selectedEventData) {
+        setAttendees((previous) => [...previous, newAttendee]);
         setParticipants((previous) => [
           ...previous,
           {
@@ -400,6 +402,8 @@ function ParticipantsPage() {
     }
   };
 
+  const registeredEventCount = new Set(participants.map((participant) => participant.eventId)).size;
+
   //Tailwind style classes.
 
   const inputClass =
@@ -435,6 +439,64 @@ function ParticipantsPage() {
         }
       />
 
+      <section
+        className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2"
+        aria-label="Participant summary"
+      >
+        <article className="glass-panel flex items-center gap-4 bg-white/75 p-4 sm:p-5">
+          <span
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-100 text-brand-primary"
+            aria-hidden="true"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16 20v-1.5a4.5 4.5 0 0 0-4.5-4.5h-3A4.5 4.5 0 0 0 4 18.5V20m6-9a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6-7.5a4 4 0 0 1 0 7.5m1 3h1.5a4.5 4.5 0 0 1 4.5 4.5V20"
+              />
+            </svg>
+          </span>
+          <div>
+            <p className="text-sm font-medium text-text-muted">Total participants</p>
+            <p className="mt-0.5 text-2xl font-bold tracking-tight text-text-primary">
+              {attendees.length}
+            </p>
+          </div>
+        </article>
+        <article className="glass-panel flex items-center gap-4 bg-white/75 p-4 sm:p-5">
+          <span
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-orange-100 text-accent-orange"
+            aria-hidden="true"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              viewBox="0 0 24 24"
+            >
+              <rect width="16" height="16" x="4" y="5" rx="2" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8 3v4m8-4v4M4 10h16m-12 4h3m-3 3h6"
+              />
+            </svg>
+          </span>
+          <div>
+            <p className="text-sm font-medium text-text-muted">Events with registrations</p>
+            <p className="mt-0.5 text-2xl font-bold tracking-tight text-text-primary">
+              {registeredEventCount}
+            </p>
+          </div>
+        </article>
+      </section>
       {/* MAIN CONTENT CARD */}
 
       <div className="glass-panel w-full overflow-hidden">
@@ -465,7 +527,7 @@ function ParticipantsPage() {
           open={showAddForm}
           ariaLabel="Add participant"
           onClose={() => setShowAddForm(false)}
-          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
+          className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border-accent/40 bg-white shadow-2xl"
         >
           <form onSubmit={addParticipant}>
             <h3
@@ -480,7 +542,10 @@ function ParticipantsPage() {
             </h3>
 
             {error && (
-              <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <p
+                role="alert"
+                className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
                 {error}
               </p>
             )}
@@ -577,7 +642,6 @@ function ParticipantsPage() {
                 gap-3
               "
             >
-
               <button type="submit" className={primaryButtonClass} disabled={loading}>
                 {loading ? 'Adding...' : 'Add Participant'}
               </button>
@@ -585,336 +649,149 @@ function ParticipantsPage() {
           </form>
         </Modal>
 
-        {/* FILTERS */}
-
-        <div className="grid grid-cols-1 gap-3 border-b border-border-subtle p-6 md:grid-cols-2">
-          <SearchBar value={searchTerm} onChange={setSearchTerm} fullWidth />
-          <EventFilter value={selectedEvent} events={events} onChange={setSelectedEvent} />
+        <div className="border-b border-border-subtle p-5 sm:p-6">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-text-primary">Attendee directory</h2>
+            <p className="mt-1 text-sm text-text-muted">
+              Search participants by name or email and filter by event.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <SearchBar
+              id="participantSearch"
+              ariaLabel="Search participants by name or email"
+              placeholder="Search participants..."
+              value={searchTerm}
+              onChange={setSearchTerm}
+              fullWidth
+            />
+            <EventFilter
+              id="participantEventFilter"
+              ariaLabel="Filter participants by event"
+              value={selectedEvent}
+              events={events}
+              onChange={setSelectedEvent}
+            />
+          </div>
         </div>
-        {/* TABLE */}
 
         <div
-          className="
-            w-full
-            overflow-x-auto
-          "
+          className="max-h-[620px] space-y-2 overflow-y-auto p-4 sm:p-5"
+          role="region"
+          aria-label="Attendee registrations"
+          tabIndex={0}
         >
-          <table
-            className="
-              table-grid
-              min-w-full
-              border-collapse
-              text-left
-              text-sm
-            "
-          >
-            <thead>
-              <tr>
-                <th
-                  className="
-                    whitespace-nowrap
-                    bg-surface-subtle
-                    px-5
-                    py-3
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-wide
-                    text-text-muted
-                  "
+          {loading ? (
+            <div className="space-y-2" role="status" aria-label="Loading participants">
+              {[0, 1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="flex animate-pulse items-center gap-3 rounded-xl border border-border-subtle bg-white/55 p-4"
                 >
-                  Attendee
-                </th>
-
-                <th
-                  className="
-                    whitespace-nowrap
-                    bg-surface-subtle
-                    px-5
-                    py-3
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-wide
-                    text-text-muted
-                  "
+                  <span className="h-11 w-11 rounded-full bg-blue-100" />
+                  <span className="h-4 w-48 max-w-[55%] rounded bg-slate-200" />
+                </div>
+              ))}
+              <span className="sr-only">Loading participants...</span>
+            </div>
+          ) : error ? (
+            <div
+              className="rounded-xl border border-red-200 bg-red-50/80 px-5 py-8 text-center"
+              role="alert"
+            >
+              <h3 className="font-semibold text-red-700">Unable to load the attendee directory</h3>
+              <p className="mt-1 text-sm text-red-700">{error}</p>
+            </div>
+          ) : filteredParticipants.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-blue-200 bg-white/55 px-5 py-10 text-center">
+              <span
+                className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-blue-100 text-brand-primary"
+                aria-hidden="true"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  viewBox="0 0 24 24"
                 >
-                  Email
-                </th>
+                  <circle cx="11" cy="8" r="4" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 21v-1a8 8 0 0 1 16 0v1m1-13 2 2m0-2-2 2"
+                  />
+                </svg>
+              </span>
+              <h3 className="mt-3 font-semibold text-text-primary">No participants found</h3>
+              <p className="mt-1 text-sm text-text-muted">
+                Try another search or event filter. Registered attendees will appear here.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-2.5">
+              {filteredParticipants.map((participant) => {
+                const actionKey = `${participant.eventId}-${participant.attendeeId}`;
+                const initials =
+                  participant.name
+                    .trim()
+                    .split(/\s+/)
+                    .slice(0, 2)
+                    .map((part) => part.charAt(0))
+                    .join('')
+                    .toUpperCase() || 'AT';
 
-                <th
-                  className="
-                    whitespace-nowrap
-                    bg-surface-subtle
-                    px-5
-                    py-3
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-wide
-                    text-text-muted
-                  "
-                >
-                  Event
-                </th>
-
-                <th
-                  className="
-                    whitespace-nowrap
-                    bg-surface-subtle
-                    px-5
-                    py-3
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-wide
-                    text-text-muted
-                  "
-                >
-                  Registration
-                </th>
-
-                <th
-                  className="
-                    whitespace-nowrap
-                    bg-surface-subtle
-                    px-5
-                    py-3
-                    text-xs
-                    font-semibold
-                    uppercase
-                    tracking-wide
-                    text-text-muted
-                  "
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {/* LOADING */}
-
-              {loading ? (
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="
-                      border-t
-                      border-border-subtle
-                    "
+                return (
+                  <li
+                    key={actionKey}
+                    className="group flex min-w-0 items-center gap-3 rounded-xl border border-border-subtle bg-white/70 p-3 shadow-sm transition hover:border-brand-primary/35 hover:bg-white/90 hover:shadow-md sm:gap-4 sm:px-4"
                   >
-                    <div
-                      className="
-                        flex
-                        flex-col
-                        items-center
-                        justify-center
-                        px-6
-                        py-12
-                        text-center
-                      "
+                    <span
+                      className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-blue-100 text-base font-bold text-brand-primary ring-1 ring-blue-200"
+                      aria-hidden="true"
                     >
-                      <h3
-                        className="
-                          text-base
-                          font-semibold
-                          text-text-primary
-                        "
-                      >
-                        Loading participants...
-                      </h3>
-
-                      <p
-                        className="
-                          mt-2
-                          text-sm
-                          text-text-muted
-                        "
-                      >
-                        Please wait while participants are loaded.
+                      {initials}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-lg font-semibold text-text-primary">
+                        {participant.name}
+                      </p>
+                      <p className="truncate text-base text-text-secondary">{participant.email}</p>
+                      <p className="mt-1 truncate text-base font-medium text-text-primary">
+                        Registered for{' '}
+                        <span className="text-text-primary">{participant.eventName}</span>
                       </p>
                     </div>
-                  </td>
-                </tr>
-              ) : error ? (
-                /* ERROR */
-
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="
-                      border-t
-                      border-border-subtle
-                    "
-                  >
-                    <div
-                      className="
-                        flex
-                        flex-col
-                        items-center
-                        justify-center
-                        px-6
-                        py-12
-                        text-center
-                      "
-                    >
-                      <h3
-                        className="
-                          text-base
-                          font-semibold
-                          text-red-600
-                        "
-                      >
-                        {error}
-                      </h3>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredParticipants.length === 0 ? (
-                /* EMPTY */
-
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="
-                      border-t
-                      border-border-subtle
-                    "
-                  >
-                    <div
-                      className="
-                        flex
-                        flex-col
-                        items-center
-                        justify-center
-                        px-6
-                        py-12
-                        text-center
-                      "
-                    >
-                      <h3
-                        className="
-                          text-base
-                          font-semibold
-                          text-text-primary
-                        "
-                      >
-                        No participants found
-                      </h3>
-
-                      <p
-                        className="
-                          mt-2
-                          text-sm
-                          text-text-muted
-                        "
-                      >
-                        Registered attendees will appear here.
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                /* PARTICIPANTS */
-
-                filteredParticipants.map((participant) => (
-                  <tr
-                    key={`${participant.eventId}-${participant.attendeeId}`}
-                    className="
-                        transition
-                        hover:bg-surface-muted
-                      "
-                  >
-                    <td
-                      className="
-                          border-t
-                          border-border-subtle
-                          px-5
-                          py-4
-                          text-sm
-                          font-medium
-                          text-text-primary
-                        "
-                    >
-                      {participant.name}
-                    </td>
-
-                    <td
-                      className="
-                          border-t
-                          border-border-subtle
-                          px-5
-                          py-4
-                          text-sm
-                          text-text-secondary
-                        "
-                    >
-                      {participant.email}
-                    </td>
-
-                    <td
-                      className="
-                          border-t
-                          border-border-subtle
-                          px-5
-                          py-4
-                          text-sm
-                          text-text-secondary
-                        "
-                    >
-                      {participant.eventName}
-                    </td>
-
-                    <td
-                      className="
-                          border-t
-                          border-border-subtle
-                          px-5
-                          py-4
-                          text-sm
-                          text-text-muted
-                        "
-                    >
+                    <span className="inline-flex shrink-0 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-sm font-semibold text-green-700 sm:px-3">
                       {participant.registeredAt}
-                    </td>
-
-                    <td
-                      className="
-                          border-t
-                          border-border-subtle
-                          px-5
-                          py-4
-                        "
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${participant.name} from ${participant.eventName}`}
+                      title="Remove participant"
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-red-200 bg-red-50 text-red-600 transition hover:border-red-300 hover:bg-red-100 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
+                      onClick={() =>
+                        void removeParticipant(participant.eventId, participant.attendeeId)
+                      }
                     >
-                      <button
-                        type="button"
-                        aria-label="Remove participant"
-                        title="Remove participant"
-                        className="grid h-8 w-8 place-items-center rounded-lg border border-surface-error bg-white p-0 text-state-error transition hover:bg-surface-error"
-                        onClick={() =>
-                          removeParticipant(participant.eventId, participant.attendeeId)
-                        }
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="1.8"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
                       >
-                        <svg
-                          aria-hidden="true"
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="1.8"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M3 6h18M8 6V4h8v2m2 0-1 14H7L6 6m4 4v6m4-6v6" />
-                        </svg>
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                        <path d="M3 6h18M8 6V4h8v2m2 0-1 14H7L6 6m4 4v6m4-6v6" />
+                      </svg>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </div>
     </div>

@@ -127,8 +127,12 @@ public class RegistrationService(IRegistrationRepository registrationRepository,
         {
             EventId = registration.EventNavigation!.EventId,
             EventName = registration.EventNavigation.EventName,
-            StartDate = registration.EventNavigation.StartDate,
-            EndDate = registration.EventNavigation.EndDate,
+            StartDate = DateTime.SpecifyKind(
+                registration.EventNavigation.StartDate,
+                DateTimeKind.Utc),
+            EndDate = DateTime.SpecifyKind(
+                registration.EventNavigation.EndDate,
+                DateTimeKind.Utc),
             Budget = registration.EventNavigation.Budget,
             EventType = registration.EventNavigation.EventType,
             Status = registration.EventNavigation.Status,

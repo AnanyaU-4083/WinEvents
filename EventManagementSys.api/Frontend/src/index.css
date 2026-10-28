@@ -293,9 +293,13 @@ button[class~='py-1'] { padding-block: 0.2rem; }
 @layer components {
   .page-canvas {
     background:
-      radial-gradient(ellipse at 8% 4%, rgb(37 99 235 / 16%), transparent 34%),
-      radial-gradient(ellipse at 94% 18%, rgb(255 122 0 / 10%), transparent 34%),
-      linear-gradient(145deg, #eef2fb 0%, #f7f9fd 55%, #e8efff 100%);
+      radial-gradient(ellipse at 8% 2%, rgb(37 99 235 / 18%), transparent 36%),
+      radial-gradient(ellipse at 94% 14%, rgb(255 122 0 / 27%), transparent 40%),
+      radial-gradient(ellipse at 78% 82%, rgb(251 146 60 / 18%), transparent 38%),
+      radial-gradient(ellipse at 42% 100%, rgb(56 189 248 / 10%), transparent 42%),
+      repeating-linear-gradient(0deg, rgb(29 78 216 / 2%) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(90deg, rgb(29 78 216 / 2%) 0 1px, transparent 1px 42px),
+      linear-gradient(145deg, #e8effb 0%, #f5f7fc 48%, #e5edfb 100%);
     background-attachment: fixed;
   }
 
@@ -364,15 +368,16 @@ button[class~='py-1'] { padding-block: 0.2rem; }
   }
 
   .glass-panel {
+    position: relative;
     border: 1px solid rgb(153 190 231 / 50%) !important;
     border-radius: 1.5rem !important;
     background: linear-gradient(
       145deg,
-      rgb(255 255 255 / 94%) 0%,
-      rgb(255 255 255 / 88%) 72%,
-      rgb(239 245 255 / 88%) 100%
+      rgb(255 255 255 / 98%) 0%,
+      rgb(239 246 255 / 96%) 72%,
+      rgb(225 238 255 / 92%) 100%
     ) !important;
-    box-shadow: 0 16px 40px rgb(20 45 94 / 10%) !important;
+    box-shadow: 0 18px 42px rgb(20 45 94 / 15%) !important;
     backdrop-filter: blur(22px) saturate(138%);
   }
 
@@ -393,7 +398,7 @@ button[class~='py-1'] { padding-block: 0.2rem; }
   }
 
   .table-grid thead {
-    background: linear-gradient(90deg, rgb(219 234 254 / 92%), rgb(239 246 255 / 94%));
+    background: linear-gradient(90deg, #c9ddfb, #dceaff 58%, #e7edff);
   }
 
   .table-grid tbody tr {
@@ -402,7 +407,12 @@ button[class~='py-1'] { padding-block: 0.2rem; }
 
   .glass-popup {
     border-color: rgb(255 255 255 / 86%) !important;
-    background: rgb(248 251 255 / 86%) !important;
+    background: linear-gradient(
+      145deg,
+      rgb(248 251 255 / 92%) 0%,
+      rgb(232 241 253 / 88%) 58%,
+      rgb(255 242 231 / 82%) 100%
+    ) !important;
     box-shadow: 0 26px 64px rgb(8 25 66 / 24%) !important;
     backdrop-filter: blur(28px) saturate(150%);
   }
@@ -456,6 +466,12 @@ textarea:focus-visible {
   box-shadow: 0 0 0 4px rgb(37 99 235 / 8%);
 }
 
+table.table-grid th,
+table.table-grid td {
+  border-bottom: 2px solid #8a9bb1;
+  color: #111827;
+}
+
 .page-title-panel button[class*='bg-brand-primary'] {
   border-color: rgb(255 255 255 / 82%);
   background: #fff;
@@ -467,4 +483,68 @@ textarea:focus-visible {
   background: #f4f8ff;
   background-image: none;
   color: #0066ff;
+}
+
+/* Keep modal form controls and actions consistent across features. */
+.glass-popup form label {
+  color: #334155;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.glass-popup form input:not([type='checkbox']):not([type='radio']),
+.glass-popup form select,
+.glass-popup form textarea {
+  min-height: 44px;
+  border-color: rgb(148 163 184 / 55%);
+  border-radius: 0.8rem;
+  background-color: rgb(255 255 255 / 88%);
+  color: #172033;
+}
+
+.glass-popup form textarea {
+  min-height: 6rem;
+}
+
+.glass-popup form input:not([type='checkbox']):not([type='radio']):focus-visible,
+.glass-popup form select:focus-visible,
+.glass-popup form textarea:focus-visible {
+  border-color: #0066ff;
+  outline: 2px solid rgb(37 99 235 / 28%);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 8%);
+}
+
+.glass-popup form > h3 {
+  display: flex;
+  min-height: 3.5rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid rgb(148 163 184 / 28%);
+  color: #102b63;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  padding-bottom: 1rem;
+}
+
+.glass-popup > form {
+  padding: 1.75rem;
+}
+
+.glass-popup form > :last-child {
+  border-top: 1px solid rgb(148 163 184 / 28%);
+  padding-top: 1.25rem;
+}
+
+.glass-popup form button[type='submit'] {
+  min-height: 44px;
+  border-radius: 0.8rem;
+  font-weight: 650;
+}
+
+@media (max-width: 600px) {
+  .glass-popup > form {
+    padding: 1rem;
+  }
 }

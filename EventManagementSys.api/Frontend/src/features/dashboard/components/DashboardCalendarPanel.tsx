@@ -1,4 +1,4 @@
-﻿// Display events in calendar views.
+// Display events in calendar views.
 import {
   ScheduleComponent,
   ViewsDirective,
@@ -51,8 +51,9 @@ export interface DashboardCalendarPanelProps {
   organizations: OrganizationOption[];
   attendeeEventPopup: {
     event: CalendarEvent;
-    top: number;
-    left: number;
+    top?: number;
+    left?: number;
+    isUpcoming?: boolean;
     isCompleted?: boolean;
   } | null;
   showEventForm: boolean;
@@ -157,6 +158,7 @@ function DashboardCalendarPanel({
           <ScheduleComponent
             cssClass="dashboard-calendar"
             height="700px"
+            timezone={Intl.DateTimeFormat().resolvedOptions().timeZone}
             selectedDate={currentDate}
             currentView="Month"
             readonly={!canManageEvents}
@@ -187,7 +189,7 @@ function DashboardCalendarPanel({
         )}
       </div>
 
-      {attendeeEventPopup && (isAttendee || attendeeEventPopup.isCompleted) && (
+      {attendeeEventPopup && (isAttendee || attendeeEventPopup.isCompleted || attendeeEventPopup.isUpcoming) && (
         <AttendeeEventPopup
           event={attendeeEventPopup.event}
           isCompleted={attendeeEventPopup.isCompleted}
@@ -210,7 +212,7 @@ function DashboardCalendarPanel({
           open={showEventForm}
           ariaLabel={editingEventId === null ? 'Create event' : 'Edit event'}
           onClose={onCloseEventForm}
-          className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-2xl"
+          className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white shadow-2xl"
         >
           <EventEditorForm
             formData={formData}

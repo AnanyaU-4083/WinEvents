@@ -93,7 +93,7 @@ export function OrganizationSection({
           open={formOpen}
           ariaLabel={editingId === null ? 'Add organization' : 'Edit organization'}
           onClose={onCancel}
-          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
+          className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border-accent/40 bg-white shadow-2xl"
         >
         <form onSubmit={onSubmit}>
           <h3 className="mb-5 text-base font-semibold text-text-primary">
@@ -230,7 +230,7 @@ export function EmployeeSection({
           open={formOpen}
           ariaLabel={editingId === null ? 'Add employee' : 'Edit employee'}
           onClose={onCancel}
-          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
+          className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border-accent/40 bg-white shadow-2xl"
         >
         <form onSubmit={onSubmit}>
           <h3 className="mb-5 text-base font-semibold text-text-primary">
@@ -373,7 +373,7 @@ export function VenueSection({
           open={formOpen}
           ariaLabel={isEditing ? 'Edit venue' : 'Add venue'}
           onClose={onCancel}
-          className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border-accent/40 bg-white p-6 shadow-2xl"
+          className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border-accent/40 bg-white shadow-2xl"
         >
           <form onSubmit={onSubmit}>
             <h3 className="mb-5 text-base font-semibold text-text-primary">

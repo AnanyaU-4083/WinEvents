@@ -173,19 +173,23 @@ describe('dashboard display components', () => {
   });
 
   it('formats event summaries and the calendar date badge', () => {
+    const onSelectEvent = vi.fn();
     render(
       <UpcomingEventsPanel
         events={[{ eventId: 2, eventName: 'Garba Celebration', startDate: '2026-10-20T17:30:00' }]}
         loading={false}
         formatDate={() => 'Oct 20, 2026'}
         formatTime={() => '5:30 PM'}
+        onSelectEvent={onSelectEvent}
       />,
     );
     expect(screen.getByRole('heading', { name: 'Garba Celebration' })).toBeInTheDocument();
     expect(screen.getByText('20')).toBeInTheDocument();
-    expect(screen.getByText('OCT')).toBeInTheDocument();
-    expect(screen.getByText('Oct 20, 2026')).toBeInTheDocument();
-    expect(screen.getByText('5:30 PM')).toBeInTheDocument();
+    expect(screen.getByText('Oct')).toBeInTheDocument();
+    expect(screen.getByLabelText('Oct 20, 2026')).toBeInTheDocument();
+    expect(screen.getByText(/5:30 PM/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'View details for Garba Celebration' }));
+    expect(onSelectEvent).toHaveBeenCalledWith(2);
   });
 
   it('shows attendee event details and forwards close action', () => {
@@ -203,12 +207,12 @@ describe('dashboard display components', () => {
         reregistering={false}
       />,
     );
-    expect(screen.getByRole('dialog', { name: 'Town Hall' })).toHaveStyle({
-      top: '40px',
-      left: '60px',
-    });
-    expect(screen.getByText('Oct 20, 2026 | 5:30 PM - 6:30 PM')).toBeInTheDocument();
-    expect(screen.getByText('Location: Main Hall')).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Town Hall' })).toHaveAttribute('aria-modal', 'true');
+    expect(screen.getByText('Oct 20, 2026')).toBeInTheDocument();
+    expect(screen.getByText('5:30 PM')).toBeInTheDocument();
+    expect(screen.getByText('6:30 PM')).toBeInTheDocument();
+    expect(screen.getByText('Location')).toBeInTheDocument();
+    expect(screen.getByText('Main Hall')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Close event details' }));
     expect(onClose).toHaveBeenCalledOnce();
   });

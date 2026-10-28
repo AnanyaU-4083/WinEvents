@@ -1,6 +1,6 @@
 // Manage task actions and status.
 import { CommonModule } from '@angular/common';
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, computed, signal } from '@angular/core';
 import type { OnDestroy, OnInit } from '@angular/core';
 import {
   formatTaskDeadline,
@@ -25,6 +25,8 @@ interface EmployeeTask {
   status: string | number;
 }
 
+type TaskFilter = 'all' | 'assigned' | 'incomplete' | 'completed' | 'declined';
+
 @Component({
   selector: 'app-my-tasks-angular',
   standalone: true,
@@ -37,6 +39,30 @@ export class MyTasksComponent implements OnInit, OnDestroy {
   @Input() apiBaseUrl = '';
 
   readonly tasks = signal<EmployeeTask[]>([]);
+  readonly taskFilter = signal<TaskFilter>('all');
+  readonly visibleTasks = computed(() => {
+    const filter = this.taskFilter();
+    const tasks = this.tasks();
+    const matchesFilter = (task: EmployeeTask) => {
+      const status = this.normalizedStatus(task.status).toLowerCase();
+      const incomplete = this.isEventOccurredIncomplete(task);
+      if (filter === 'assigned')
+        return status !== 'completed' && status !== 'declined' && !incomplete;
+      if (filter === 'incomplete') return incomplete;
+      if (filter === 'completed') return status === 'completed';
+      if (filter === 'declined') return status === 'declined';
+      return true;
+    };
+    const priority = (task: EmployeeTask) => {
+      const status = this.normalizedStatus(task.status).toLowerCase();
+      if (this.isEventOccurredIncomplete(task)) return 1;
+      return status === 'completed' ? 2 : status === 'declined' ? 3 : 0;
+    };
+    return tasks
+      .filter(matchesFilter)
+      .slice()
+      .sort((a, b) => priority(a) - priority(b));
+  });
   readonly loading = signal(true);
   readonly error = signal('');
   readonly notice = signal('');
@@ -68,7 +94,9 @@ export class MyTasksComponent implements OnInit, OnDestroy {
         this.request('/api/events'),
       ]);
       if (!taskResponse.ok || !eventResponse.ok) {
-        throw new Error(`Failed to load tasks or event dates. Status: ${taskResponse.status}/${eventResponse.status}`);
+        throw new Error(
+          `Failed to load tasks or event dates. Status: ${taskResponse.status}/${eventResponse.status}`,
+        );
       }
 
       const [tasks, events] = await Promise.all([
@@ -182,6 +210,18 @@ export class MyTasksComponent implements OnInit, OnDestroy {
     return this.isEventOccurredIncomplete(task)
       ? 'Event Occurred, Task Incomplete'
       : this.normalizedStatus(task.status);
+  }
+
+  setTaskFilter(value: string): void {
+    if (
+      value === 'all' ||
+      value === 'assigned' ||
+      value === 'incomplete' ||
+      value === 'completed' ||
+      value === 'declined'
+    ) {
+      this.taskFilter.set(value);
+    }
   }
 
   statusClass(task: EmployeeTask): string {

@@ -2,13 +2,24 @@
 interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
+  id?: string;
+  ariaLabel?: string;
   placeholder?: string;
   fullWidth?: boolean;
 }
 
-function SearchBar({ value, onChange, placeholder = 'Search...', fullWidth = false }: SearchBarProps) {
+function SearchBar({
+  value,
+  onChange,
+  placeholder = 'Search...',
+  fullWidth = false,
+  id,
+  ariaLabel,
+}: SearchBarProps) {
   return (
     <input
+      id={id}
+      aria-label={ariaLabel}
       type="text"
       placeholder={placeholder}
       value={value}

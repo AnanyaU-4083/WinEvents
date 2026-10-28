@@ -87,8 +87,9 @@ function DashboardPage() {
   const [savingEvent, setSavingEvent] = useState(false);
   const [attendeeEventPopup, setAttendeeEventPopup] = useState<{
     event: EventDto;
-    top: number;
-    left: number;
+    top?: number;
+    left?: number;
+    isUpcoming?: boolean;
     isCompleted: boolean;
   } | null>(null);
   const [reregisteringEventId, setReregisteringEventId] = useState<number | null>(null);
@@ -437,22 +438,8 @@ function DashboardPage() {
     if (showDetailsInApp) {
       args.cancel = true;
       if (event) {
-        const target = args.target as HTMLElement | undefined;
-        const rect = target?.getBoundingClientRect();
-        const popupWidth = 320;
-        const popupHeight = 230;
-        const left = rect
-          ? rect.right + popupWidth + 16 <= window.innerWidth
-            ? rect.right + 8
-            : Math.max(16, rect.left - popupWidth - 8)
-          : 16;
-        const top = rect
-          ? Math.min(Math.max(16, rect.top), window.innerHeight - popupHeight - 16)
-          : 16;
         setAttendeeEventPopup({
           event,
-          top,
-          left,
           isCompleted: getEventStatus(event.status) === 'Completed',
         });
       } else {
@@ -652,20 +639,9 @@ function DashboardPage() {
           <h1>{t('dashboard.welcome', { name: userName })}</h1>
           <p className="dashboard-welcome-subtitle">Manage your company events, view upcoming events and keep the team connected.</p>
         </div>
-        <div className="dashboard-welcome-art" aria-hidden="true">
-          <svg className="dashboard-art-camera" viewBox="0 0 100 78" fill="none"><rect x="8" y="17" width="76" height="49" rx="10" transform="rotate(14 8 17)" stroke="currentColor" strokeWidth="3"/><path d="m27 26 9 3 5-7 20 5-2 8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="51" cy="43" r="12" transform="rotate(14 51 43)" stroke="currentColor" strokeWidth="3"/></svg>
-          <svg className="dashboard-art-photo" viewBox="0 0 100 78" fill="none"><rect x="10" y="9" width="75" height="58" rx="6" transform="rotate(-11 10 9)" stroke="currentColor" strokeWidth="3"/><circle cx="39" cy="27" r="5" stroke="currentColor" strokeWidth="3"/><path d="m21 56 18-17 11 8 14-19 13 17" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-        </div>
       </header>
 
       <main className="mx-auto w-full max-w-[1400px]">
-        <DashboardSummaryCards
-          total={events.length}
-          scheduled={scheduledEvents.length}
-          completed={completedThisMonth.length}
-          upcoming={upcomingEvents.length}
-        />
-
         {error && (
           <div className="mb-5 flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <span>{error}</span>
@@ -677,6 +653,33 @@ function DashboardPage() {
         )}
 
         <section className="dashboard-planning-grid">
+          <aside className="dashboard-sidebar" aria-label="Event overview">
+            <DashboardSummaryCards
+              total={events.length}
+              scheduled={scheduledEvents.length}
+              completed={completedThisMonth.length}
+              upcoming={upcomingEvents.length}
+            />
+            <UpcomingEventsPanel
+              events={upcomingEvents.map((event) => ({
+                ...event,
+                location: venues.find((venue) => venue.venueId === event.venueId)?.address,
+              }))}
+              loading={loading}
+              formatDate={formatDisplayDate}
+              formatTime={formatTime}
+              onSelectEvent={(eventId) => {
+                const event = events.find((item) => item.eventId === eventId);
+                if (event) {
+                  setAttendeeEventPopup({
+                    event,
+                    isUpcoming: true,
+                    isCompleted: getEventStatus(event.status) === 'Completed',
+                  });
+                }
+              }}
+            />
+          </aside>
           <DashboardCalendarPanel
             monthEventCount={monthEvents.length}
             selectedDate={selectedDate}
@@ -713,15 +716,6 @@ function DashboardPage() {
             onSaveEvent={saveCalendarEvent}
           />
 
-          <UpcomingEventsPanel
-            events={upcomingEvents.map((event) => ({
-              ...event,
-              location: venues.find((venue) => venue.venueId === event.venueId)?.address,
-            }))}
-            loading={loading}
-            formatDate={formatDisplayDate}
-            formatTime={formatTime}
-          />
         </section>
       </main>
       <FeedbackModal

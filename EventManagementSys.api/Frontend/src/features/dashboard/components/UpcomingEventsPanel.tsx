@@ -12,9 +12,10 @@ interface UpcomingEventsPanelProps {
   loading: boolean;
   formatDate: (date: string) => string;
   formatTime: (date: string) => string;
+  onSelectEvent?: (eventId: number) => void;
 }
 
-function UpcomingEventsPanel({ events, loading, formatDate, formatTime }: UpcomingEventsPanelProps) {
+function UpcomingEventsPanel({ events, loading, formatDate, formatTime, onSelectEvent }: UpcomingEventsPanelProps) {
   return (
     <section className="dashboard-upcoming-panel" aria-labelledby="dashboard-upcoming-title">
       <header className="dashboard-panel-heading">
@@ -41,7 +42,14 @@ function UpcomingEventsPanel({ events, loading, formatDate, formatTime }: Upcomi
             const day = eventDate.toLocaleString('en-US', { weekday: 'short' });
             const month = eventDate.toLocaleString('en-US', { month: 'short' });
             return (
-              <li key={event.eventId} className={`dashboard-upcoming-card dashboard-upcoming-card-${index % 3}`}>
+              <li key={event.eventId}>
+                <button
+                  type="button"
+                  className={`dashboard-upcoming-card dashboard-upcoming-card-${index % 3}`}
+                  aria-label={`View details for ${event.eventName}`}
+                  disabled={!onSelectEvent}
+                  onClick={() => onSelectEvent?.(event.eventId)}
+                >
                 <div className="dashboard-date-tile" aria-label={formatDate(event.startDate)}>
                   <span>{month}</span>
                   <strong>{eventDate.getDate().toString().padStart(2, '0')}</strong>
@@ -58,6 +66,7 @@ function UpcomingEventsPanel({ events, loading, formatDate, formatTime }: Upcomi
                     <span>{event.location || 'Location unavailable'}</span>
                   </p>
                 </div>
+                </button>
               </li>
             );
           })}

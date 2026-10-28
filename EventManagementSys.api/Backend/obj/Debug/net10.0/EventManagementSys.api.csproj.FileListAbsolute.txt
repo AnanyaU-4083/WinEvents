@@ -1183,3 +1183,10 @@ C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagement
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\Backend.Tests\UnitTestBuildDebug\net10.0\EventManagementSys.api.runtimeconfig.json
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\Backend.Tests\UnitTestBuildDebug\net10.0\EventManagementSys.api.dll
 C:\Users\AnanyaUrlam\OneDrive - WinWire\TrainingPractice\Project\EventManagementSys.api\Backend.Tests\UnitTestBuildDebug\net10.0\EventManagementSys.api.pdb
+C:\Users\AnanyaUrlam\AppData\Local\Temp\WewBuild\appsettings.Development.json
+C:\Users\AnanyaUrlam\AppData\Local\Temp\WewBuild\appsettings.json
+C:\Users\AnanyaUrlam\AppData\Local\Temp\WewBuild\EventManagementSys.api.staticwebassets.endpoints.json
+C:\Users\AnanyaUrlam\AppData\Local\Temp\WewBuild\EventManagementSys.api.deps.json
+C:\Users\AnanyaUrlam\AppData\Local\Temp\WewBuild\EventManagementSys.api.runtimeconfig.json
+C:\Users\AnanyaUrlam\AppData\Local\Temp\WewBuild\EventManagementSys.api.dll
+C:\Users\AnanyaUrlam\AppData\Local\Temp\WewBuild\EventManagementSys.api.pdb

@@ -978,7 +978,7 @@ describe('Participants page', () => {
       '/api/events/8/attendees/16',
       expect.objectContaining({ method: 'POST' }),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Remove participant' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Taylor from Summer Festival' }));
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         '/api/events/8/attendees/16',
@@ -1084,19 +1084,17 @@ describe('Events page', () => {
     fireEvent.submit(form());
     expect(await screen.findByText('Event name is required.')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Event Name/), { target: { value: 'Created Meetup' } });
-    fireEvent.change(screen.getByLabelText(/Start Date and Time/), {
-      target: { value: '2026-11-01T09:30' },
-    });
-    fireEvent.change(screen.getByLabelText(/End Date and Time/), {
-      target: { value: '2026-11-01T08:30' },
-    });
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-11-01' } });
+    fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '09:30' } });
+    fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2026-11-01' } });
+    fireEvent.change(screen.getByLabelText('End time'), { target: { value: '08:30' } });
     fireEvent.submit(form());
     expect(await screen.findByText('Please select a venue.')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Venue/), { target: { value: '1' } });
     fireEvent.change(screen.getByLabelText(/Event Type/), { target: { value: '2' } });
     fireEvent.submit(form());
     expect(await screen.findByText('End date must be after the start date.')).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/End Date and Time/), { target: { value: '2026-11-01T11:30' } });
+    fireEvent.change(screen.getByLabelText('End time'), { target: { value: '11:30' } });
     fireEvent.change(screen.getByLabelText(/Budget/), { target: { value: '125.50' } });
     fireEvent.change(screen.getByLabelText(/Organization/), { target: { value: '2' } });
     fireEvent.submit(form());
@@ -1151,7 +1149,9 @@ describe('Events page', () => {
     fireEvent.change(screen.getByLabelText(/Task/), { target: { value: 'Prepare room' } });
     fireEvent.change(screen.getByLabelText(/Deadline/), { target: { value: '2026-11-01T09:30' } });
     fireEvent.click(within(assignmentPanel()).getByRole('button', { name: 'Assign Task' }));
-    expect((await screen.findAllByText('Employee task assigned successfully.')).length).toBeGreaterThan(0);
+    expect(
+      (await screen.findAllByText('Employee task assigned successfully.')).length,
+    ).toBeGreaterThan(0);
     expect(await screen.findByText('Prepare room')).toBeInTheDocument();
     const post = fetchMock.mock.calls.find(
       ([url, init]) => url === '/api/events/44/staff' && init?.method === 'POST',
@@ -1257,6 +1257,38 @@ describe('Events page', () => {
     expect(screen.queryByText('Completed Filter')).not.toBeInTheDocument();
   });
 
+  it('shows only attendee-registered events in the cancelled filter', async () => {
+    setAccount(['Attendee']);
+    const registeredCancelled = {
+      ...eventRecord,
+      eventId: 120,
+      eventName: 'Registered cancelled event',
+      status: 1,
+      isRegistrationCancelled: false,
+    };
+    const unrelatedCancelled = {
+      ...eventRecord,
+      eventId: 121,
+      eventName: 'Unrelated cancelled event',
+      status: 1,
+      isRegistrationCancelled: false,
+    };
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/events') return apiResponse([registeredCancelled, unrelatedCancelled]);
+      if (url === '/api/events/my-registrations') return apiResponse([registeredCancelled]);
+      return apiResponse([]);
+    });
+    render(
+      <MemoryRouter>
+        <Events />
+      </MemoryRouter>,
+    );
+    await screen.findByRole('combobox');
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'cancelled' } });
+    expect(await screen.findByText('Registered cancelled event')).toBeInTheDocument();
+    expect(screen.queryByText('Unrelated cancelled event')).not.toBeInTheDocument();
+  });
   it('renders every event type and falls back for unknown event types and statuses', async () => {
     const records = Array.from({ length: 7 }, (_, eventType) => ({
       ...eventRecord,
@@ -1300,8 +1332,10 @@ describe('Events page', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByRole('heading', { name: 'Create Event' })).toBeInTheDocument();
-    expect(screen.getByLabelText(/Start Date and Time/)).toHaveValue('2026-11-03T09:00');
-    expect(screen.getByLabelText(/End Date and Time/)).toHaveValue('2026-11-03T10:00');
+    expect(screen.getByLabelText('Start date')).toHaveValue('2026-11-03');
+    expect(screen.getByLabelText('Start time')).toHaveValue('09:00');
+    expect(screen.getByLabelText('End date')).toHaveValue('2026-11-03');
+    expect(screen.getByLabelText('End time')).toHaveValue('10:00');
     unmount();
 
     setAccount(['Attendee']);
@@ -1358,13 +1392,17 @@ describe('Events page', () => {
     );
     await screen.findByText('Task Error Event');
     fireEvent.click(screen.getByRole('button', { name: 'Assign Task' }));
-    expect((await screen.findAllByText('Failed to load assigned employees.')).length).toBeGreaterThan(0);
+    expect(
+      (await screen.findAllByText('Failed to load assigned employees.')).length,
+    ).toBeGreaterThan(0);
     const panel = () =>
       screen.getByRole('heading', { name: 'Assign Employee Task' }).closest('section')!;
     fireEvent.change(screen.getByLabelText(/Employee/), { target: { value: '8' } });
     fireEvent.change(screen.getByLabelText(/Task/), { target: { value: 'Check venue' } });
     fireEvent.click(within(panel()).getByRole('button', { name: 'Assign Task' }));
-    expect((await screen.findAllByText('Failed to assign employee task.')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Failed to assign employee task.')).length).toBeGreaterThan(
+      0,
+    );
   });
 
   it('shows registered and unavailable attendee event states and reports registration errors', async () => {

@@ -48,10 +48,10 @@ describe('event editor form', () => {
     expect(screen.getByRole('option', { name: 'WinWire' })).toHaveValue('2');
     fireEvent.change(screen.getByLabelText(/Event Name/), { target: { value: 'Staff meeting' } });
     fireEvent.change(screen.getByLabelText(/Event Type/), { target: { value: '1' } });
-    fireEvent.change(screen.getByLabelText(/Start Date and Time/), {
-      target: { value: '2026-10-21T09:00' },
-    });
-    fireEvent.change(screen.getByLabelText(/End Date and Time/), { target: { value: '2026-10-21T10:00' } });
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-10-21' } });
+    fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '09:00' } });
+    fireEvent.change(screen.getByLabelText('End date'), { target: { value: '2026-10-21' } });
+    fireEvent.change(screen.getByLabelText('End time'), { target: { value: '10:00' } });
     fireEvent.change(screen.getByLabelText(/Venue/), { target: { value: '1' } });
     fireEvent.change(screen.getByLabelText(/Organization/), { target: { value: '2' } });
     fireEvent.change(screen.getByLabelText(/Budget/), { target: { value: '200' } });
@@ -95,6 +95,65 @@ describe('event editor form', () => {
     expect(screen.getByRole('option', { name: 'Select venue' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'No organization' })).toBeInTheDocument();
   });
+
+  it('updates end time from duration and preserves a manually edited end time when start changes', () => {
+    render(
+      <EventEditorForm
+        formData={editorForm}
+        venues={[]}
+        organizations={[]}
+        isEditing={false}
+        saving={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const startDate = screen.getByLabelText('Start date');
+    const startTime = screen.getByLabelText('Start time');
+    const endDate = screen.getByLabelText('End date');
+    const endTime = screen.getByLabelText('End time');
+    const duration = screen.getByLabelText('Duration (hours)');
+
+    fireEvent.change(startDate, { target: { value: '2026-10-21' } });
+    fireEvent.change(startTime, { target: { value: '09:00' } });
+    expect(endDate).toHaveValue('2026-10-21');
+    expect(endTime).toHaveValue('10:00');
+
+    fireEvent.change(endTime, { target: { value: '13:00' } });
+    fireEvent.change(startTime, { target: { value: '10:00' } });
+    expect(endTime).toHaveValue('13:00');
+    expect(duration).toHaveValue('3');
+
+    fireEvent.change(duration, { target: { value: '2' } });
+    expect(endTime).toHaveValue('12:00');
+  });
+
+  it('supports a custom duration longer than 48 hours', () => {
+    render(
+      <EventEditorForm
+        formData={editorForm}
+        venues={[]}
+        organizations={[]}
+        isEditing={false}
+        saving={false}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('Start date'), { target: { value: '2026-10-21' } });
+    fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '09:00' } });
+    fireEvent.change(screen.getByLabelText('Duration (hours)'), {
+      target: { value: 'custom' },
+    });
+    const customDuration = screen.getByLabelText('Custom duration in hours');
+    fireEvent.change(customDuration, { target: { value: '2' } });
+    expect(customDuration).toHaveValue(2);
+    fireEvent.change(customDuration, { target: { value: '22' } });
+    expect(customDuration).toHaveValue(22);
+    fireEvent.change(customDuration, { target: { value: '50' } });
+    expect(screen.getByLabelText('End date')).toHaveValue('2026-10-23');
+    expect(screen.getByLabelText('End time')).toHaveValue('11:00');
+  });
 });
 
 describe('event task assignment panel', () => {
@@ -103,24 +162,23 @@ describe('event task assignment panel', () => {
     const setTask = vi.fn();
     const setDeadline = vi.fn();
     const onAssign = vi.fn();
-    render(
-      <EventTaskAssignmentPanel
-        eventName="Town Hall"
-        employees={[
-          { employeeId: 4, name: 'Alex', jobTitle: 'Coordinator' },
-          { employeeId: 5, name: 'Robin', jobTitle: null },
-        ]}
-        assignedStaff={[]}
-        selectedEmployeeId=""
-        setSelectedEmployeeId={setSelectedEmployeeId}
-        task=""
-        setTask={setTask}
-        deadline=""
-        setDeadline={setDeadline}
-        assigning={false}
-        onAssign={onAssign}
-      />,
-    );
+    const props = {
+      eventName: 'Town Hall',
+      employees: [
+        { employeeId: 4, name: 'Alex', jobTitle: 'Coordinator' },
+        { employeeId: 5, name: 'Robin', jobTitle: null },
+      ],
+      assignedStaff: [],
+      selectedEmployeeId: '',
+      setSelectedEmployeeId,
+      task: '',
+      setTask,
+      deadline: '',
+      setDeadline,
+      assigning: false,
+      onAssign,
+    };
+    const { rerender } = render(<EventTaskAssignmentPanel {...props} />);
     expect(screen.getByText('Event: Town Hall')).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Alex - Coordinator' })).toHaveValue('4');
     expect(screen.getByRole('option', { name: 'Robin' })).toHaveValue('5');
@@ -128,10 +186,13 @@ describe('event task assignment panel', () => {
       screen.getByText('No employees have been assigned to this event yet.'),
     ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Employee/), { target: { value: '4' } });
-    fireEvent.change(screen.getByLabelText(/Deadline/), { target: { value: '2026-10-21T09:00' } });
+    fireEvent.change(screen.getByLabelText('Deadline date'), { target: { value: '2026-10-21' } });
+    rerender(<EventTaskAssignmentPanel {...props} deadline="2026-10-21T17:00" />);
+    fireEvent.change(screen.getByLabelText('Deadline time'), { target: { value: '09:00' } });
     fireEvent.change(screen.getByLabelText(/Task/), { target: { value: 'Prepare the room' } });
     fireEvent.click(screen.getByRole('button', { name: 'Assign Task' }));
     expect(setSelectedEmployeeId).toHaveBeenCalledWith('4');
+    expect(setDeadline).toHaveBeenCalledWith('2026-10-21T17:00');
     expect(setDeadline).toHaveBeenCalledWith('2026-10-21T09:00');
     expect(setTask).toHaveBeenCalledWith('Prepare the room');
     expect(onAssign).toHaveBeenCalledOnce();
@@ -214,6 +275,63 @@ describe('event list panel', () => {
     expect(screen.getByText('There are no events matching your search.')).toBeInTheDocument();
   });
 
+  it('paginates attendee events in groups of nine', () => {
+    const pastEvents = Array.from({ length: 20 }, (_, index) => ({
+      ...event,
+      eventId: 100 + index,
+      eventName: `Past Event ${index + 1}`,
+      startDate: '2020-01-01T09:00:00Z',
+      endDate: '2020-01-01T10:00:00Z',
+      status: 2 as const,
+    }));
+    render(
+      <EventListPanel
+        events={pastEvents}
+        loading={false}
+        searchValue=""
+        statusFilter="completed"
+        canManageEvents={false}
+        isAttendee
+        registeringEventId={null}
+        {...callbacks()}
+      />,
+    );
+    expect(screen.getByText('Past Event 1')).toBeInTheDocument();
+    expect(screen.getByText('Past Event 9')).toBeInTheDocument();
+    expect(screen.queryByText('Past Event 10')).not.toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('Past Event 10')).toBeInTheDocument();
+    expect(screen.getByText('Past Event 18')).toBeInTheDocument();
+    expect(screen.queryByText('Past Event 9')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    expect(screen.getByText('Past Event 1')).toBeInTheDocument();
+  });
+  it('paginates manager event tables as well', () => {
+    const records = Array.from({ length: 10 }, (_, index) => ({
+      ...event,
+      eventId: 200 + index,
+      eventName: `Manager Event ${index + 1}`,
+    }));
+    render(
+      <EventListPanel
+        events={records}
+        loading={false}
+        searchValue=""
+        statusFilter="all"
+        canManageEvents
+        isAttendee={false}
+        registeringEventId={null}
+        {...callbacks()}
+      />,
+    );
+    expect(screen.getByText('Manager Event 1')).toBeInTheDocument();
+    expect(screen.getByText('Manager Event 9')).toBeInTheDocument();
+    expect(screen.queryByText('Manager Event 10')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByText('Manager Event 10')).toBeInTheDocument();
+    expect(screen.queryByText('Manager Event 1')).not.toBeInTheDocument();
+  });
   it('forwards searches and filters for attendees and handles registration states', () => {
     const cb = callbacks();
     const { rerender } = render(

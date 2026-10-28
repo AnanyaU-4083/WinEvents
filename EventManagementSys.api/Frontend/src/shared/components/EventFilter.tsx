@@ -7,12 +7,16 @@ interface EventItem {
 interface EventFilterProps {
   value: string;
   events: EventItem[];
+  id?: string;
+  ariaLabel?: string;
   onChange: (value: string) => void;
 }
 
-function EventFilter({ value, events, onChange }: EventFilterProps) {
+function EventFilter({ value, events, onChange, id, ariaLabel }: EventFilterProps) {
   return (
     <select
+      id={id}
+      aria-label={ariaLabel}
       value={value}
       onChange={(event) => onChange(event.target.value)}
       className="w-full rounded-lg border border-border-default bg-white px-3 py-2.5 text-sm text-text-primary outline-none transition focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"

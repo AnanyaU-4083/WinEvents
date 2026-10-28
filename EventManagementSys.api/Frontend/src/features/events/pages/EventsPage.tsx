@@ -27,6 +27,11 @@ type EventType = 0 | 1 | 2 | 3 | 4 | 5;
 
 const API_URL = '/api';
 
+const toLocalDateTimeInput = (date: Date) => {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+};
+
 interface EventResponse {
   eventId: number;
   eventName: string;
@@ -760,7 +765,7 @@ function EventsPage() {
     setAssigningEvent(event);
     setSelectedEmployeeId('');
     setTask('');
-    setDeadline('');
+    setDeadline(toLocalDateTimeInput(new Date()));
     setAssignedStaff([]);
     setShowAssignForm(true);
 
@@ -784,7 +789,7 @@ function EventsPage() {
   // ASSIGN EMPLOYEE TASK
   // POST /api/events/{eventId}/staff
   const assignEmployeeTask = async () => {
-    if (!assigningEvent) {
+    if (!assigningEvent || assigning) {
       return;
     }
 
@@ -945,7 +950,10 @@ function EventsPage() {
               : 'upcoming';
       const matchesStatus = statusFilter === 'all' || statusFilter === displayStatus;
 
-      return matchesSearch && matchesStatus;
+      const attendeeCancelledEvent =
+        !isAttendee || statusFilter !== 'cancelled' || registeredEventIds.includes(event.eventId);
+
+      return matchesSearch && matchesStatus && attendeeCancelledEvent;
     })
     .sort((firstEvent, secondEvent) => {
       const statusDifference =
@@ -958,9 +966,7 @@ function EventsPage() {
       return new Date(firstEvent.startDate).getTime() - new Date(secondEvent.startDate).getTime();
     });
 
-
   // RENDER
-
 
   return (
     <div className="page-canvas min-h-full p-6 md:p-8">
@@ -1003,7 +1009,7 @@ function EventsPage() {
           open={showCreateForm}
           ariaLabel={editingEventId === null ? 'Create event' : 'Edit event'}
           onClose={resetForm}
-          className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-2xl"
+          className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl shadow-2xl"
         >
           <EventEditorForm
             formData={formData}

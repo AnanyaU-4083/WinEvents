@@ -20,9 +20,13 @@ function FormField({ label, htmlFor, className = '', required = false, children 
 
   return (
     <div className={`grid gap-1 text-sm font-medium ${className}`}>
-      <label htmlFor={controlId}>
+      <label className="text-text-secondary" htmlFor={controlId}>
         {label}
-        {required && <span aria-hidden="true" className="ml-1 text-red-600">*</span>}
+        {required && (
+          <span aria-hidden="true" className="ml-1 text-red-600">
+            *
+          </span>
+        )}
       </label>
       {control}
     </div>
