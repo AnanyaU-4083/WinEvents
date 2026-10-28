@@ -25,13 +25,13 @@ function AdminSectionPanel({
 }: AdminSectionPanelProps) {
   return (
     <section className="glass-panel p-6">
-      <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+      <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
           <p className="mt-1 text-sm text-text-muted">{description}</p>
         </div>
 
-        <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
+        <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto md:items-center">
           <SearchBar
             value={searchValue}
             onChange={onSearchChange}
@@ -39,7 +39,7 @@ function AdminSectionPanel({
           />
           <button
             type="button"
-            className="whitespace-nowrap rounded-lg bg-brand-primary px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            className="whitespace-nowrap rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             onClick={onAdd}
           >
             {addLabel}

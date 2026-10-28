@@ -23,7 +23,7 @@
       <p>You currently don't have any tasks assigned to you.</p>
     </section>
   } @else {
-    <section class="table-card" aria-label="Assigned tasks">
+    <section class="task-list-card" aria-label="Assigned tasks">
       <div class="task-filters">
         <label for="task-status-filter">Show tasks</label>
         <select
@@ -38,69 +38,73 @@
           <option value="declined">Opted out</option>
         </select>
       </div>
-      <div class="table-scroll">
-        <table class="table-grid">
-          <thead>
-            <tr>
-              <th scope="col">Event</th>
-              <th scope="col">Task</th>
-              <th scope="col">Deadline</th>
-              <th scope="col">Status</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Render every assigned task row. -->
-            @if (visibleTasks().length === 0) {
-              <tr>
-                <td colspan="5" class="no-filtered-tasks">No tasks match this filter.</td>
-              </tr>
-            }
-            @for (task of visibleTasks(); track task.assignmentId) {
-              <tr [class]="'task-row overdue-' + overdueLevel(task)">
-                <td class="event-name">{{ task.eventName }}</td>
-                <td>{{ task.task }}</td>
-                <td>{{ formatDeadline(task.deadline) }}</td>
-                <td>
-                  <span [class]="statusClass(task)">
-                    {{ displayStatus(task) }}
-                  </span>
-                </td>
-                <td class="actions">
-                  @if (!isEventOccurredIncomplete(task)) {
-                    @if (normalizedStatus(task.status).toLowerCase() === 'completed') {
-                      <span class="completed-label">Completed</span>
-                    } @else if (normalizedStatus(task.status).toLowerCase() === 'declined') {
-                      <span class="declined-label">Declined</span>
-                    } @else {
+
+      @if (visibleTasks().length === 0) {
+        <div class="no-filtered-tasks">No tasks match this filter.</div>
+      } @else {
+        <div class="task-card-list" role="list">
+          @for (task of visibleTasks(); track task.assignmentId) {
+            <article [class]="'task-card overdue-' + overdueLevel(task)" role="listitem">
+              <div class="task-deadline-badge" aria-hidden="true">
+                <span>{{ task.deadline ? (task.deadline | date: 'MMM') : 'No due date' }}</span>
+                @if (task.deadline) {
+                  <strong>{{ task.deadline | date: 'd' }}</strong>
+                }
+              </div>
+
+              <div class="task-card-content">
+                <div class="task-card-heading">
+                  <h2>{{ task.eventName }}</h2>
+                </div>
+                <p class="task-description">{{ task.task }}</p>
+                <p class="task-deadline">
+                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <circle cx="10" cy="10" r="7.25" />
+                    <path d="M10 5.8v4.5l3 1.8" />
+                  </svg>
+                  <span>Deadline: {{ formatDeadline(task.deadline) }}</span>
+                </p>
+                @if (isOverdue(task) && !isEventOccurredIncomplete(task)) {
+                  <p class="overdue-note">Deadline passed</p>
+                }
+              </div>
+
+              <div class="task-card-status">
+                <span [class]="statusClass(task)">{{ displayStatus(task) }}</span>
+              </div>
+
+              <div class="task-card-actions">
+                @if (!isEventOccurredIncomplete(task)) {
+                  @if (normalizedStatus(task.status).toLowerCase() === 'completed') {
+                    <span class="completed-label">Completed</span>
+                  } @else if (normalizedStatus(task.status).toLowerCase() === 'declined') {
+                    <span class="declined-label">Opted out</span>
+                  } @else {
+                    <button
+                      type="button"
+                      class="complete-button"
+                      [disabled]="savingAssignmentId() === task.assignmentId"
+                      (click)="markAsCompleted(task)"
+                    >
+                      {{ savingAssignmentId() === task.assignmentId ? 'Saving...' : 'Mark Complete' }}
+                    </button>
+                    @if (normalizedStatus(task.status).toLowerCase() === 'pending') {
                       <button
                         type="button"
-                        class="complete-button"
+                        class="decline-button"
                         [disabled]="savingAssignmentId() === task.assignmentId"
-                        (click)="markAsCompleted(task)"
+                        (click)="confirmDecline(task)"
                       >
-                        {{
-                          savingAssignmentId() === task.assignmentId ? 'Saving...' : 'Mark Complete'
-                        }}
+                        Opt Out
                       </button>
-                      @if (normalizedStatus(task.status).toLowerCase() === 'pending') {
-                        <button
-                          type="button"
-                          class="decline-button"
-                          [disabled]="savingAssignmentId() === task.assignmentId"
-                          (click)="confirmDecline(task)"
-                        >
-                          Opt Out
-                        </button>
-                      }
                     }
                   }
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      }
     </section>
   }
 
@@ -123,7 +127,7 @@
         </button>
         <h2 id="decline-title">Opt out of this task?</h2>
         <p>
-          You’ll be removed from <strong>{{ selectedTask.task }}</strong> for
+          You will be removed from <strong>{{ selectedTask.task }}</strong> for
           <strong>{{ selectedTask.eventName }}</strong
           >.
         </p>

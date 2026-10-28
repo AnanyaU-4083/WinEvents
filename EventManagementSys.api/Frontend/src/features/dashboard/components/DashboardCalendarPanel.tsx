@@ -158,7 +158,6 @@ function DashboardCalendarPanel({
           <ScheduleComponent
             cssClass="dashboard-calendar"
             height="700px"
-            timezone={Intl.DateTimeFormat().resolvedOptions().timeZone}
             selectedDate={currentDate}
             currentView="Month"
             readonly={!canManageEvents}

@@ -651,7 +651,7 @@ function ParticipantsPage() {
 
         <div className="border-b border-border-subtle p-5 sm:p-6">
           <div className="mb-4">
-            <h2 className="text-lg font-semibold text-text-primary">Attendee directory</h2>
+            <h2 className="text-base font-semibold text-text-primary">Attendee directory</h2>
             <p className="mt-1 text-sm text-text-muted">
               Search participants by name or email and filter by event.
             </p>
@@ -747,22 +747,22 @@ function ParticipantsPage() {
                     className="group flex min-w-0 items-center gap-3 rounded-xl border border-border-subtle bg-white/70 p-3 shadow-sm transition hover:border-brand-primary/35 hover:bg-white/90 hover:shadow-md sm:gap-4 sm:px-4"
                   >
                     <span
-                      className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-blue-100 text-base font-bold text-brand-primary ring-1 ring-blue-200"
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-blue-100 text-sm font-bold text-brand-primary ring-1 ring-blue-200"
                       aria-hidden="true"
                     >
                       {initials}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-lg font-semibold text-text-primary">
+                      <p className="truncate text-base font-semibold text-text-primary">
                         {participant.name}
                       </p>
-                      <p className="truncate text-base text-text-secondary">{participant.email}</p>
-                      <p className="mt-1 truncate text-base font-medium text-text-primary">
+                      <p className="truncate text-sm text-text-secondary">{participant.email}</p>
+                      <p className="mt-1 truncate text-sm font-medium text-text-primary">
                         Registered for{' '}
                         <span className="text-text-primary">{participant.eventName}</span>
                       </p>
                     </div>
-                    <span className="inline-flex shrink-0 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-sm font-semibold text-green-700 sm:px-3">
+                    <span className="inline-flex shrink-0 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 sm:px-3">
                       {participant.registeredAt}
                     </span>
                     <button

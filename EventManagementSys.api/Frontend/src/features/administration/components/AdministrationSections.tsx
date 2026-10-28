@@ -1,8 +1,6 @@
 // Coordinate administration data and dialogs.
 import type { ChangeEvent, FormEvent } from 'react';
-import AdminDataTable from './AdminDataTable';
 import AdminSectionPanel from './AdminSectionPanel';
-import EmptyTableRow from '@/shared/components/EmptyTableRow';
 import FormField from '@/shared/components/FormField';
 import Modal from '@/shared/components/Modal';
 
@@ -95,87 +93,109 @@ export function OrganizationSection({
           onClose={onCancel}
           className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border-accent/40 bg-white shadow-2xl"
         >
-        <form onSubmit={onSubmit}>
-          <h3 className="mb-5 text-base font-semibold text-text-primary">
-            {editingId === null ? 'Add Organization' : 'Edit Organization'}
-          </h3>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField label="Name" required>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={onChange}
-                required
-                className={inputClass}
-              />
-            </FormField>
-            <FormField label="Email" required>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={onChange}
-                required
-                className={inputClass}
-              />
-            </FormField>
-            <FormField label="Phone" required>
-              <input
-                type="text"
-                name="phone"
-                value={form.phone}
-                onChange={onChange}
-                required
-                className={inputClass}
-              />
-            </FormField>
-            <FormField label="Contact Person">
-              <input
-                type="text"
-                name="contactPerson"
-                value={form.contactPerson}
-                onChange={onChange}
-                className={inputClass}
-              />
-            </FormField>
-          </div>
-          <FormActions
-            loading={loading}
-            editing={editingId !== null}
-            addLabel="Add Organization"
-            updateLabel="Update Organization"
-          />
-        </form>
+          <form onSubmit={onSubmit}>
+            <h3 className="mb-5 text-base font-semibold text-text-primary">
+              {editingId === null ? 'Add Organization' : 'Edit Organization'}
+            </h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField label="Name" required>
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name}
+                  onChange={onChange}
+                  required
+                  className={inputClass}
+                />
+              </FormField>
+              <FormField label="Email" required>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={onChange}
+                  required
+                  className={inputClass}
+                />
+              </FormField>
+              <FormField label="Phone" required>
+                <input
+                  type="text"
+                  name="phone"
+                  value={form.phone}
+                  onChange={onChange}
+                  required
+                  className={inputClass}
+                />
+              </FormField>
+              <FormField label="Contact Person">
+                <input
+                  type="text"
+                  name="contactPerson"
+                  value={form.contactPerson}
+                  onChange={onChange}
+                  className={inputClass}
+                />
+              </FormField>
+            </div>
+            <FormActions
+              loading={loading}
+              editing={editingId !== null}
+              addLabel="Add Organization"
+              updateLabel="Update Organization"
+            />
+          </form>
         </Modal>
       )}
 
-      <AdminDataTable
-        minWidth="760px"
-        headers={['Organization', 'Email', 'Phone', 'Contact Person', 'Actions']}
-      >
+      <div className="space-y-3" aria-label="Organizations">
         {items.length === 0 ? (
-          <EmptyTableRow
-            colSpan={5}
-            title={searchValue ? 'No matching organizations' : 'No organizations found'}
-            description={
-              searchValue ? 'Try a different search.' : 'Organizations will appear here.'
-            }
-          />
+          <div className="rounded-xl border border-dashed border-blue-200 bg-white/55 px-5 py-10 text-center">
+            <h3 className="text-base font-semibold text-text-primary">
+              {searchValue ? 'No matching organizations' : 'No organizations found'}
+            </h3>
+            <p className="mt-1 text-sm text-text-muted">
+              {searchValue ? 'Try a different search.' : 'Organizations will appear here.'}
+            </p>
+          </div>
         ) : (
           items.map((item) => (
-            <tr key={item.orgId} className={rowClass}>
-              <td className={cellClass}>{item.name}</td>
-              <td className={cellClass}>{item.email}</td>
-              <td className={cellClass}>{item.phone}</td>
-              <td className={cellClass}>{item.contactPerson || '-'}</td>
-              <td className="px-4 py-3">
-                <RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item.orgId)} />
-              </td>
-            </tr>
+            <article
+              key={item.orgId}
+              className="flex min-w-0 flex-col gap-4 rounded-xl border border-border-subtle bg-white/75 p-4 shadow-sm transition hover:border-brand-primary/35 hover:bg-white/90 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-base font-semibold text-text-primary">{item.name}</h3>
+                <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="min-w-0">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      Email
+                    </dt>
+                    <dd className="mt-0.5 truncate text-text-secondary">{item.email}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      Phone
+                    </dt>
+                    <dd className="mt-0.5 text-text-secondary">{item.phone}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      Contact person
+                    </dt>
+                    <dd className="mt-0.5 text-text-secondary">{item.contactPerson || '-'}</dd>
+                  </div>
+                </dl>
+              </div>
+              <RowActions
+                onEdit={() => onEdit(item)}
+                onDelete={() => onDelete(item.orgId)}
+                deleteLabel={'Delete ' + item.name}
+              />
+            </article>
           ))
         )}
-      </AdminDataTable>
+      </div>
     </AdminSectionPanel>
   );
 }
@@ -232,95 +252,116 @@ export function EmployeeSection({
           onClose={onCancel}
           className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border-accent/40 bg-white shadow-2xl"
         >
-        <form onSubmit={onSubmit}>
-          <h3 className="mb-5 text-base font-semibold text-text-primary">
-            {editingId === null ? 'Add Employee' : 'Edit Employee'}
-          </h3>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField label="Name" required>
-              <input
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={onChange}
-                required
-                className={inputClass}
-              />
-            </FormField>
-            <FormField label="Job Title" required>
-              <input
-                type="text"
-                name="jobTitle"
-                value={form.jobTitle}
-                onChange={onChange}
-                required
-                className={inputClass}
-              />
-            </FormField>
-            <FormField label="Email" required>
-              <input
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={onChange}
-                required
-                className={inputClass}
-              />
-            </FormField>
-            <FormField label="Organization" required>
-              <select
-                name="orgId"
-                value={form.orgId}
-                onChange={onChange}
-                required
-                className={inputClass}
-              >
-                <option value="">Select organization</option>
-                {organizations.map((organization) => (
-                  <option key={organization.orgId} value={organization.orgId}>
-                    {organization.name}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-          </div>
-          <FormActions
-            loading={loading}
-            editing={editingId !== null}
-            addLabel="Add Employee"
-            updateLabel="Update Employee"
-          />
-        </form>
+          <form onSubmit={onSubmit}>
+            <h3 className="mb-5 text-base font-semibold text-text-primary">
+              {editingId === null ? 'Add Employee' : 'Edit Employee'}
+            </h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormField label="Name" required>
+                <input
+                  type="text"
+                  name="name"
+                  value={form.name}
+                  onChange={onChange}
+                  required
+                  className={inputClass}
+                />
+              </FormField>
+              <FormField label="Job Title" required>
+                <input
+                  type="text"
+                  name="jobTitle"
+                  value={form.jobTitle}
+                  onChange={onChange}
+                  required
+                  className={inputClass}
+                />
+              </FormField>
+              <FormField label="Email" required>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={onChange}
+                  required
+                  className={inputClass}
+                />
+              </FormField>
+              <FormField label="Organization" required>
+                <select
+                  name="orgId"
+                  value={form.orgId}
+                  onChange={onChange}
+                  required
+                  className={inputClass}
+                >
+                  <option value="">Select organization</option>
+                  {organizations.map((organization) => (
+                    <option key={organization.orgId} value={organization.orgId}>
+                      {organization.name}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+            </div>
+            <FormActions
+              loading={loading}
+              editing={editingId !== null}
+              addLabel="Add Employee"
+              updateLabel="Update Employee"
+            />
+          </form>
         </Modal>
       )}
 
-      <AdminDataTable
-        minWidth="760px"
-        headers={['Name', 'Email', 'Job Title', 'Organization', 'Actions']}
-      >
+      <div className="space-y-3" aria-label="Employees">
         {items.length === 0 ? (
-          <EmptyTableRow
-            colSpan={5}
-            title={searchValue ? 'No matching employees' : 'No employees found'}
-            description={searchValue ? 'Try a different search.' : 'Employees will appear here.'}
-          />
+          <div className="rounded-xl border border-dashed border-blue-200 bg-white/55 px-5 py-10 text-center">
+            <h3 className="text-base font-semibold text-text-primary">
+              {searchValue ? 'No matching employees' : 'No employees found'}
+            </h3>
+            <p className="mt-1 text-sm text-text-muted">
+              {searchValue ? 'Try a different search.' : 'Employees will appear here.'}
+            </p>
+          </div>
         ) : (
           items.map((item) => (
-            <tr key={item.employeeId} className={rowClass}>
-              <td className={cellClass}>{item.name}</td>
-              <td className={cellClass}>{item.email}</td>
-              <td className={cellClass}>{item.jobTitle}</td>
-              <td className={cellClass}>{organizationName(item.orgId)}</td>
-              <td className="px-4 py-3">
-                <RowActions
-                  onEdit={() => onEdit(item)}
-                  onDelete={() => onDelete(item.employeeId)}
-                />
-              </td>
-            </tr>
+            <article
+              key={item.employeeId}
+              className="flex min-w-0 flex-col gap-4 rounded-xl border border-border-subtle bg-white/75 p-4 shadow-sm transition hover:border-brand-primary/35 hover:bg-white/90 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-base font-semibold text-text-primary">{item.name}</h3>
+                <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="min-w-0">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      Email
+                    </dt>
+                    <dd className="mt-0.5 truncate text-text-secondary">{item.email}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      Job title / role
+                    </dt>
+                    <dd className="mt-0.5 text-text-secondary">{item.jobTitle}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      Organization
+                    </dt>
+                    <dd className="mt-0.5 text-text-secondary">{organizationName(item.orgId)}</dd>
+                  </div>
+                </dl>
+              </div>
+              <RowActions
+                onEdit={() => onEdit(item)}
+                onDelete={() => onDelete(item.employeeId)}
+                deleteLabel={'Delete ' + item.name}
+              />
+            </article>
           ))
         )}
-      </AdminDataTable>
+      </div>
     </AdminSectionPanel>
   );
 }
@@ -412,26 +453,50 @@ export function VenueSection({
         </Modal>
       )}
 
-      <AdminDataTable minWidth="760px" headers={['Venue', 'Location', 'Capacity', 'Actions']}>
+      <div className="space-y-3" aria-label="Venues">
         {items.length === 0 ? (
-          <EmptyTableRow
-            colSpan={4}
-            title={searchValue ? 'No matching venues' : 'No venues found'}
-            description={searchValue ? 'Try a different search.' : 'Venues will appear here.'}
-          />
+          <div className="rounded-xl border border-dashed border-blue-200 bg-white/55 px-5 py-10 text-center">
+            <h3 className="text-base font-semibold text-text-primary">
+              {searchValue ? 'No matching venues' : 'No venues found'}
+            </h3>
+            <p className="mt-1 text-sm text-text-muted">
+              {searchValue ? 'Try a different search.' : 'Venues will appear here.'}
+            </p>
+          </div>
         ) : (
           items.map((item) => (
-            <tr key={item.venueId} className={rowClass}>
-              <td className={cellClass}>{item.address}</td>
-              <td className={cellClass}>{item.address}</td>
-              <td className={cellClass}>{item.capacity}</td>
-              <td className="px-4 py-3">
-                <RowActions onEdit={() => onEdit(item)} onDelete={() => onDelete(item.venueId)} />
-              </td>
-            </tr>
+            <article
+              key={item.venueId}
+              className="flex min-w-0 flex-col gap-4 rounded-xl border border-border-subtle bg-white/75 p-4 shadow-sm transition hover:border-brand-primary/35 hover:bg-white/90 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-base font-semibold text-text-primary">
+                  {item.address}
+                </h3>
+                <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                  <div className="min-w-0">
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      Location
+                    </dt>
+                    <dd className="mt-0.5 truncate text-text-secondary">{item.address}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      Capacity
+                    </dt>
+                    <dd className="mt-0.5 text-text-secondary">{item.capacity}</dd>
+                  </div>
+                </dl>
+              </div>
+              <RowActions
+                onEdit={() => onEdit(item)}
+                onDelete={() => onDelete(item.venueId)}
+                deleteLabel={'Delete venue at ' + item.address}
+              />
+            </article>
           ))
         )}
-      </AdminDataTable>
+      </div>
     </AdminSectionPanel>
   );
 }
@@ -464,9 +529,10 @@ function FormActions({ loading, editing, addLabel, updateLabel }: FormActionsPro
 interface RowActionsProps {
   onEdit: () => void;
   onDelete: () => void;
+  deleteLabel: string;
 }
 
-function RowActions({ onEdit, onDelete }: RowActionsProps) {
+function RowActions({ onEdit, onDelete, deleteLabel }: RowActionsProps) {
   return (
     <div className="flex flex-wrap gap-2">
       <button
@@ -478,7 +544,7 @@ function RowActions({ onEdit, onDelete }: RowActionsProps) {
       </button>
       <button
         type="button"
-        aria-label="Delete"
+        aria-label={deleteLabel}
         title="Delete"
         className="grid h-8 w-8 place-items-center rounded-lg border border-surface-error bg-white p-0 text-state-error transition hover:bg-surface-error"
         onClick={onDelete}
